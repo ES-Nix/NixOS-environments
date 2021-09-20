@@ -200,6 +200,7 @@ in
       kubernetes
     ];
 
+    environment.variables.KUBECONFIG = "/etc/kubernetes/cluster-admin.kubeconfig";
 
     # It is a hack, minkube only works if calling `sudo -k -n podman` does NOT ask for password.
     # The hardcoded path is because i am not using the podman installed in the system, but the one
