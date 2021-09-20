@@ -13,6 +13,7 @@ in
 
       # configure the bootloader
       ({
+        # https://gist.github.com/andir/88458b13c26a04752854608aacb15c8f#file-configuration-nix-L11-L12
         boot.loader.grub.extraConfig = ''
           serial --unit=0 --speed=115200
           terminal_output serial console; terminal_input serial console
@@ -243,14 +244,6 @@ in
 #      kubelet.containerRuntime = "docker";
 #    };
 
-#    services.kubernetes.roles = [ "master" ];
-#    services.kubernetes.masterAddress = kubeMasterHostname;
-#    services.kubernetes.apiserverAddress = "https://${kubeMasterHostname}:${toString kubeMasterAPIServerPort}";
-#    services.kubernetes.pki = {
-#      etcClusterAdminKubeconfig = "/etc/kubernetes/cluster-admin.kubeconfig";
-#    };
-#    services.kubernetes.addonManager.enable = true;
-
     services.kubernetes = {
       addonManager.enable = true;
       addons = {
@@ -258,21 +251,43 @@ in
         dashboard.rbac.enable = true;
         dns.enable = true;
       };
-      apiserver.enable = true;
+
       apiserverAddress = "https://${kubeMasterHostname}:${toString kubeMasterAPIServerPort}";
+
+      apiserver = {
+        advertiseAddress = kubeMasterIP;
+        enable = true;
+        securePort = kubeMasterAPIServerPort;
+      };
       controllerManager.enable = true;
       flannel.enable = true;
-      masterAddress = kubeMasterHostname;
-      pki = {
-        etcClusterAdminKubeconfig = "/etc/kubernetes/cluster-admin.kubeconfig";
-      };
+      masterAddress = "${toString kubeMasterHostname}";
+#      # It conflicts and if used with mkForce still not works
+#      pki = {
+#        etcClusterAdminKubeconfig = pkgs.lib.mkDefault "/etc/kubernetes/cluster-admin.kubeconfig";
+#      };
       proxy.enable = true;
-#      roles = [ "master" "node" ];
+      roles = [ "master" "node" ];
       scheduler.enable = true;
       easyCerts = true;
       kubelet.enable = true;
 
+      # TODO: Fix this!
+      #verbose = true;
+
 #      # needed if you use swap
-#      kubelet.extraOpts = "--fail-swap-on=false";
+      kubelet.extraOpts = "--fail-swap-on=false";
     };
+
+    services = {
+      flannel = {
+        enable = true;
+        etcd.endpoints = [ "http://127.0.0.1:2379" ];
+        #storageBackend = "etcd";
+      };
+    };
+
+    # TODO: Fix this!
+    networking.firewall.enable = false;
+
 }

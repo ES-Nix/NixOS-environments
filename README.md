@@ -255,3 +255,107 @@ WIP
 - [Mein kleines aber feines Cheatsheet für NixOS.](https://noqqe.de/sammelsurium/nixos/)
 
 
+kube-addon-manager.service
+kube-apiserver.service
+kube-controller-manager.service
+kube-proxy.service
+kube-scheduler.service
+
+systemctl cat kube-apiserver.service
+
+stat /var/lib/kubernetes/secrets/ca.pem
+
+stat /var/lib/kubernetes/secrets/kube-apiserver.pem
+
+
+
+systemctl status kube-addon-manager.service | rg -e 'Active: active' || echo 'Error!'
+systemctl status kube-apiserver.service | rg -e 'Active: active' || echo 'Error!'
+systemctl status kube-controller-manager.service | rg -e 'Active: active' || echo 'Error!'
+systemctl status kube-proxy.service | rg -e 'Active: active' || echo 'Error!'
+systemctl status kube-scheduler.service | rg -e 'Active: active' || echo 'Error!'
+systemctl status certmgr.service | rg -e 'Active: active' || echo 'Error!'
+
+
+systemctl status kube-apiserver.service
+systemctl status kube-addon-manager.service
+systemctl restart kube-addon-manager.service
+cat /nix/store/*-unit-kube-addon-manager.service/kube-addon-manager.service
+
+ss -tunlp
+
+
+anager-pre-start]# ss -tunlph795044h40wci7x7csghzly2d3j-unit-script-kube-addon-ma
+Netid   State    Recv-Q   Send-Q     Local Address:Port      Peer Address:Port  Process                                                                         
+udp     UNCONN   0        0                0.0.0.0:68             0.0.0.0:*      users:(("dhcpcd",pid=892,fd=10))                                               
+tcp     LISTEN   0        4096           127.0.0.1:43765          0.0.0.0:*      users:(("containerd",pid=717,fd=11))                                           
+tcp     LISTEN   0        128              0.0.0.0:22             0.0.0.0:*      users:(("sshd",pid=768,fd=3))                                                  
+tcp     LISTEN   0        4096           127.0.0.1:10248          0.0.0.0:*      users:(("kubelet",pid=1399,fd=21))                                             
+tcp     LISTEN   0        4096           127.0.0.1:10249          0.0.0.0:*      users:(("kube-proxy",pid=1343,fd=7))                                           
+tcp     LISTEN   0        4096           127.0.0.1:10251          0.0.0.0:*      users:(("kube-scheduler",pid=1344,fd=7))                                       
+tcp     LISTEN   0        4096           127.0.0.1:2379           0.0.0.0:*      users:(("etcd",pid=1278,fd=9))                                                 
+tcp     LISTEN   0        4096           127.0.0.1:10252          0.0.0.0:*      users:(("kube-controller",pid=1289,fd=7))                                      
+tcp     LISTEN   0        4096           127.0.0.1:2380           0.0.0.0:*      users:(("etcd",pid=1278,fd=8))                                                 
+tcp     LISTEN   0        4096                   *:10259                *:*      users:(("kube-scheduler",pid=1344,fd=8))                                       
+tcp     LISTEN   0        128                 [::]:22                [::]:*      users:(("sshd",pid=768,fd=4))                                                  
+tcp     LISTEN   0        4096                   *:8888                 *:*      users:(("cfssl",pid=813,fd=7))                                                 
+tcp     LISTEN   0        4096                   *:10250                *:*      users:(("kubelet",pid=1399,fd=16))                                             
+tcp     LISTEN   0        4096                   *:6443                 *:*      users:(("kube-apiserver",pid=1342,fd=7))                                       
+tcp     LISTEN   0        4096                   *:10255                *:*      users:(("kubelet",pid=1399,fd=17))                                             
+tcp     LISTEN   0        4096                   *:10256                *:*      users:(("kube-proxy",pid=1343,fd=11))
+
+
+
+/nix/store/*-kubernetes-1.22.1/bin/kube-addons
+
+kubectl get pods -A
+
+kubectl cluster-info
+
+kubectl cluster-info dump
+
+
+ss -tunlp
+
+ss -tunlp | rg 'kube-apiserver|kubelet|kube-controller|kube-proxy|kube-scheduler|certmgr'
+
+
+cat /etc/hosts
+
+ping -c 3 127.0.0.1
+
+journalctl -l -u kubelet
+
+
+cat /var/lib/kubernetes/secrets/apitoken.secret | wc -l | rg 1
+
+find / -iname '*.kubeconfig'
+
+~/.kube/config
+
+
+          {"apiVersion":"v1",
+            "clusters":
+              [
+                {
+                "cluster":
+                  {
+                    "certificate-authority":"/var/lib/kubernetes/secrets/ca.pem",
+                    "server":"${kubeMasterHostname}::${toString kubeMasterAPIServerPort}"
+                  },
+                  "name":"local"
+                  }
+              ],
+            "contexts"
+          }
+
+
+file /etc/kubernetes/cluster-admin.kubeconfig | rg -w '/etc/kubernetes/cluster-admin.kubeconfig: symbolic link to /etc/static/kubernetes/cluster-admin.kubeconfig'
+test -d ~/.kube || mkdir ~/.kube
+ln -s /etc/kubernetes/cluster-admin.kubeconfig ~/.kube/config
+kubectl cluster-info
+
+
+echo $KUBECONFIG
+
+
