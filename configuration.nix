@@ -166,12 +166,12 @@ in
       kubelet.extraOpts = "--fail-swap-on=false";
     };
 
-#    services = {
-#      flannel = {
-#        enable = true;
-#        etcd.endpoints = [ "http://127.0.0.1:2379" ];
-#      };
-#    };
+    services = {
+      flannel = {
+        enable = true;
+        etcd.endpoints = [ "http://127.0.0.1:2379" ];
+      };
+    };
 
     # TODO: Fix this!
     networking.firewall.enable = false;

@@ -359,3 +359,56 @@ kubectl cluster-info
 echo $KUBECONFIG
 
 
+cat /run/flannel/subnet.env
+
+
+kubectl get nodes
+kubectl get pods --all-namespaces
+kubectl get pods --all-namespaces -o wide
+
+
+cat /etc/cni/net.d/*-flannel.conf
+
+
+
+kubeadm init --token-ttl=0 --apiserver-advertise-address=https://localhost:6443
+
+kubectl describe kube-flannel-ds-* -n kube-system
+
+systemctl restart kubelet.service
+
+```bash
+systemctl status kubelet.service
+journalctl -f -u kubelet.service
+```
+
+```bash
+echo kubectl cluster-info dump | rg MinimumReplicasUnavailable -B 11 -A 12 -m 1 
+```
+
+
+kubectl cluster-info dump | rg error
+
+
+shutdown -r now
+
+
+env | sort | sha256sum
+
+
+```bash
+env | grep -v HOSTNAME | sort | sha256sum
+```
+
+```bash
+podman \
+run \
+--interactive=true \
+--tty=false \
+--rm=true \
+--user=0 \
+docker.io/library/busybox \
+<< COMMANDS
+env | grep -v HOSTNAME | sort | sha256sum
+COMMANDS
+```
