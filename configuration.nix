@@ -2,7 +2,7 @@
 let
   kubeMasterIP = "10.1.1.2";
   kubeMasterHostname = "localhost";
-  kubeMasterAPIServerPort = 8080;
+  kubeMasterAPIServerPort = 6443;
 in
 {
     imports = [
@@ -77,18 +77,6 @@ in
           shell = pkgs.zsh;
         };
 
-  #      users.users.nixuser.openssh.authorizedKeys.keys = ["AAAAC3NzaC1lZDI1NTE5AAAAIDbqkQxZD6I65C1cQ3A5N/LoTHR85x1k/tBbBymZsWw8"];
-
-  #      users.users.nixuser.openssh.authorizedKeys.keys = let
-  #        keys = import ./ssh-keys.nix;
-  #      in
-  #        [ keys.nixuser ];
-
-        hardware.opengl = {
-          enable = true;
-          driSupport = true;
-        };
-
         # https://nixos.wiki/wiki/Libvirt
         boot.extraModprobeConfig = "options kvm_intel nested=1";
 
@@ -109,36 +97,6 @@ in
 
         users.users."root".initialPassword = "r00t";
 
-  #      users.users.root.openssh.authorizedKeys.keys = [
-  #        "ssh-rsa AAAAC3NzaC1lZDI1NTE5AAAAIDbqkQxZD6I65C1cQ3A5N/LoTHR85x1k/tBbBymZsWw8"
-  #      ];
-
-        #services.openssh.authorizedKeysFiles = ["./ssh-keys.nix"];
-
-  #      networking.useDHCP = false; # Disable DHCP globally as we will not need it.
-  #      networking.interfaces.eth0.useDHCP = true;
-
-  #      networking = {
-  #        hostName = "nixosvm";
-  #        networkmanager.enable = true;
-  #        defaultGateway = "x.x.x.x";
-  #        # Use google's public DNS server
-  #        nameservers = [ "8.8.8.8" ];
-  #        interfaces.eth0 = {
-  #          ipv4.addresses =  [ {
-  #              address = "192.168.1.2";
-  #              prefixLength = 24;
-  #            }
-  #          ];
-  #        };
-  #      };
-
-  #      networking.interfaces.eth0.ipv4.addresses = [ {
-  #        address = "192.168.1.2";
-  #        prefixLength = 24;
-  #        }
-  #      ];
-
       })
     ];
 
@@ -151,28 +109,6 @@ in
         experimental-features = nix-command flakes ca-references ca-derivations
         system-features = benchmark big-parallel kvm nixos-test
       '';
-    };
-
-    # Use this option to avoid issues on macOS version upgrade
-    # https://github.com/execat/nix/blob/0d4db14db79e1e692306c769e685146e8c8810c9/nix/default.nix#L13
-    #users.nix.configureBuildUsers = true;
-
-    # Probably solve many warns about fonts
-    # https://gist.github.com/kendricktan/8c33019cf5786d666d0ad64c6a412526
-    fonts = {
-      fontDir.enable = true;
-      fonts = with pkgs; [
-        corefonts           # Microsoft free fonts
-        fira                # Monospace
-        fira-code
-        font-awesome
-        hack-font
-        inconsolata         # Monospace
-        iosevka
-        powerline-fonts
-        ubuntu_font_family
-        unifont             # International languages
-      ];
     };
 
     # TODO: fix it!
@@ -202,49 +138,6 @@ in
 
     environment.variables.KUBECONFIG = "/etc/kubernetes/cluster-admin.kubeconfig";
 
-    # It is a hack, minkube only works if calling `sudo -k -n podman` does NOT ask for password.
-    # The hardcoded path is because i am not using the podman installed in the system, but the one
-    # in a flake that i am using at work. For now let it be hardcoded :|
-    #
-    # It looks like there is a bug too:
-    # https://unix.stackexchange.com/questions/377362/in-nixos-how-to-add-a-user-to-the-sudoers-file
-    # https://www.reddit.com/r/NixOS/comments/nzks7u/running_sudo_without_password/
-    # https://github.com/NixOS/nixpkgs/issues/58276
-#    security.sudo.extraConfig = ''
-#      %wheel      ALL=(root)      NOPASSWD:SETENV: /nix/store/h63yf7a2ccfimas30i0wn54fp8c8h3qf-podman-rootless-derivation/bin/podman
-#    '';
-
-    #
-    # https://nixos.wiki/wiki/Kubernetes
-    # resolve master hostname
-#    networking.extraHosts = "${kubeMasterIP} ${kubeMasterHostname}";
-
-    # packages for administration tasks
-#    environment.systemPackages = with pkgs; [
-#      kompose
-#      kubectl
-#      kubernetes
-#    ];
-
-#    services.kubernetes = {
-#      roles = ["master" "node"];
-#      masterAddress = kubeMasterHostname;
-#      apiserverAddress = "https://${kubeMasterHostname}:${toString kubeMasterAPIServerPort}";
-#      easyCerts = true;
-#      apiserver = {
-#        securePort = kubeMasterAPIServerPort;
-#        advertiseAddress = kubeMasterIP;
-#      };
-#
-#      # use coredns
-#      addons.dns.enable = true;
-#
-#      # needed if you use swap
-#      kubelet.extraOpts = "--fail-swap-on=false";
-#
-#      kubelet.containerRuntime = "docker";
-#    };
-
     services.kubernetes = {
       addonManager.enable = true;
       addons = {
@@ -263,32 +156,23 @@ in
       controllerManager.enable = true;
       flannel.enable = true;
       masterAddress = "${toString kubeMasterHostname}";
-#      # It conflicts and if used with mkForce still not works
-#      pki = {
-#        etcClusterAdminKubeconfig = pkgs.lib.mkDefault "/etc/kubernetes/cluster-admin.kubeconfig";
-#      };
       proxy.enable = true;
       roles = [ "master" "node" ];
       scheduler.enable = true;
       easyCerts = true;
       kubelet.enable = true;
 
-      # TODO: Fix this!
-      #verbose = true;
-
 #      # needed if you use swap
       kubelet.extraOpts = "--fail-swap-on=false";
     };
 
-    services = {
-      flannel = {
-        enable = true;
-        etcd.endpoints = [ "http://127.0.0.1:2379" ];
-        #storageBackend = "etcd";
-      };
-    };
+#    services = {
+#      flannel = {
+#        enable = true;
+#        etcd.endpoints = [ "http://127.0.0.1:2379" ];
+#      };
+#    };
 
     # TODO: Fix this!
     networking.firewall.enable = false;
-
 }
