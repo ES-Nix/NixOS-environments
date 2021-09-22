@@ -334,38 +334,25 @@ find / -iname '*.kubeconfig'
 ~/.kube/config
 
 
-          {"apiVersion":"v1",
-            "clusters":
-              [
-                {
-                "cluster":
-                  {
-                    "certificate-authority":"/var/lib/kubernetes/secrets/ca.pem",
-                    "server":"${kubeMasterHostname}::${toString kubeMasterAPIServerPort}"
-                  },
-                  "name":"local"
-                  }
-              ],
-            "contexts"
-          }
-
-
+Probably usefull for a unpriviliged user?
 file /etc/kubernetes/cluster-admin.kubeconfig | rg -w '/etc/kubernetes/cluster-admin.kubeconfig: symbolic link to /etc/static/kubernetes/cluster-admin.kubeconfig'
 test -d ~/.kube || mkdir ~/.kube
 ln -s /etc/kubernetes/cluster-admin.kubeconfig ~/.kube/config
 kubectl cluster-info
 
 
-echo $KUBECONFIG
+echo $KUBECONFIG | rg -w '
 
 
 cat /run/flannel/subnet.env
 
 
+kubectl version
+kubectl version --short --client
 kubectl get nodes
 kubectl get pods --all-namespaces
 kubectl get pods --all-namespaces -o wide
-
+kubectl get svc
 
 cat /etc/cni/net.d/*-flannel.conf
 
@@ -373,7 +360,11 @@ cat /etc/cni/net.d/*-flannel.conf
 
 kubeadm init --token-ttl=0 --apiserver-advertise-address=https://localhost:6443
 
-kubectl describe kube-flannel-ds-* -n kube-system
+kubectl describe -n kube-system pod coredns-55c7644d65-4gr6c 
+
+kubectl describe -n kube-system pod shell-demo
+
+
 
 systemctl restart kubelet.service
 
@@ -412,3 +403,107 @@ docker.io/library/busybox \
 env | grep -v HOSTNAME | sort | sha256sum
 COMMANDS
 ```
+
+```bash
+env > env.txt
+SHA="$(sha256sum env.txt | cut -d ' ' -f 1)"
+echo "$SHA env.txt" | sha256sum --check
+echo "$SHA env.txt" | sha256sum --check --status
+```
+https://superuser.com/questions/1312740/how-to-take-sha256sum-of-file-and-compare-to-check-in-one-line#comment2484548_1468626
+
+
+
+```bash
+mkdir -p /usr/lib/cni \
+&& ln -fsv $(which bandwidth) /usr/lib/cni/bandwidth \
+&& ln -fsv $(which bridge) /usr/lib/cni/bridge \
+&& ln -fsv $(which dhcp) /usr/lib/cni/dhcp \
+&& ln -fsv $(which firewall) /usr/lib/cni/firewall \
+&& ln -fsv $(which host-device) /usr/lib/cni/host-device \
+&& ln -fsv $(which host-local) /usr/lib/cni/host-local \
+&& ln -fsv $(which ipvlan) /usr/lib/cni/ipvlan \
+&& ln -fsv $(which loopback) /usr/lib/cni/loopback \
+&& ln -fsv $(which macvlan) /usr/lib/cni/macvlan \
+&& ln -fsv $(which portmap) /usr/lib/cni/portmap \
+&& ln -fsv $(which ptp) /usr/lib/cni/ptp \
+&& ln -fsv $(which sbr) /usr/lib/cni/sbr \
+&& ln -fsv $(which static) /usr/lib/cni/static \
+&& ln -fsv $(which tuning) /usr/lib/cni/tuning \
+&& ln -fsv $(which vlan) /usr/lib/cni/vlan \
+&& ln -fsv $(which vrf) /usr/lib/cni/vrf
+```
+
+
+kubeadm init --pod-network-cidr=10.244.0.0/16
+
+
+cat << EOF > projected.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-pod
+spec:
+  containers:
+  - name: test-pod
+    image: busybox
+    command: ['sh', '-c', 'echo The Bench Container 1 is Running ; sleep 3600']
+EOF
+
+kubectl create -f projected.yaml
+kubectl get pods
+
+kubectl logs test-pod
+
+
+kubectl get pods
+kubectl exec test-pod -- -i -t -- /bin/sh -c ' ls -al /'
+
+minikube kubectl -- delete pod test-pod
+rm -fv projected.yaml
+
+
+
+
+kubeadm config images list
+
+
+docker pull quay.io/coreos/flannel:v0.14.0
+docker pull k8s.gcr.io/kube-apiserver:v1.22.2
+docker pull k8s.gcr.io/kube-controller-manager:v1.22.2
+docker pull k8s.gcr.io/kube-scheduler:v1.22.2
+docker pull k8s.gcr.io/kube-proxy:v1.22.2
+docker pull k8s.gcr.io/pause:3.5
+docker pull k8s.gcr.io/etcd:3.5.0-0
+docker pull k8s.gcr.io/coredns/coredns:v1.8.4
+
+kubectl delete all --all -n kube-system
+
+```bash
+mkdir -p /etc/systemd/system/kubelet.service.d
+cat << EOF > /etc/systemd/system/kubelet.service.d/20-etcd-service-manager.conf
+[Service]
+ExecStart=
+#  Replace "systemd" with the cgroup driver of your container runtime. The default value in the kubelet is "cgroupfs".
+ExecStart=$(which kubelet) --address=127.0.0.1 --pod-manifest-path=/etc/kubernetes/manifests --cgroup-driver=systemd
+Restart=always
+EOF
+```
+Adapted from: [Setting up the cluster](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/setup-ha-etcd-with-kubeadm/#setting-up-the-cluster)
+
+
+
+TODOs: 
+- https://www.weave.works/docs/net/latest/kubernetes/kube-addon/#-troubleshooting
+- https://logs.nix.samueldr.com/nixos-kubernetes/2018-09-07
+- https://jl.lu/blog/nixos-and-kubernetes-woes/
+- https://github.com/kubernetes/kubernetes/issues/54918#issuecomment-851042394
+- https://stackoverflow.com/a/48205752
+- https://stackoverflow.com/questions/65424037/failed-to-create-pod-sandbox-rpc-error-code-unknown-desc-failed-to-set-up
+- https://stackoverflow.com/a/66742904 and https://github.com/kubernetes/kubernetes/issues/70202#issuecomment-481173403 see the `FLANNEL_IPMASQ=true`
+- [Steps for the first control plane node](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/high-availability/#steps-for-the-first-control-plane-node)
+- [Installing a Pod network add-on](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/create-cluster-kubeadm/#pod-network)
+- To troubleshoot https://stackoverflow.com/a/58080891
+- https://serverfault.com/a/923249
+- https://kubernetes.io/docs/tasks/debug-application-cluster/debug-service/
+- 
