@@ -29,6 +29,7 @@
             lsof
             neovim
             netcat
+            nixpkgs-fmt
             nmap
             qemu
             which
@@ -36,6 +37,9 @@
 
           shellHook = ''
             export TMPDIR=/tmp
+
+            # TODO
+            #nix run nixpkgs#nixpkgs-fmt **/*.nix *.nix
           '';
         };
       }

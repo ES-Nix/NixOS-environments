@@ -22,6 +22,10 @@
         "panic=30"
         "boot.panic_on_fail" # reboot the machine upon fatal boot issues
       ];
+
+      # TODO: document
+      #boot.kernel.sysctl = { "net.netfilter.nf_conntrack_max" = 131072; };
+
       boot.loader.grub.device = "/dev/sda";
       boot.loader.grub.version = 2;
 
@@ -78,6 +82,7 @@
 #      in
 #        [ keys.nixuser ];
 
+      # Who depends on it?
       hardware.opengl = {
         enable = true;
         driSupport = true;
@@ -145,6 +150,11 @@
       experimental-features = nix-command flakes ca-references ca-derivations
       system-features = benchmark big-parallel kvm nixos-test
     '';
+
+    # From:
+    # https://github.com/sherubthakur/dotfiles/blob/be96fe7c74df706a8b1b925ca4e7748cab703697/system/configuration.nix#L44
+    # pointted by: https://github.com/NixOS/nixpkgs/issues/124215
+    sandboxPaths = [ "/bin/sh=${pkgs.bash}/bin/sh"];
   };
 
   # Use this option to avoid issues on macOS version upgrade
@@ -176,18 +186,104 @@
     bashInteractive
     cacert            # If it is not used, it is like not have internet! Really hard to figure out it!
     coreutils
+
+    #
+    binutils
+    bottom  # the binary name is btm
+    coreutils
+    dnsutils
     file
-    inetutils
+    findutils
+    fzf
+    inetutils # TODO: it was causing a conflict, insvestigate it!
     lsof
-    netcat
-    nmap
-    minikube
-    kubectl
     neovim
-    openssl
+    netcat
+    nixpkgs-fmt
+    nmap
+    oh-my-zsh
     openssh
+    openssl
     ripgrep
+    strace
+    tree
+    unzip
+    util-linux
     which
+    zsh
+    zsh-autosuggestions
+    zsh-completions
+
+#    minikube
+#    kubectl
+#     # shell stuff
+#     direnv
+#     fzf
+#     neovim
+#     oh-my-zsh
+#     zsh
+#     zsh-autosuggestions
+#     zsh-completions
+#     bottom  # the binary name is btm
+#
+#     # Some utils
+#     binutils
+#     coreutils
+#     dnsutils
+#     file
+#     findutils
+#     # inetutils # TODO: it was causing a conflict, insvestigate it!
+#     nixpkgs-fmt
+#     ripgrep
+#     strace
+#     util-linux
+#     unzip
+#     tree
+#
+#     gzip
+#     unrar
+#     unzip
+#
+#     curl
+#     wget
+#
+#     graphviz # dot command comes from here
+#     jq
+#     unixtools.xxd
+#
+#     # Caching compilers
+#     gcc
+#     gcc6
+#
+##     anydesk
+##     discord
+##     firefox
+##     freeoffice
+##     gitkraken
+##     klavaro
+##     spectacle
+#     vlc
+#     xorg.xkill
+#
+##     amazon-ecs-cli
+##     awscli
+##     docker
+##     docker-compose
+##     git
+##     gnumake
+##     gnupg
+##     gparted
+#
+##     youtube-dl
+##     htop
+##     jetbrains.pycharm-community
+##     keepassxc
+##     okular
+##     # libreoffice
+##     python39Full
+##     peek
+##     insomnia
+
   ];
 
 
@@ -202,5 +298,40 @@
   security.sudo.extraConfig = ''
     %wheel      ALL=(root)      NOPASSWD:SETENV: /nix/store/h63yf7a2ccfimas30i0wn54fp8c8h3qf-podman-rootless-derivation/bin/podman
   '';
+
+  # https://github.com/NixOS/nixpkgs/blob/3a44e0112836b777b176870bb44155a2c1dbc226/nixos/modules/programs/zsh/oh-my-zsh.nix#L119
+  # https://discourse.nixos.org/t/nix-completions-for-zsh/5532
+  # https://github.com/NixOS/nixpkgs/blob/09aa1b23bb5f04dfc0ac306a379a464584fc8de7/nixos/modules/programs/zsh/zsh.nix#L230-L231
+  programs.zsh = {
+    enable = true;
+    shellAliases = {
+      vim = "nvim";
+    };
+    enableCompletion = true;
+    autosuggestions.enable = true;
+    interactiveShellInit = ''
+      export ZSH=${pkgs.oh-my-zsh}/share/oh-my-zsh
+      export ZSH_THEME="agnoster"
+      export ZSH_CUSTOM=${pkgs.zsh-autosuggestions}/share/zsh-autosuggestions
+      plugins=(
+                colored-man-pages
+                docker
+                git
+                #zsh-autosuggestions # Why this causes an warn?
+                #zsh-syntax-highlighting
+              )
+      source $ZSH/oh-my-zsh.sh
+    '';
+    ohMyZsh.custom = "${pkgs.zsh-autosuggestions}/share/zsh-autosuggestions";
+    promptInit = "";
+  };
+
+  # TODO: study about this
+  # https://github.com/thiagokokada/dotfiles/blob/a221bf1186fd96adcb537a76a57d8c6a19592d0f/_nixos/etc/nixos/misc-configuration.nix#L124-L128
+  zramSwap = {
+    enable = true;
+    algorithm = "zstd";
+  };
+
 
 }
