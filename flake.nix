@@ -13,6 +13,27 @@
           system = "x86_64-linux";
           config = { allowUnfree = true; };
         };
+
+        user_name="nixuser";
+
+          sshClient = pkgsAllowUnfree.writeShellScriptBin "sshVM" ''
+            sshKey=$(mktemp)
+            trap 'rm $sshKey' EXIT
+            cp ${./vagrant} "$sshKey"
+            chmod 0600 "$sshKey"
+
+            until ${pkgsAllowUnfree.openssh}/bin/ssh \
+              -X \
+              -o GlobalKnownHostsFile=/dev/null \
+              -o UserKnownHostsFile=/dev/null \
+              -o StrictHostKeyChecking=no \
+              -o LogLevel=ERROR \
+              -i "$sshKey" ${user_name}@127.0.0.1 -p 10023 "$@"; do
+              ((c++)) && ((c==60)) && break
+              sleep 1
+            done
+          '';
+
       in
       {
         packages.image = import ./default.nix {
@@ -33,6 +54,7 @@
             nmap
             qemu
             which
+            sshClient
           ];
 
           shellHook = ''
