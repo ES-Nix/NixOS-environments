@@ -97,6 +97,21 @@
         chmod -v 0755 nixos.qcow2
       '';
 
+        sshVMVolume = pkgsAllowUnfree.writeShellScriptBin "ssh-vm-volume" ''
+          build \
+          && refresh-vm \
+          && (run-vm-kvm < /dev/null &) \
+          && { ssh-vm << COMMANDS
+          volume-mount-hack
+          COMMANDS
+          } && { ssh-vm << COMMANDS
+          ls -al /home/nixuser/code | rg result
+          COMMANDS
+          } && { ssh-vm << COMMANDS
+          timeout 100 nix run nixpkgs#xorg.xclock
+          COMMANDS
+          } && ssh-vm
+        '';
       in
       {
         packages.image = import ./default.nix {
@@ -123,9 +138,10 @@
 
             build
             buildDev
-            sshVM
-            runVMKVM
             refreshVM
+            runVMKVM
+            sshVM
+            sshVMVolume
           ];
 
           shellHook = ''

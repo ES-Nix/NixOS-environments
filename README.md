@@ -13,12 +13,20 @@ build \
 volume-mount-hack
 COMMANDS
 } && { ssh-vm << COMMANDS
-ls -al /home/nixuser/code
+ls -al /home/nixuser/code | rg result
 COMMANDS
 } && { ssh-vm << COMMANDS
 timeout 100 nix run nixpkgs#xorg.xclock
 COMMANDS
 } && ssh-vm
+```
+
+```bash
+nix \
+develop \
+github:ES-Nix/NixOS-environments/box \
+--command \
+ssh-vm-volume
 ```
 
 
