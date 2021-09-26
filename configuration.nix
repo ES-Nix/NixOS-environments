@@ -12,9 +12,11 @@
         serial --unit=0 --speed=115200
         terminal_output serial console; terminal_input serial console
       '';
+
+      #
       boot.kernelParams = [
         "console=tty0"
-        "console=ttyS0,115200n8"
+        "console=ttyS0::respawn:/sbin/getty -L ttyS0 115200 vt100"
         # Set sensible kernel parameters
         # https://nixos.wiki/wiki/Bootloader
         # https://git.redbrick.dcu.ie/m1cr0man/nix-configs-rb/commit/ddb4d96dacc52357e5eaec5870d9733a1ea63a5a?lang=pt-PT
@@ -33,16 +35,29 @@
       # Needed for https://github.com/NixOS/nixpkgs/issues/58959
       boot.supportedFilesystems = pkgs.lib.mkForce [ "btrfs" "reiserfs" "vfat" "f2fs" "xfs" "ntfs" "cifs" ];
 
-      # Define a user account. Don't forget to set a password with ‘passwd’.
-      users.users.nixuser = {
+      # Define a user account.
+      # Don't forget to set a password with `passwd`.
+      users.extraUsers.nixuser = {
         isNormalUser = true;
 
         # https://nixos.wiki/wiki/Libvirt
-        extraGroups = [ "audio" "libvirtd" "wheel" "nixgroup" "networkmanager" "docker" "kvm"]; # Enable sudo for the user.
+        extraGroups = [
+                        "audio"
+                        "docker"
+                        "kvm"
+                        "libvirtd"
+                        "networkmanager"
+                        "nixgroup"
+                        "wheel"
+                      ];
 
-        openssh.authorizedKeys.keys = [
-          "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDbqkQxZD6I65C1cQ3A5N/LoTHR85x1k/tBbBymZsWw8 nixuser@nixos"
-        ];
+        # It can be turned off, it is here for debug help
+        # To crete a new one:
+        # mkpasswd -m sha-512
+        hashedPassword = "$6$mjFTykvA04OgeQfm$lTo5uKI30VL816eBb.x11RErrBcLfyXsnaM2wKlQ41s14oZK27dVVy8McCCKYsaY4Byuqf3H6R8lFda.F/V3K1";
+        openssh.authorizedKeys.keyFiles = [
+          ./vagrant.pub
+          ];
       };
 
     # Sad, but for now...
@@ -63,24 +78,26 @@
       '';
     };
 
-#      users.users.alice = {
-#        isNormalUser = true;
-#        home = "/home/alice";
-#        description = "Alice Foobar";
-#        extraGroups = [ "wheel" "networkmanager" ];
-#        openssh.authorizedKeys.keys = [ "ssh-rsa AAAAC3NzaC1lZDI1NTE5AAAAIDbqkQxZD6I65C1cQ3A5N/LoTHR85x1k/tBbBymZsWw8 alice" ];
-#      };
+    # TODO: do a NixOS test about this!
+    # cat /etc/sudoers.d/nixuser | rg -w 'nixuser ALL=(ALL) NOPASSWD: ALL' || echo $?
+    # rg -c -q -e 'nixuser ALL=\(ALL\) NOPASSWD: ALL' /etc/sudoers.d/nixuser || echo 'Error!'
+    environment.etc."sudoers.d/nixuser" = {
+      mode="0644";
+      text=''
+        nixuser ALL=(ALL) NOPASSWD: ALL
+      '';
+    };
+
+    environment.etc."ssh/sshd_config" = {
+      mode="0644";
+      text=''
+        X11UseLocalHost no
+      '';
+    };
 
       users.extraUsers.nixuser = {
         shell = pkgs.zsh;
       };
-
-#      users.users.nixuser.openssh.authorizedKeys.keys = ["AAAAC3NzaC1lZDI1NTE5AAAAIDbqkQxZD6I65C1cQ3A5N/LoTHR85x1k/tBbBymZsWw8"];
-
-#      users.users.nixuser.openssh.authorizedKeys.keys = let
-#        keys = import ./ssh-keys.nix;
-#      in
-#        [ keys.nixuser ];
 
       # Who depends on it?
       hardware.opengl = {
@@ -97,6 +114,9 @@
 
     # openssh and user configuration
     ({
+
+      # ?
+      # https://github.com/NixOS/nixpkgs/issues/19246#issuecomment-252206901
       services.openssh = {
         allowSFTP = true;
         challengeResponseAuthentication = false;
@@ -104,39 +124,19 @@
         forwardX11 = true;
         passwordAuthentication = true;
         permitRootLogin = "yes";
+#        What is the difference about this and the one in
+#        users.extraUsers.nixuser.openssh.authorizedKeys.keyFiles ?
+#        authorizedKeysFiles = [ "./vagrant.pub" ];
       };
+      programs.ssh.forwardX11 = true;
+
+      programs.ssh.setXAuthLocation = true;
+
+      # Enable the X11 windowing system.
+      services.xserver.enable = true;
+      services.xserver.layout = "us";
 
       users.users."root".initialPassword = "r00t";
-
-#      users.users.root.openssh.authorizedKeys.keys = [
-#        "ssh-rsa AAAAC3NzaC1lZDI1NTE5AAAAIDbqkQxZD6I65C1cQ3A5N/LoTHR85x1k/tBbBymZsWw8"
-#      ];
-
-      #services.openssh.authorizedKeysFiles = ["./ssh-keys.nix"];
-
-#      networking.useDHCP = false; # Disable DHCP globally as we will not need it.
-#      networking.interfaces.eth0.useDHCP = true;
-
-#      networking = {
-#        hostName = "nixosvm";
-#        networkmanager.enable = true;
-#        defaultGateway = "x.x.x.x";
-#        # Use google's public DNS server
-#        nameservers = [ "8.8.8.8" ];
-#        interfaces.eth0 = {
-#          ipv4.addresses =  [ {
-#              address = "192.168.1.2";
-#              prefixLength = 24;
-#            }
-#          ];
-#        };
-#      };
-
-#      networking.interfaces.eth0.ipv4.addresses = [ {
-#        address = "192.168.1.2";
-#        prefixLength = 24;
-#        }
-#      ];
 
     })
   ];
@@ -163,21 +163,21 @@
 
   # Probably solve many warns about fonts
   # https://gist.github.com/kendricktan/8c33019cf5786d666d0ad64c6a412526
-  fonts = {
-    fontDir.enable = true;
-    fonts = with pkgs; [
-      corefonts           # Microsoft free fonts
-      fira                # Monospace
-      fira-code
-      font-awesome
-      hack-font
-      inconsolata         # Monospace
-      iosevka
-      powerline-fonts
-      ubuntu_font_family
-      unifont             # International languages
-    ];
-  };
+#  fonts = {
+#    fontDir.enable = true;
+#    fonts = with pkgs; [
+#      corefonts           # Microsoft free fonts
+#      fira                # Monospace
+#      fira-code
+#      font-awesome
+#      hack-font
+#      inconsolata         # Monospace
+#      iosevka
+#      powerline-fonts
+#      ubuntu_font_family
+#      unifont             # International languages
+#    ];
+#  };
 
   # TODO: fix it!
   #time.timeZone = "Europe/London";
@@ -326,12 +326,28 @@
     promptInit = "";
   };
 
+  # Hack to fix annoying zsh warning, yes a hack...
+  # https://www.reddit.com/r/NixOS/comments/cg102t/how_to_run_a_shell_command_upon_startup/eudvtz1/?utm_source=reddit&utm_medium=web2x&context=3
+  systemd.services.fix-zsh-warning = {
+    script = ''
+      echo "Fixing a zsh warning"
+      touch /home/nixuser/.zshrc
+
+      chown nixuser: /home/nixuser/.zshrc
+
+      #
+      touch /home/nixuser/.Xauthority
+      chown nixuser: /home/nixuser/.Xauthority
+    '';
+    wantedBy = [ "multi-user.target" ];
+  };
+
   # TODO: study about this
   # https://github.com/thiagokokada/dotfiles/blob/a221bf1186fd96adcb537a76a57d8c6a19592d0f/_nixos/etc/nixos/misc-configuration.nix#L124-L128
-  zramSwap = {
-    enable = true;
-    algorithm = "zstd";
-  };
+#  zramSwap = {
+#    enable = true;
+#    algorithm = "zstd";
+#  };
 
 
 }

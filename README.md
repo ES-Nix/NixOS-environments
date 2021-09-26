@@ -431,29 +431,6 @@ nix build .#image.image \
 && cp result/nixos.qcow2 nixos.qcow2 \
 && chmod 0755 nixos.qcow2
 
-qemu-kvm \
--m 18G \
--nic user \
--hda nixos.qcow2 \
--nographic \
--enable-kvm \
--cpu host \
--smp $(nproc) \
--virtfs "local,security_model=none,id=fsdev0,path=$PWD,readonly=off,mount_tag=hostshare"
-
-
-qemu-kvm \
--m 18G \
--nic user \
--hda nixos.qcow2 \
--nographic \
--enable-kvm \
--cpu host \
--smp $(nproc) \
--fsdev local,security_model=passthrough,id=fsdev0,path=$PWD -device virtio-9p-pci,id=fs0,fsdev=fsdev0,mount_tag=share01
-
-
-
 ```bash
 cp result/nixos.qcow2 nixos.qcow2 \
 && chmod 0755 nixos.qcow2 \
@@ -639,3 +616,71 @@ qemu-kvm \
 -device virtio-9p-pci,id=fs0,fsdev=fsdev0,mount_tag=hostshare
 ```
 
+
+
+```bash
+kill -9 $(pidof qemu-system-x86_64) || true \
+&& result/refresh || nix build .#qemu.vm \
+```
+
+
+```bash
+kill -9 $(pidof qemu-system-x86_64) || true \
+&& nix build .#image.image \
+&& cp result/nixos.qcow2 nixos.qcow2 \
+&& chmod 0755 nixos.qcow2 \
+&& (run-vm < /dev/null &) \
+&& { ssh-vm << COMMANDS
+sudo mount -t 9p \
+-o trans=virtio,access=any,cache=none,version=9p2000.L,cache=none,msize=262144,rw \
+hostshare \
+"\$VOLUME_MOUNT_PATH"
+
+cd "\$VOLUME_MOUNT_PATH"
+WRAP
+
+test -d "\$VOLUME_MOUNT_PATH" || sudo mkdir -p "\$VOLUME_MOUNT_PATH"
+
+sudo mount -t 9p \
+-o trans=virtio,access=any,cache=none,version=9p2000.L,cache=none,msize=262144,rw \
+hostshare "\$VOLUME_MOUNT_PATH"
+
+OLD_UID=\$(getent passwd "\$(id -u)" | cut -f3 -d:)
+NEW_UID=\$(stat -c "%u" "\$VOLUME_MOUNT_PATH")
+
+OLD_GID=\$(getent group "\$(id -g)" | cut -f3 -d:)
+NEW_GID=\$(stat -c "%g" "\$VOLUME_MOUNT_PATH")
+
+
+if [ "\$OLD_UID" != "\$NEW_UID" ]; then
+    echo "Changing UID of \$(id) from \$OLD_UID to \$NEW_UID"
+    #sudo usermod -u "\$NEW_UID" -o \$(id -un \$(id -u))
+    sudo find / -xdev -uid "\$OLD_UID" -exec chown -h "\$NEW_UID" {} \;
+fi
+
+if [ "\$OLD_GID" != "\$NEW_GID" ]; then
+    echo "Changing GID of \$(id) from \$OLD_GID to \$NEW_GID"
+    #sudo groupmod -g "\$NEW_GID" -o \$(id -gn \$(id -u))
+    sudo find / -xdev -group "\$OLD_GID" -exec chgrp -h "\$NEW_GID" {} \;
+fi
+
+sudo su -c "sed -i -e \"s/^\(nixuser:[^:]\):[0-9]*:[0-9]*:/\1:\\${NEW_UID}:\\${NEW_GID}:/\" /etc/passwd && sed -i \"/^users/s/:[0-9]*:/:\${NEW_GID}:/g\" /etc/group && reboot"
+
+COMMANDS
+}
+```
+
+
+```bash
+(run-vm < /dev/null &) \
+&& { ssh-vm << COMMANDS
+id
+COMMANDS
+}
+```
+
+
+cat $(type ssh-vm | cut -d' ' -f3)
+
+
+nix run nixpkgs#xorg.xclock
