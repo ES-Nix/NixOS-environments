@@ -255,6 +255,7 @@ WIP
 - [Mein kleines aber feines Cheatsheet für NixOS.](https://noqqe.de/sammelsurium/nixos/)
 
 
+### Alpine
 
 - https://alpinelinux.org/downloads/
 - https://wiki.alpinelinux.org/wiki/Install_Alpine_in_Qemu
@@ -425,7 +426,36 @@ export PATH="$HOME"/.nix-profile/bin:"$PATH"
 nix-shell -I nixpkgs=channel:nixos-21.05 --packages nixFlakes
 
 
-###
+### CentOS
+
+- https://cloud.centos.org/centos/8/x86_64/images/
+
+
+wget https://cloud.centos.org/centos/8/x86_64/images/CentOS-8-ec2-8.4.2105-20210603.0.x86_64.qcow2
+
+
+qemu-img info
+
+
+```bash
+qemu-kvm \
+-m 512 \
+-nic user \
+-boot d \
+-hda CentOS-8-ec2-8.4.2105-20210603.0.x86_64.qcow2 \
+-nographic \
+-enable-kvm \
+-cpu host \
+-smp $(nproc)
+```
+
+      
+      if [ ! test -e /home/nixuser/.zshrc ]; then
+            echo "Fixing a zsh warning"
+      fi
+
+
+### NixOS
 
 nix build .#image.image \
 && cp result/nixos.qcow2 nixos.qcow2 \
@@ -558,7 +588,6 @@ cp nixos-with-volume-nixuser.qcow2 nixos.qcow2
 ```
 
 
-
 ```bash
 qemu-kvm \
 -m 18G \
@@ -682,5 +711,30 @@ COMMANDS
 
 cat $(type ssh-vm | cut -d' ' -f3)
 
-
+```bash
+build \
+&& refresh-vm \
+&& run-vm-kvm
+```
+ssh-vm
 nix run nixpkgs#xorg.xclock
+
+
+sudo systemctl cat fix-zsh-warning
+
+
+```bash
+build \
+&& refresh-vm \
+&& (run-vm-kvm < /dev/null &) \
+&& { ssh-vm << COMMANDS
+volume-mount-hack
+COMMANDS
+} && { ssh-vm << COMMANDS
+ls -al /home/nixuser/code
+COMMANDS
+} && { ssh-vm << COMMANDS
+timeout 100 nix run nixpkgs#xorg.xclock
+COMMANDS
+} && ssh-vm
+```

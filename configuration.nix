@@ -1,4 +1,44 @@
 { pkgs ? import <nixpkgs> {}, ... }:
+let
+  volumeMountHack = pkgs.writeShellScriptBin "volume-mount-hack" ''
+    export VOLUME_MOUNT_PATH=/home/nixuser/code
+
+    test -d "$VOLUME_MOUNT_PATH" || sudo mkdir -p "$VOLUME_MOUNT_PATH"
+
+    sudo chmod 0700 /home/nixuser
+    sudo chown nixuser:users -v /home/nixuser
+
+    sudo mount -t 9p \
+    -o trans=virtio,access=any,cache=none,version=9p2000.L,cache=none,msize=262144,rw \
+    hostshare "$VOLUME_MOUNT_PATH"
+
+    export OLD_UID=$(getent passwd "$(id -u nixuser)" | cut -f3 -d:)
+    export NEW_UID=$(stat -c "%u" "$VOLUME_MOUNT_PATH")
+
+    export OLD_GID=$(getent group "$(id -g nixuser)" | cut -f3 -d:)
+    export NEW_GID=$(stat -c "%g" "$VOLUME_MOUNT_PATH")
+
+    sudo chown nixuser:users -v /home/nixuser
+
+    if [ "$OLD_UID" != "$NEW_UID" ]; then
+        echo "Changing UID of $(id -u) from $OLD_UID to $NEW_UID"
+        #sudo usermod -u "$NEW_UID" -o $(id -un $(id -u))
+        sudo find / -xdev -uid "$OLD_UID" -exec chown -h "$NEW_UID" {} \;
+    fi
+
+    if [ "$OLD_GID" != "$NEW_GID" ]; then
+        echo "Changing GID of $(id -g) from $OLD_GID to $NEW_GID"
+        #sudo groupmod -g "$NEW_GID" -o $(id -gn $(id -u))
+        sudo find / -xdev -group "$OLD_GID" -exec chgrp -h "$NEW_GID" {} \;
+    fi
+
+    # https://unix.stackexchange.com/a/560315
+    if [[ "$OLD_UID" != "$NEW_UID" || "$OLD_GID" != "$NEW_GID" ]]; then
+        echo "Changing /etc/passwd and/or /etc/group AND REBOOTING!"
+        sudo su -c "sed -i -e \"s/^\(nixuser:[^:]\):[0-9]*:[0-9]*:/\1:''${NEW_UID}:''${NEW_GID}:/\" /etc/passwd && sed -i -e \"/^users/s/:[0-9]*:/:''${NEW_GID}:/g\" /etc/group && chown -v ''${NEW_UID}:''${NEW_GID} /home/nixuser && reboot"
+    fi
+  '';
+in
 {
   imports = [
     # configure the mountpoint of the root device
@@ -8,6 +48,8 @@
 
     # configure the bootloader
     ({
+      # TODO: how to test it?
+      # https://gist.github.com/andir/88458b13c26a04752854608aacb15c8f#file-configuration-nix-L11-L12
       boot.loader.grub.extraConfig = ''
         serial --unit=0 --speed=115200
         terminal_output serial console; terminal_input serial console
@@ -15,6 +57,8 @@
 
       #
       boot.kernelParams = [
+        # About the console=ttyS0
+        # https://fadeevab.com/how-to-setup-qemu-output-to-console-and-automate-using-shell-script/
         "console=tty0"
         "console=ttyS0::respawn:/sbin/getty -L ttyS0 115200 vt100"
         # Set sensible kernel parameters
@@ -24,6 +68,9 @@
         "panic=30"
         "boot.panic_on_fail" # reboot the machine upon fatal boot issues
       ];
+
+      # TODO: test it!
+      # boot.kernelPackages = pkgs.linuxPackages_latest;
 
       # TODO: document
       #boot.kernel.sysctl = { "net.netfilter.nf_conntrack_max" = 131072; };
@@ -54,11 +101,17 @@
         # It can be turned off, it is here for debug help
         # To crete a new one:
         # mkpasswd -m sha-512
+        # https://unix.stackexchange.com/a/187337
         hashedPassword = "$6$mjFTykvA04OgeQfm$lTo5uKI30VL816eBb.x11RErrBcLfyXsnaM2wKlQ41s14oZK27dVVy8McCCKYsaY4Byuqf3H6R8lFda.F/V3K1";
+
+        # TODO: https://stackoverflow.com/a/67984113
         openssh.authorizedKeys.keyFiles = [
           ./vagrant.pub
           ];
       };
+
+    # Disable sudo for the tests and play/hack up stuff
+    security.sudo.wheelNeedsPassword = false;
 
     # Sad, but for now...
     # Is it usefull for some other thing?
@@ -84,7 +137,7 @@
     environment.etc."sudoers.d/nixuser" = {
       mode="0644";
       text=''
-        nixuser ALL=(ALL) NOPASSWD: ALL
+        nixuser ALL=(ALL) NOPASSWD:SETENV: ALL
       '';
     };
 
@@ -155,6 +208,9 @@
     # https://github.com/sherubthakur/dotfiles/blob/be96fe7c74df706a8b1b925ca4e7748cab703697/system/configuration.nix#L44
     # pointted by: https://github.com/NixOS/nixpkgs/issues/124215
     sandboxPaths = [ "/bin/sh=${pkgs.bash}/bin/sh"];
+
+    # TODO: document it
+    trustedUsers = ["@wheel"];
   };
 
   # Use this option to avoid issues on macOS version upgrade
@@ -213,6 +269,8 @@
     zsh
     zsh-autosuggestions
     zsh-completions
+
+    volumeMountHack
 
 #    minikube
 #    kubectl
@@ -311,6 +369,7 @@
     autosuggestions.enable = true;
     interactiveShellInit = ''
       export ZSH=${pkgs.oh-my-zsh}/share/oh-my-zsh
+      # https://github.com/ohmyzsh/ohmyzsh/wiki/Themes
       export ZSH_THEME="agnoster"
       export ZSH_CUSTOM=${pkgs.zsh-autosuggestions}/share/zsh-autosuggestions
       plugins=(
@@ -328,16 +387,40 @@
 
   # Hack to fix annoying zsh warning, yes a hack...
   # https://www.reddit.com/r/NixOS/comments/cg102t/how_to_run_a_shell_command_upon_startup/eudvtz1/?utm_source=reddit&utm_medium=web2x&context=3
+  #
+  # https://www.linuxquestions.org/questions/debian-26/how-can-i-change-a-user%27s-uid-and-gid-328241/
   systemd.services.fix-zsh-warning = {
     script = ''
       echo "Fixing a zsh warning"
-      touch /home/nixuser/.zshrc
 
-      chown nixuser: /home/nixuser/.zshrc
+      # https://stackoverflow.com/questions/638975/how-do-i-tell-if-a-regular-file-does-not-exist-in-bash#comment25226870_638985
+      if [ ! -f /home/nixuser/.zshrc ]; then
+        touch /home/nixuser/.zshrc
 
-      #
-      touch /home/nixuser/.Xauthority
-      chown nixuser: /home/nixuser/.Xauthority
+        # Ohh eahh, it is a hack
+        #echo 'volume-mount-hack' >> /home/nixuser/.zshrc
+
+        # Ohh eahh, it is a hack
+        echo 'sudo mount -t 9p \' >> /home/nixuser/.zshrc
+        echo '-o trans=virtio,access=any,cache=none,version=9p2000.L,cache=none,msize=262144,rw \' >> /home/nixuser/.zshrc
+        echo 'hostshare /home/nixuser/code' >> /home/nixuser/.zshrc
+
+        echo 'sudo chown -R nixuser: /home/nixuser' >> /home/nixuser/.zshrc
+
+        echo 'cd /home/nixuser/code' >> /home/nixuser/.zshrc
+
+        chown nixuser: /home/nixuser/.zshrc
+      fi
+
+      if [ ! -f /home/nixuser/.Xauthority ]; then
+        touch /home/nixuser/.Xauthority
+        chown nixuser: /home/nixuser/.Xauthority
+      fi
+
+      if [ ! -f /home/nixuser/code ]; then
+        mkdir -p /home/nixuser/code
+        chown nixuser: /home/nixuser
+      fi
     '';
     wantedBy = [ "multi-user.target" ];
   };
