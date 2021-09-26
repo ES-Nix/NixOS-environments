@@ -99,6 +99,8 @@
           nixos = nixos;
         };
 
+      defaultPackage = self.packages.${system}.image;
+
         devShell = pkgsAllowUnfree.mkShell {
           buildInputs = with pkgsAllowUnfree; [
             bashInteractive

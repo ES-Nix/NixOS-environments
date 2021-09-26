@@ -1,6 +1,29 @@
 
 # NixOS environments
 
+```bash
+nix \
+develop \
+github:ES-Nix/NixOS-environments/box#image.image
+```
+
+```bash
+build \
+&& refresh-vm \
+&& (run-vm-kvm < /dev/null &) \
+&& { ssh-vm << COMMANDS
+volume-mount-hack
+COMMANDS
+} && { ssh-vm << COMMANDS
+ls -al /home/nixuser/code
+COMMANDS
+} && { ssh-vm << COMMANDS
+timeout 100 nix run nixpkgs#xorg.xclock
+COMMANDS
+} && ssh-vm
+```
+
+
 
 ```bash
 nix build github:ES-Nix/NixOS-environments#image.image \
