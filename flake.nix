@@ -81,7 +81,12 @@
         exec ${pkgsAllowUnfree.qemu}/bin/qemu-kvm "''${args[@]}" "$@" >/dev/null 2>&1
       '';
 
+
       build = pkgsAllowUnfree.writeShellScriptBin "build" ''
+        nix build github:ES-Nix/NixOS-environments/box#image.image
+      '';
+
+      buildDev = pkgsAllowUnfree.writeShellScriptBin "build-dev" ''
         nix build .#image.image
       '';
 
@@ -117,6 +122,7 @@
             which
 
             build
+            buildDev
             sshVM
             runVMKVM
             refreshVM

@@ -4,10 +4,8 @@
 ```bash
 nix \
 develop \
-github:ES-Nix/NixOS-environments/box#image.image
-```
-
-```bash
+github:ES-Nix/NixOS-environments/box \
+--command \
 build \
 && refresh-vm \
 && (run-vm-kvm < /dev/null &) \
