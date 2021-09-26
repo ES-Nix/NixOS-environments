@@ -70,7 +70,7 @@ in
       ];
 
       # TODO: test it!
-      # boot.kernelPackages = pkgs.linuxPackages_latest;
+      boot.kernelPackages = pkgs.linuxPackages_latest;
 
       # TODO: document
       #boot.kernel.sysctl = { "net.netfilter.nf_conntrack_max" = 131072; };
@@ -111,6 +111,7 @@ in
       };
 
     # Disable sudo for the tests and play/hack up stuff
+    # Do NOT user it in PRODUCTION!
     security.sudo.wheelNeedsPassword = false;
 
     # Sad, but for now...
@@ -219,21 +220,22 @@ in
 
   # Probably solve many warns about fonts
   # https://gist.github.com/kendricktan/8c33019cf5786d666d0ad64c6a412526
-#  fonts = {
-#    fontDir.enable = true;
-#    fonts = with pkgs; [
-#      corefonts           # Microsoft free fonts
-#      fira                # Monospace
-#      fira-code
-#      font-awesome
-#      hack-font
-#      inconsolata         # Monospace
-#      iosevka
-#      powerline-fonts
-#      ubuntu_font_family
-#      unifont             # International languages
-#    ];
-#  };
+  # The nixpkgs#xorg.xclock need some of them
+  fonts = {
+    fontDir.enable = true;
+    fonts = with pkgs; [
+      corefonts           # Microsoft free fonts
+      fira                # Monospace
+      fira-code
+      font-awesome
+      hack-font
+      inconsolata         # Monospace
+      iosevka
+      powerline-fonts
+      ubuntu_font_family
+      unifont             # International languages
+    ];
+  };
 
   # TODO: fix it!
   #time.timeZone = "Europe/London";
@@ -272,8 +274,8 @@ in
 
     volumeMountHack
 
-#    minikube
-#    kubectl
+    minikube
+    kubectl
 #     # shell stuff
 #     direnv
 #     fzf
@@ -305,13 +307,13 @@ in
 #     curl
 #     wget
 #
-#     graphviz # dot command comes from here
-#     jq
-#     unixtools.xxd
-#
-#     # Caching compilers
-#     gcc
-#     gcc6
+     graphviz # dot command comes from here
+     jq
+     unixtools.xxd
+
+     # Caching compilers
+     gcc
+     gcc6
 #
 ##     anydesk
 ##     discord
@@ -427,10 +429,10 @@ in
 
   # TODO: study about this
   # https://github.com/thiagokokada/dotfiles/blob/a221bf1186fd96adcb537a76a57d8c6a19592d0f/_nixos/etc/nixos/misc-configuration.nix#L124-L128
-#  zramSwap = {
-#    enable = true;
-#    algorithm = "zstd";
-#  };
+  zramSwap = {
+    enable = true;
+    algorithm = "zstd";
+  };
 
 
 }
