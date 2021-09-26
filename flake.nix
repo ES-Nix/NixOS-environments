@@ -68,7 +68,7 @@
           -device virtio-9p-pci,id=fs0,fsdev=fsdev0,mount_tag=hostshare
           -enable-kvm
           -fsdev local,security_model=passthrough,id=fsdev0,path="$(pwd)"
-          -hda nixos.qcow2
+          -hda nixos-vm-volume.qcow2
           -m 18G
           -netdev "user,id=net0,hostfwd=tcp:127.0.0.1:10023-:22"
           -nic user
@@ -92,23 +92,33 @@
 
       refreshVM = pkgsAllowUnfree.writeShellScriptBin "refresh-vm" ''
         kill -9 $(pidof qemu-system-x86_64) || true
-        test -f result/nixos.qcow2 || nix build .#image.image
-        cp -v result/nixos.qcow2 nixos.qcow2
-        chmod -v 0755 nixos.qcow2
+        test -f result/nixos.qcow2 || nix build github:ES-Nix/NixOS-environments/box#image.image
+        cp -v result/nixos.qcow2 nixos-vm-volume.qcow2
+        chmod -v 0755 nixos-vm-volume.qcow2
       '';
 
-        sshVMVolume = pkgsAllowUnfree.writeShellScriptBin "ssh-vm-volume" ''
+      refreshVMDev = pkgsAllowUnfree.writeShellScriptBin "refresh-vm-dev" ''
+        kill -9 $(pidof qemu-system-x86_64) || true
+        test -f result/nixos.qcow2 || nix build .#image.image
+        cp -v result/nixos.qcow2 nixos-vm-volume.qcow2
+        chmod -v 0755 nixos-vm-volume.qcow2
+      '';
+
+        NixOSVMVolume = pkgsAllowUnfree.writeShellScriptBin "nixos-vm-volume" ''
           build \
           && refresh-vm \
           && (run-vm-kvm < /dev/null &) \
           && { ssh-vm << COMMANDS
-          volume-mount-hack
+            volume-mount-hack
           COMMANDS
           } && { ssh-vm << COMMANDS
-          ls -al /home/nixuser/code | rg result
+            ls -al /home/nixuser/code | rg result
           COMMANDS
           } && { ssh-vm << COMMANDS
-          timeout 100 nix run nixpkgs#xorg.xclock
+            uname --all
+          COMMANDS
+          } && { ssh-vm << COMMANDS
+            timeout 100 nix run nixpkgs#xorg.xclock
           COMMANDS
           } && ssh-vm
         '';
@@ -136,12 +146,12 @@
             qemu
             which
 
+            NixOSVMVolume
             build
             buildDev
             refreshVM
             runVMKVM
             sshVM
-            sshVMVolume
           ];
 
           shellHook = ''

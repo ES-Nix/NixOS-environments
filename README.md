@@ -6,34 +6,17 @@ nix \
 develop \
 github:ES-Nix/NixOS-environments/box \
 --command \
-build \
-&& refresh-vm \
-&& (run-vm-kvm < /dev/null &) \
-&& { ssh-vm << COMMANDS
-volume-mount-hack
-COMMANDS
-} && { ssh-vm << COMMANDS
-ls -al /home/nixuser/code | rg result
-COMMANDS
-} && { ssh-vm << COMMANDS
-timeout 100 nix run nixpkgs#xorg.xclock
-COMMANDS
-} && ssh-vm
+nixos-vm-volume
 ```
 
 ```bash
-nix \
-develop \
-github:ES-Nix/NixOS-environments/box \
---command \
-ssh-vm-volume
+rm -fv nixos-vm-volume.qcow2 result \
+&& nix store gc --verbose
 ```
-
-
 
 ```bash
 nix build github:ES-Nix/NixOS-environments#image.image \
-&& cp result/nixos.qcow2 nixos.qcow2 \
+&& cp result/nixos.qcow2 nixos-vm-volume.qcow2 \
 && chmod 0755 nixos.qcow2
 ```
 
