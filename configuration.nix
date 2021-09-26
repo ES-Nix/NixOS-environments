@@ -21,13 +21,13 @@ let
     sudo chown nixuser:users -v /home/nixuser
 
     if [ "$OLD_UID" != "$NEW_UID" ]; then
-        echo "Changing UID of $(id -u) from $OLD_UID to $NEW_UID"
+        echo "Changing UID of $(id -un) from $OLD_UID to $NEW_UID"
         #sudo usermod -u "$NEW_UID" -o $(id -un $(id -u))
         sudo find / -xdev -uid "$OLD_UID" -exec chown -h "$NEW_UID" {} \;
     fi
 
     if [ "$OLD_GID" != "$NEW_GID" ]; then
-        echo "Changing GID of $(id -g) from $OLD_GID to $NEW_GID"
+        echo "Changing GID of $(id -un) from $OLD_GID to $NEW_GID"
         #sudo groupmod -g "$NEW_GID" -o $(id -gn $(id -u))
         sudo find / -xdev -group "$OLD_GID" -exec chgrp -h "$NEW_GID" {} \;
     fi
@@ -211,7 +211,17 @@ in
     sandboxPaths = [ "/bin/sh=${pkgs.bash}/bin/sh"];
 
     # TODO: document it
-    trustedUsers = ["@wheel"];
+    trustedUsers = ["@wheel" "nixuser"];
+    autoOptimiseStore = true;
+    gc.automatic = true;
+    optimise.automatic = true;
+
+    binaryCaches = [
+      "https://cache.nixos.org"
+    ];
+#    binaryCachePublicKeys = [
+#      "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
+#    ];
   };
 
   # Use this option to avoid issues on macOS version upgrade
@@ -243,6 +253,8 @@ in
 
   environment.systemPackages = with pkgs; [
     bashInteractive
+    #
+    # https://discourse.nixos.org/t/ssl-peer-certificate-or-ssh-remote-key-was-not-ok-error-on-fresh-nix-install-on-macos/3582/4
     cacert            # If it is not used, it is like not have internet! Really hard to figure out it!
     coreutils
 

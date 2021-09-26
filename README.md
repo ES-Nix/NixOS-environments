@@ -15,6 +15,16 @@ rm -fv nixos-vm-volume.qcow2 result \
 ```
 
 ```bash
+nix \
+flake \
+update \
+--override-input \
+nixpkgs \
+nixpkgs
+```
+
+
+```bash
 nix build github:ES-Nix/NixOS-environments#image.image \
 && cp result/nixos.qcow2 nixos-vm-volume.qcow2 \
 && chmod 0755 nixos.qcow2
