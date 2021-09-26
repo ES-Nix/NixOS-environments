@@ -20,6 +20,8 @@ let
 
     sudo chown nixuser:users -v /home/nixuser
 
+    # TODO: document it
+    # https://askubuntu.com/a/16719
     if [ "$OLD_UID" != "$NEW_UID" ]; then
         echo "Changing UID of $(id -un) from $OLD_UID to $NEW_UID"
         #sudo usermod -u "$NEW_UID" -o $(id -un $(id -u))
@@ -416,11 +418,12 @@ in
         #echo 'volume-mount-hack' >> /home/nixuser/.zshrc
 
         # Ohh eahh, it is a hack
+        # Convert it to a heredocument
         echo 'sudo mount -t 9p \' >> /home/nixuser/.zshrc
         echo '-o trans=virtio,access=any,cache=none,version=9p2000.L,cache=none,msize=262144,rw \' >> /home/nixuser/.zshrc
         echo 'hostshare /home/nixuser/code' >> /home/nixuser/.zshrc
 
-        echo 'sudo chown -R nixuser: /home/nixuser' >> /home/nixuser/.zshrc
+        echo '! test -w /home/nixuser || sudo chown nixuser: /home/nixuser' >> /home/nixuser/.zshrc
 
         echo 'cd /home/nixuser/code' >> /home/nixuser/.zshrc
 

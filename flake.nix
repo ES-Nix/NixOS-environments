@@ -22,6 +22,13 @@
             cp ${./vagrant} "$sshKey"
             chmod 0600 "$sshKey"
 
+            # TODO; decouple the kvm hardcoded dependency
+            # https://stackoverflow.com/a/19295632
+            qemu_process_id=$(pidof qemu-system-x86_64)
+            if [[ -z $qemu_process_id ]]; then
+                (run-vm-kvm < /dev/null &)
+            fi
+
 # https://unix.stackexchange.com/a/508856
 #
 # ssh -Q protocol-version localhost
@@ -60,7 +67,15 @@
 #        image=$1
 #        userdata=$2
 #        shift 2
-    
+
+        # TODO: document it, many magic stuff here!
+        # https://www.linux-kvm.org/page/9p_virtio
+        # https://superuser.com/a/1565275
+        # https://www.kernel.org/doc/Documentation/filesystems/9p.txt
+        # https://unix.stackexchange.com/questions/596646/is-it-okay-to-run-off-a-writable-9pfs-share-when-cache-loose
+        # https://askubuntu.com/questions/548208/sharing-folder-with-vm-through-libvirt-9p-permission-denied/1259833#1259833
+        # https://github.com/zimbatm/nix-experiments/blob/68c56e8b77b72f5d38d3bdb21c7a83b66d613e26/ubuntu-vm/default.nix#L36
+        # https://github.com/NixOS/nixpkgs/pull/127933#issuecomment-922325089
         args=(
           -cpu Haswell-noTSX-IBRS,vmx=on
           -cpu host
@@ -121,7 +136,7 @@
             timeout 100 nix run nixpkgs#xorg.xclock
           COMMANDS
           } && { ssh-vm << COMMANDS
-            timeout 100 nix run nixpkgs#firefox
+            timeout 100 nix run nixpkgs#blender
           COMMANDS
           } && ssh-vm
         '';
@@ -153,6 +168,7 @@
             build
             buildDev
             refreshVM
+            refreshVMDev
             runVMKVM
             sshVM
           ];

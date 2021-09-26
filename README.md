@@ -4,10 +4,14 @@
 ```bash
 nix \
 develop \
+--refresh \
 github:ES-Nix/NixOS-environments/box \
 --command \
 nixos-vm-volume
 ```
+
+About the `--refresh` [see this issue](https://github.com/NixOS/nix/issues/4743)
+
 
 ```bash
 rm -fv nixos-vm-volume.qcow2 result \
@@ -25,21 +29,26 @@ nixpkgs
 
 
 ```bash
+nix \
+develop \
+--command \
+build-dev \
+&& refresh-vm-dev \
+&& ssh-vm
+```
+
+```bash
 nix build github:ES-Nix/NixOS-environments#image.image \
 && cp result/nixos.qcow2 nixos-vm-volume.qcow2 \
 && chmod 0755 nixos.qcow2
 ```
 
-TODO: wrap it in a scrip.
-```bash
-nix shell nixpkgs#qemu
-```
 
 ```bash
 qemu-kvm \
 -m 18G \
 -nic user \
--hda nixos.qcow2 \
+-hda nixos-vm-volume.qcow2 \
 -nographic \
 -enable-kvm \
 -cpu host \
@@ -447,6 +456,10 @@ usermod --add-subgids 100000-165535 "$USER"
 export PATH="$HOME"/.nix-profile/bin:"$PATH"
 nix-shell -I nixpkgs=channel:nixos-21.05 --packages nixFlakes
 
+#### Refs
+
+- https://stackoverflow.com/a/44581167
+- https://stackoverflow.com/questions/38024160/how-to-get-etc-profile-to-run-automatically-in-alpine-docker
 
 ### CentOS
 
