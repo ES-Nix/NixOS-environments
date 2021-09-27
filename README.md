@@ -35,9 +35,9 @@ develop \
 --refresh \
 github:ES-Nix/NixOS-environments/box \
 --command \
-build \
-&& refresh-vm \
-&& nixos-box
+bash \
+-c \
+'build && refresh-vm && nixos-box'
 ```
 
 ```bash
