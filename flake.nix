@@ -45,6 +45,9 @@
 #
 # https://unix.stackexchange.com/a/191065
 #              -o X11UseLocalhost no \
+#
+# https://github.com/bitnami/minideb/blob/master/qemu_build#L11
+
             until
                ${pkgsAllowUnfree.openssh}/bin/ssh \
                 -X \
@@ -76,6 +79,7 @@
         # https://askubuntu.com/questions/548208/sharing-folder-with-vm-through-libvirt-9p-permission-denied/1259833#1259833
         # https://github.com/zimbatm/nix-experiments/blob/68c56e8b77b72f5d38d3bdb21c7a83b66d613e26/ubuntu-vm/default.nix#L36
         # https://github.com/NixOS/nixpkgs/pull/127933#issuecomment-922325089
+        # https://github.com/lima-vm/lima/issues/20#issuecomment-917432296
         args=(
           -cpu Haswell-noTSX-IBRS,vmx=on
           -cpu host
@@ -147,6 +151,8 @@
           nixos = nixos;
         };
 
+      # TODO
+      # https://github.com/NixOS/nix/issues/2854
       defaultPackage = self.packages.${system}.image.image;
 
         devShell = pkgsAllowUnfree.mkShell {

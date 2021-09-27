@@ -8,6 +8,8 @@ let
     sudo chmod 0700 /home/nixuser
     sudo chown nixuser:users -v /home/nixuser
 
+    # It looks like it is possible split in many -o pieces:
+    # https://github.com/machyve/xhyve/issues/70#issuecomment-178641144
     sudo mount -t 9p \
     -o trans=virtio,access=any,cache=none,version=9p2000.L,cache=none,msize=262144,rw \
     hostshare "$VOLUME_MOUNT_PATH"
@@ -36,6 +38,8 @@ let
 
     # https://unix.stackexchange.com/a/560315
     if [[ "$OLD_UID" != "$NEW_UID" || "$OLD_GID" != "$NEW_GID" ]]; then
+        # TODO: document it better
+        # https://github.com/NixOS/nixpkgs/pull/122420#issuecomment-846377016
         echo "Changing /etc/passwd and/or /etc/group AND REBOOTING!"
         sudo su -c "sed -i -e \"s/^\(nixuser:[^:]\):[0-9]*:[0-9]*:/\1:''${NEW_UID}:''${NEW_GID}:/\" /etc/passwd && sed -i -e \"/^users/s/:[0-9]*:/:''${NEW_GID}:/g\" /etc/group && chown -v ''${NEW_UID}:''${NEW_GID} /home/nixuser && reboot"
     fi
@@ -46,6 +50,13 @@ in
     # configure the mountpoint of the root device
     ({
       fileSystems."/".device = "/dev/disk/by-label/nixos";
+
+      # How much of the universe would break?!
+      # https://christine.website/blog/paranoid-nixos-2021-07-18
+#      fileSystems."/".options = [ "noexec" ];
+#      fileSystems."/etc/nixos".options = [ "noexec" ];
+#      fileSystems."/srv".options = [ "noexec" ];
+#      fileSystems."/var/log".options = [ "noexec" ];
     })
 
     # configure the bootloader
@@ -61,6 +72,7 @@ in
       boot.kernelParams = [
         # About the console=ttyS0
         # https://fadeevab.com/how-to-setup-qemu-output-to-console-and-automate-using-shell-script/
+        # https://www.linode.com/docs/guides/install-nixos-on-linode/
         "console=tty0"
         "console=ttyS0::respawn:/sbin/getty -L ttyS0 115200 vt100"
         # Set sensible kernel parameters
@@ -75,6 +87,9 @@ in
       boot.kernelPackages = pkgs.linuxPackages_latest;
 
       # TODO: document
+      # https://github.com/freifunkMUC/infra/blob/2e6b341b047532b202b365edc3c01d5177fd2075/modules/gateway.nix#L239
+      # Hardening ralated?
+      # https://github.com/NixOS/nixpkgs/issues/12987
       #boot.kernel.sysctl = { "net.netfilter.nf_conntrack_max" = 131072; };
 
       boot.loader.grub.device = "/dev/sda";
@@ -107,6 +122,7 @@ in
         hashedPassword = "$6$mjFTykvA04OgeQfm$lTo5uKI30VL816eBb.x11RErrBcLfyXsnaM2wKlQ41s14oZK27dVVy8McCCKYsaY4Byuqf3H6R8lFda.F/V3K1";
 
         # TODO: https://stackoverflow.com/a/67984113
+        # https://www.vultr.com/docs/how-to-install-nixos-on-a-vultr-vps
         openssh.authorizedKeys.keyFiles = [
           ./vagrant.pub
           ];
@@ -137,6 +153,7 @@ in
     # TODO: do a NixOS test about this!
     # cat /etc/sudoers.d/nixuser | rg -w 'nixuser ALL=(ALL) NOPASSWD: ALL' || echo $?
     # rg -c -q -e 'nixuser ALL=\(ALL\) NOPASSWD: ALL' /etc/sudoers.d/nixuser || echo 'Error!'
+    # https://unix.stackexchange.com/a/377385
     environment.etc."sudoers.d/nixuser" = {
       mode="0644";
       text=''
@@ -192,12 +209,42 @@ in
       services.xserver.enable = true;
       services.xserver.layout = "us";
 
+      #
+      # https://discourse.nixos.org/t/how-to-disable-root-user-account-in-configuration-nix/13235/7
       users.users."root".initialPassword = "r00t";
 
+
+      # https://www.linode.com/docs/guides/install-nixos-on-linode/
+      # networking.usePredictableInterfaceNames = false;
+      # networking.useDHCP = false; # Disable DHCP globally as we will not need it.
+      ## required for ssh?
+      #networking.interfaces.eth0.useDHCP = true;
     })
   ];
 
-  nixpkgs.config.allowUnfree = true;
+  nixpkgs.config = {
+    allowBroken = false;
+    allowUnfree = true;
+    # https://github.com/Pamplemousse/laptop/blob/f780c26bbef2fd0b681cac570fc016b4128de6ce/etc/nixos/packages.nix#L49
+    # TODO: test if it work
+    # config.pulseaudio = true;
+
+    # TODO: Test it
+    #config.firefox.enablePlasmaBrowserIntegration = true;
+
+    # TODO: Test it
+    #config.oraclejdk.accept_license = true;
+
+    #https://github.com/zyansheep/nixos-conf/blob/7b932af1b87bbe6cdf7bff1a8b7546d9b17f1720/nixos/development/platforms/android.nix#L13-L17
+#    config.allowUnfreePackages = [ "android-studio" ];
+#	  config.allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg) [
+#		  "android-studio-stable"
+#	  ];
+
+    # What is it for?
+    # nativeOnly = true;
+  };
+
   nix = {
     package = pkgs.nixFlakes;
     extraOptions =''
@@ -215,15 +262,30 @@ in
     # TODO: document it
     trustedUsers = ["@wheel" "nixuser"];
     autoOptimiseStore = true;
-    gc.automatic = true;
+
     optimise.automatic = true;
 
+    gc = {
+      automatic = true;
+      options = "--delete-older-than 1d";
+    };
+
+    buildCores = 4;
+    maxJobs = 4;
+
+    # Can be a hardening thing
+    # https://github.com/sarahhodne/nix-system/blob/98dcfced5ff3bf08ccbd44a1d3619f1730f6fd71/modules/nixpkgs.nix#L16-L22
+    readOnlyStore = true;
+    # https://discourse.nixos.org/t/how-to-use-binary-cache-in-nixos/5202/4
+    # https://www.reddit.com/r/NixOS/comments/p67ju0/cachix_configuration_in_configurationnix/h9b76fs/?utm_source=reddit&utm_medium=web2x&context=3
     binaryCaches = [
+      "https://nix-community.cachix.org"
       "https://cache.nixos.org"
     ];
-#    binaryCachePublicKeys = [
-#      "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
-#    ];
+    binaryCachePublicKeys = [
+      "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
+      "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
+    ];
   };
 
   # Use this option to avoid issues on macOS version upgrade
@@ -264,24 +326,26 @@ in
     binutils
     bottom  # the binary name is btm
     coreutils
-    dnsutils
+#    dnsutils
     file
     findutils
     fzf
-    inetutils # TODO: it was causing a conflict, insvestigate it!
-    lsof
+#    inetutils
+#    lsof
     neovim
-    netcat
+#    netcat
     nixpkgs-fmt
-    nmap
+#    nmap
+#    mtr
+#    sysstat
     oh-my-zsh
     openssh
     openssl
     ripgrep
     strace
-    tree
-    unzip
-    util-linux
+#    tree
+#    unzip
+#    util-linux
     which
     zsh
     zsh-autosuggestions
@@ -322,13 +386,13 @@ in
 #     curl
 #     wget
 #
-     graphviz # dot command comes from here
-     jq
-     unixtools.xxd
+#     graphviz # dot command comes from here
+#     jq
+#     unixtools.xxd
 
-     # Caching compilers
-     gcc
-     gcc6
+#     # Caching compilers
+#     gcc
+#     gcc6
 #
 ##     anydesk
 ##     discord
@@ -370,9 +434,18 @@ in
   # https://unix.stackexchange.com/questions/377362/in-nixos-how-to-add-a-user-to-the-sudoers-file
   # https://www.reddit.com/r/NixOS/comments/nzks7u/running_sudo_without_password/
   # https://github.com/NixOS/nixpkgs/issues/58276
-  security.sudo.extraConfig = ''
-    %wheel      ALL=(root)      NOPASSWD:SETENV: /nix/store/h63yf7a2ccfimas30i0wn54fp8c8h3qf-podman-rootless-derivation/bin/podman
-  '';
+  # https://github.com/NixOS/nixpkgs/pull/58396#issuecomment-574623527
+  # https://unix.stackexchange.com/a/377385
+  # https://unix.stackexchange.com/a/416646
+  # https://unix.stackexchange.com/a/531762
+  #
+  # Related:
+  # https://discourse.nixos.org/t/dont-prompt-a-user-for-the-sudo-password/9163/2
+  #
+  # About hardenig https://www.reddit.com/r/NixOS/comments/l95gm4/goodbye_sudo/
+#  security.sudo.extraConfig = ''
+#    %wheel      ALL=(root)      NOPASSWD:SETENV: /nix/store/h63yf7a2ccfimas30i0wn54fp8c8h3qf-podman-rootless-derivation/bin/podman
+#  '';
 
   # https://github.com/NixOS/nixpkgs/blob/3a44e0112836b777b176870bb44155a2c1dbc226/nixos/modules/programs/zsh/oh-my-zsh.nix#L119
   # https://discourse.nixos.org/t/nix-completions-for-zsh/5532
@@ -445,10 +518,10 @@ in
 
   # TODO: study about this
   # https://github.com/thiagokokada/dotfiles/blob/a221bf1186fd96adcb537a76a57d8c6a19592d0f/_nixos/etc/nixos/misc-configuration.nix#L124-L128
-  zramSwap = {
-    enable = true;
-    algorithm = "zstd";
-  };
+#  zramSwap = {
+#    enable = true;
+#    algorithm = "zstd";
+#  };
 
 
 }
