@@ -144,6 +144,16 @@
           COMMANDS
           } && ssh-vm
         '';
+
+        sshNixOSBox = pkgsAllowUnfree.writeShellScriptBin "nixos-box" ''
+          build \
+          && refresh-vm \
+          && (run-vm-kvm < /dev/null &) \
+          && { ssh-vm << COMMANDS
+            volume-mount-hack
+          COMMANDS
+          } && ssh-vm
+          '';
       in
       {
         packages.image = import ./default.nix {
@@ -176,6 +186,7 @@
             refreshVM
             refreshVMDev
             runVMKVM
+            sshNixOSBox
             sshVM
           ];
 

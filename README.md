@@ -32,6 +32,7 @@ nixpkgs
 ```bash
 nix \
 develop \
+--refresh \
 --command \
 build-dev \
 && refresh-vm-dev \
