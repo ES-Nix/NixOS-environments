@@ -33,6 +33,16 @@ nixpkgs
 nix \
 develop \
 --refresh \
+github:ES-Nix/NixOS-environments/box \
+--command \
+build \
+&& refresh-vm \
+&& nixos-box
+```
+
+```bash
+nix \
+develop \
 --command \
 build-dev \
 && refresh-vm-dev \
