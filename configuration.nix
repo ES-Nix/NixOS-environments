@@ -324,8 +324,9 @@ in
 
     #
     binutils
-    bottom  # the binary name is btm
+    #bottom  # the binary name is btm
     coreutils
+    git
 #    dnsutils
     file
     findutils
