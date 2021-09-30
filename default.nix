@@ -7,7 +7,7 @@ let
       ({ config, lib, pkgs, ... }: {
         system.build.qcow2 = import "${nixos}/nixos/lib/make-disk-image.nix" {
           inherit lib config pkgs;
-          diskSize = 8192;
+          diskSize = 18000;
           format = "qcow2-compressed";
           configFile = ./configuration.nix;
         };
