@@ -7,7 +7,7 @@ develop \
 --refresh \
 github:ES-Nix/NixOS-environments/box \
 --command \
-nixos-vm-volume
+nixos-box-volume
 ```
 
 About the `--refresh` [see this issue](https://github.com/NixOS/nix/issues/4743) 
