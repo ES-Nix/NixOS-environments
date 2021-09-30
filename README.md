@@ -83,6 +83,7 @@ chmod 0755 nixos.qcow2
 
 TODO: 
 - https://discourse.nixos.org/t/list-available-services-and-their-options/6123/13
+  and https://github.com/NixOS/nixpkgs/blob/master/nixos/lib/make-options-doc/default.nix
 - https://stackoverflow.com/questions/35075262/nixos-list-all-possible-configuration-options
 - https://www.reddit.com/r/NixOS/comments/pgymm4/listing_of_the_100_most_frequently_set_nixos/
 
@@ -100,6 +101,42 @@ TODO: nixos-option does not support flakes https://github.com/NixOS/nixpkgs/issu
 
 TODO: hardening https://github.com/anoother/etc-nixos/blob/b5865bf75543e2cab0a069f5bebc926b8bc86068/configuration.nix#L96
 https://christine.website/blog/paranoid-nixos-2021-07-18
+
+
+### What about inside an OCI image?
+
+
+```bash
+podman \
+run \
+--env=PATH=/root/.nix-profile/bin:/usr/bin:/bin \
+--device=/dev/kvm \
+--device=/dev/fuse \
+--env="DISPLAY=${DISPLAY:-:0.0}" \
+--interactive=true \
+--log-level=error \
+--network=host \
+--mount=type=tmpfs,destination=/var/lib/containers \
+--privileged=true \
+--tty=false \
+--rm=true \
+--user=0 \
+--volume=/sys/fs/cgroup:/sys/fs/cgroup:ro \
+docker.nix-community.org/nixpkgs/nix-flakes \
+<<COMMANDS
+mkdir --parent --mode=0755 ~/.config/nix
+echo 'experimental-features = nix-command flakes ca-references ca-derivations' >> ~/.config/nix/nix.conf
+
+nix \
+develop \
+--refresh \
+github:ES-Nix/NixOS-environments/box \
+--command \
+bash \
+-c \
+'build && refresh-vm && nixos-box'
+COMMANDS
+```
 
 ### Local development 
 

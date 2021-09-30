@@ -123,7 +123,7 @@
         chmod -v 0755 nixos-vm-volume.qcow2
       '';
 
-        NixOSVMVolume = pkgsAllowUnfree.writeShellScriptBin "nixos-vm-volume" ''
+        NixOSBoxVolumeTest = pkgsAllowUnfree.writeShellScriptBin "nixos-box-test" ''
           build \
           && refresh-vm \
           && (run-vm-kvm < /dev/null &) \
@@ -145,7 +145,7 @@
           } && ssh-vm
         '';
 
-        sshNixOSBox = pkgsAllowUnfree.writeShellScriptBin "nixos-box" ''
+        NixOSBoxVolume = pkgsAllowUnfree.writeShellScriptBin "nixos-box-volume" ''
           build \
           && refresh-vm \
           && (run-vm-kvm < /dev/null &) \
@@ -154,6 +154,14 @@
           COMMANDS
           } && ssh-vm
           '';
+
+        NixOSBox = pkgsAllowUnfree.writeShellScriptBin "nixos-box" ''
+          build \
+          && refresh-vm \
+          && (run-vm-kvm < /dev/null &) \
+          && ssh-vm
+          '';
+
       in
       {
         packages.image = import ./default.nix {
@@ -180,13 +188,13 @@
             qemu
             which
 
-            NixOSVMVolume
+            NixOSBoxVolumeTest
+            NixOSBoxVolume
             build
             buildDev
             refreshVM
             refreshVMDev
             runVMKVM
-            sshNixOSBox
             sshVM
           ];
 
@@ -195,6 +203,9 @@
 
             # TODO
             #nix run nixpkgs#nixpkgs-fmt **/*.nix *.nix
+
+            alias nbv='nixos-box-volume'
+            alias nb='nixos-box'
           '';
         };
       }
