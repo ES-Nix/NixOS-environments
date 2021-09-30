@@ -176,6 +176,13 @@
     bashInteractive
     cacert            # If it is not used, it is like not have internet! Really hard to figure out it!
     coreutils
+
+    #
+    binutils
+    #bottom  # the binary name is btm
+    coreutils
+    git
+#    dnsutils
     file
     inetutils
     lsof
