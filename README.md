@@ -10,6 +10,17 @@ github:ES-Nix/NixOS-environments/troubleshooting-poetry2nix-yaml \
 nixos-box-volume
 ```
 
+```bash
+nix \
+develop \
+--refresh \
+github:ES-Nix/NixOS-environments/troubleshooting-poetry2nix-yaml \
+--command \
+build \
+&& refresh-vm
+```
+build
+
 
 ```bash
 nix build github:ES-Nix/NixOS-environments#image.image \

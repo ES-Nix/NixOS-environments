@@ -102,7 +102,7 @@
 
 
         build = pkgsAllowUnfree.writeShellScriptBin "build" ''
-          nix build github:ES-Nix/NixOS-environments/box#image.image
+          nix build github:ES-Nix/NixOS-environments/troubleshooting-poetry2nix-yaml#image.image
         '';
 
         buildDev = pkgsAllowUnfree.writeShellScriptBin "build-dev" ''
