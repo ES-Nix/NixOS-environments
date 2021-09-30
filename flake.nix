@@ -111,7 +111,7 @@
 
         refreshVM = pkgsAllowUnfree.writeShellScriptBin "refresh-vm" ''
           kill -9 $(pidof qemu-system-x86_64) || true
-          test -f result/nixos.qcow2 || nix build github:ES-Nix/NixOS-environments/box#image.image
+          test -f result/nixos.qcow2 || nix build github:ES-Nix/NixOS-environments/troubleshooting-poetry2nix-yaml#image.image
           cp -v result/nixos.qcow2 nixos-vm-volume.qcow2
           chmod -v 0755 nixos-vm-volume.qcow2
         '';
@@ -127,7 +127,7 @@
           build \
           && refresh-vm \
           && (run-vm-kvm < /dev/null &) \
-          && { ssh-vm << COMMANDS
+          && { ssh-vml << COMMANDS
             volume-mount-hack
           COMMANDS
           } && { ssh-vm << COMMANDS
