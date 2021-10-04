@@ -7,7 +7,9 @@ develop \
 --refresh \
 github:ES-Nix/NixOS-environments/box \
 --command \
-nixos-box-volume
+bash \
+-c \
+"nixos-box-volume"
 ```
 
 About the `--refresh` [see this issue](https://github.com/NixOS/nix/issues/4743) 
@@ -19,6 +21,7 @@ rm -fv nixos-vm-volume.qcow2 result \
 && nix store gc --verbose
 ```
 
+Not so obvious, this is the way to update the nixpkgs: 
 ```bash
 nix \
 flake \
@@ -26,6 +29,16 @@ update \
 --override-input \
 nixpkgs \
 nixpkgs
+```
+
+Also, possible:
+```bash
+nix \
+flake \
+update \
+--override-input \
+nixpkgs \
+nixpkgs/549044ea1c1e938cd5bcc337b7061edf029691da
 ```
 
 
@@ -37,8 +50,11 @@ github:ES-Nix/NixOS-environments/box \
 --command \
 bash \
 -c \
-'build && refresh-vm && nixos-box'
+"build \
+&& refresh-vm \
+&& nixos-box"
 ```
+
 
 ```bash
 nix \
@@ -137,7 +153,7 @@ github:ES-Nix/NixOS-environments/box \
 --command \
 bash \
 -c \
-'build && refresh-vm && nixos-box'
+"nixos-box-volume"
 COMMANDS
 ```
 
