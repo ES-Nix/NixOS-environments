@@ -132,9 +132,8 @@ in
     # Do NOT user it in PRODUCTION!
     security.sudo.wheelNeedsPassword = false;
 
-    # Sad, but for now...
     # Is it usefull for some other thing?
-    virtualisation.docker.enable = true;
+    #virtualisation.docker.enable = true;
 
     virtualisation.podman = {
         enable = true;
@@ -354,8 +353,8 @@ in
 
     volumeMountHack
 
-    minikube
-    kubectl
+#    minikube
+#    kubectl
 #     # shell stuff
 #     direnv
 #     fzf
