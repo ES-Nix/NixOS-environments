@@ -415,7 +415,7 @@ in
 #
 ##     youtube-dl
 ##     htop
-##     jetbrains.pycharm-community
+     jetbrains.pycharm-community
 ##     keepassxc
 ##     okular
 ##     # libreoffice
