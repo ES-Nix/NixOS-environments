@@ -43,10 +43,13 @@ bash \
 ```bash
 nix \
 develop \
+--refresh \
 --command \
-build-dev \
+bash \
+-c \
+"build-dev \
 && refresh-vm-dev \
-&& ssh-vm
+&& ssh-vm"
 ```
 
 ```bash
