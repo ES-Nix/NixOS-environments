@@ -139,9 +139,6 @@
           } && { ssh-vm << COMMANDS
             timeout 100 nix run nixpkgs#xorg.xclock
           COMMANDS
-          } && { ssh-vm << COMMANDS
-            timeout 100 nix run nixpkgs#blender
-          COMMANDS
           } && ssh-vm
         '';
 
