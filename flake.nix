@@ -62,6 +62,10 @@
             done
           '';
 
+      VMKill = writeShellScriptBin "vm-kill" ''
+        kill -9 $(pidof qemu-system-x86_64)
+      '';
+
       runVMKVM = pkgsAllowUnfree.writeShellScriptBin "run-vm-kvm" ''
         #
         # Starts the VM 
@@ -196,6 +200,7 @@
             refreshVMDev
             runVMKVM
             sshVM
+            VMKill
           ];
 
           shellHook = ''
