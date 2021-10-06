@@ -62,7 +62,7 @@
             done
           '';
 
-      VMKill = writeShellScriptBin "vm-kill" ''
+      VMKill = pkgsAllowUnfree.writeShellScriptBin "vm-kill" ''
         kill -9 $(pidof qemu-system-x86_64)
       '';
 
