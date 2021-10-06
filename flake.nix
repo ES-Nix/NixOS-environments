@@ -106,7 +106,7 @@
 
 
       build = pkgsAllowUnfree.writeShellScriptBin "build" ''
-        nix build github:ES-Nix/NixOS-environments/box#image.image
+        nix build --refresh github:ES-Nix/NixOS-environments/box#image.image
       '';
 
       buildDev = pkgsAllowUnfree.writeShellScriptBin "build-dev" ''
