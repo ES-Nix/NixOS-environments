@@ -295,21 +295,21 @@ in
   # https://gist.github.com/kendricktan/8c33019cf5786d666d0ad64c6a412526
   # The nixpkgs#xorg.xclock need some of them or not:
   # Warning: Missing charsets in String to FontSet conversion
-#  fonts = {
-#    fontDir.enable = true;
-#    fonts = with pkgs; [
-#      corefonts           # Microsoft free fonts
-#      fira                # Monospace
-#      fira-code
-#      font-awesome
-#      hack-font
-#      inconsolata         # Monospace
-#      iosevka
-#      powerline-fonts
-#      ubuntu_font_family
-#      unifont             # International languages
-#    ];
-#  };
+  fonts = {
+    fontDir.enable = true;
+    fonts = with pkgs; [
+      corefonts           # Microsoft free fonts
+      fira                # Monospace
+      fira-code
+      font-awesome
+      hack-font
+      inconsolata         # Monospace
+      iosevka
+      powerline-fonts
+      ubuntu_font_family
+      unifont             # International languages
+    ];
+  };
 
   # TODO: fix it!
   #time.timeZone = "Europe/London";
