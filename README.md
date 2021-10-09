@@ -641,3 +641,14 @@ timeout 100 nix run nixpkgs#xorg.xclock
 COMMANDS
 } && ssh-vm
 ```
+
+```bash
+nix \
+develop \
+--refresh \
+github:ES-Nix/NixOS-environments/box \
+--command \
+nixos-box-test
+```
+
+
