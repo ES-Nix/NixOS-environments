@@ -487,7 +487,7 @@ in
       if [ ! -f /home/nixuser/.zshrc ]; then
         touch /home/nixuser/.zshrc
 
-        echo 'sudo umount /code' >> /home/nixuser/.zshrc
+        echo 'sudo umount /home/nixuser/code' >> /home/nixuser/.zshrc
 
         # Ohh eahh, it is a hack
         #echo 'volume-mount-hack' >> /home/nixuser/.zshrc
