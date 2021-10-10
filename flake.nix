@@ -201,6 +201,8 @@
             runVMKVM
             sshVM
             VMKill
+
+            self.packages.${system}.image.image
           ];
 
           shellHook = ''
