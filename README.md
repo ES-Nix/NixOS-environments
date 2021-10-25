@@ -248,6 +248,9 @@ echo 'net.ipv4.ip_forward=1' > /etc/sysctl.con
 
 WIP
 
+## TODOs
+
+- [] https://github.com/NixOS/nixpkgs/blob/a3f85aedb1d66266b82d9f8c0a80457b4db5850c/pkgs/tools/package-management/nix/default.nix#L45
 
 ## Refs
 
