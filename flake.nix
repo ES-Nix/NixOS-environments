@@ -47,6 +47,7 @@
 #              -o X11UseLocalhost no \
 #
 # https://github.com/bitnami/minideb/blob/master/qemu_build#L11
+# https://askubuntu.com/questions/35512/what-is-the-difference-between-ssh-y-trusted-x11-forwarding-and-ssh-x-u/35518#35518
 
             until
                ${pkgsAllowUnfree.openssh}/bin/ssh \
