@@ -3,17 +3,18 @@
 
 
 ```bash
-nix build github:ES-Nix/NixOS-environments#image.image \
+nix build github:ES-Nix/NixOS-environments/minimal#image.image \
 && cp result/nixos.qcow2 nixos.qcow2 \
-&& chmod 0755 nixos.qcow2
+&& chmod 0755 nixos.qcow2 \
+&& du -hs nixos.qcow2
 ```
 
 TODO: wrap it in a scrip.
 ```bash
-nix shell nixpkgs#qemu
-```
-
-```bash
+nix \
+shell \
+nixpkgs#qemu \
+--command \
 qemu-kvm \
 -m 18G \
 -nic user \
