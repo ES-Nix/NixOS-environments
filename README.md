@@ -15,6 +15,17 @@ bash \
 About the `--refresh` [see this issue](https://github.com/NixOS/nix/issues/4743) 
 and [this](https://github.com/NixOS/nix/issues/3781#issuecomment-716440620)
 
+For local development:
+```bash
+nix \
+develop \
+--refresh \
+.# \
+--command \
+bash \
+-c \
+"nixos-box-volume"
+```
 
 ```bash
 rm -fv nixos-vm-volume.qcow2 result \
