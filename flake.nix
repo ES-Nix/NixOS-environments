@@ -10,7 +10,7 @@
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgsAllowUnfree = import nixpkgs {
-          system = "x86_64-linux";
+          inherit system;
           config = { allowUnfree = true; };
         };
       in
