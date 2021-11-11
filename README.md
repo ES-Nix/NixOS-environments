@@ -16,7 +16,7 @@ shell \
 nixpkgs#qemu \
 --command \
 qemu-kvm \
--m 18G \
+-m 8G \
 -nic user \
 -hda nixos.qcow2 \
 -nographic \
