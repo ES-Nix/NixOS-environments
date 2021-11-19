@@ -1,5 +1,12 @@
 { pkgs ? import <nixpkgs> {}, ... }:
 let
+
+  # https://github.com/Xe/nixos-configs/blob/ffa57412d4f93018491308892b114c155ac9fd49/media/autoinstall-paranoid/configuration.nix#L4-L5
+  PedroRegisPOARKeys = pkgs.fetchurl {
+    url = "https://github.com/PedroRegisPOAR.keys";
+    hash = "sha256-Z5/a6L9XtZYZ/+2AA0vqQzf3LRa/x0k3VHkJkHBWfYY=";
+  };
+
   volumeMountHack = pkgs.writeShellScriptBin "volume-mount-hack" ''
     export VOLUME_MOUNT_PATH=/home/nixuser/code
 
@@ -125,11 +132,12 @@ in
         # https://www.vultr.com/docs/how-to-install-nixos-on-a-vultr-vps
         openssh.authorizedKeys.keyFiles = [
           ./vagrant.pub
+          PedroRegisPOARKeys
           ];
       };
 
     # Disable sudo for the tests and play/hack up stuff
-    # Do NOT user it in PRODUCTION!
+    # Do NOT use it in PRODUCTION!
     security.sudo.wheelNeedsPassword = false;
 
     # Is it usefull for some other thing?
@@ -172,10 +180,10 @@ in
       };
 
       # Who depends on it?
-      hardware.opengl = {
-        enable = true;
-        driSupport = true;
-      };
+#      hardware.opengl = {
+#        enable = true;
+#        driSupport = true;
+#      };
 
       # https://nixos.wiki/wiki/Libvirt
       boot.extraModprobeConfig = "options kvm_intel nested=1";
@@ -322,27 +330,26 @@ in
     coreutils
 
     #
-    binutils
+#    binutils
     #bottom  # the binary name is btm
-    coreutils
     git
 #    dnsutils
     file
-    findutils
-    fzf
+#    findutils
+#    fzf
 #    inetutils
 #    lsof
     neovim
 #    netcat
-    nixpkgs-fmt
+#    nixpkgs-fmt
 #    nmap
 #    mtr
 #    sysstat
     oh-my-zsh
     openssh
     openssl
-    ripgrep
-    strace
+#    ripgrep
+#    strace
 #    tree
 #    unzip
 #    util-linux
@@ -415,7 +422,7 @@ in
 #
 ##     youtube-dl
 ##     htop
-     jetbrains.pycharm-community
+#     jetbrains.pycharm-community
 ##     keepassxc
 ##     okular
 ##     # libreoffice

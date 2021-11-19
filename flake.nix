@@ -193,6 +193,7 @@
             qemu
             which
 
+            NixOSBox
             NixOSBoxVolumeTest
             NixOSBoxVolume
             build

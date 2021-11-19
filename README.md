@@ -663,3 +663,38 @@ nixos-box-test
 ```
 
 
+
+### Injecting ssh key from github
+
+
+```bash
+nix build .#image.image \
+&& cp result/nixos.qcow2 nixos-vm-volume.qcow2 \
+&& chmod 0755 nixos.qcow2
+```
+
+
+```bash
+qemu-kvm \
+-m 18G \
+-nic user \
+-hda nixos.qcow2 \
+-nographic \
+-enable-kvm \
+-cpu host \
+-smp $(nproc) \
+-device "rtl8139,netdev=net0" \
+-netdev "user,id=net0,hostfwd=tcp:127.0.0.1:10022-:22"
+```
+
+In some terminal:
+```bash
+ssh nixuser@127.0.0.1 -p 10022
+```
+
+
+If needed login as `root` with the passwd `r00t` to lookaround stuff:
+```bash
+cat /etc/ssh/authorized_keys.d/nixuser
+```
+
