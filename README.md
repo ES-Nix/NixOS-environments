@@ -13,7 +13,7 @@ bash \
 ```
 
 About the `--refresh` [see this issue](https://github.com/NixOS/nix/issues/4743) 
-and [this](https://github.com/NixOS/nix/issues/3781#issuecomment-716440620)
+and [this](https://github.com/NixOS/nix/issues/3781#issuecomment-716440620).
 
 For local development:
 ```bash
@@ -290,7 +290,7 @@ podman network create podman
 podman run -it --rm busybox echo 'Ok!'
 ```
 
-
+TODO: remove all this `sudo ln`, podman itself should know how to install itself.
 ```bash
 nix \
     profile \
