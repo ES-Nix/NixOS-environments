@@ -669,8 +669,8 @@ nixos-box-test
 
 ```bash
 nix build .#image.image \
-&& cp result/nixos.qcow2 nixos-vm-volume.qcow2 \
-&& chmod 0755 nixos.qcow2
+&& cp -fv result/nixos.qcow2 nixos.qcow2 \
+&& chmod -v 0755 nixos.qcow2
 ```
 
 
@@ -698,3 +698,83 @@ If needed login as `root` with the passwd `r00t` to lookaround stuff:
 cat /etc/ssh/authorized_keys.d/nixuser
 ```
 
+```bash
+qemu-img convert nixos.qcow2 nixos.iso
+```
+
+```bash
+qemu-img info nixos.iso
+
+stat -c %s nixos.iso
+wc -c < nixos.iso
+wc -c nixos.iso
+du -b nixos.iso
+du -b -h nixos.iso
+du -h nixos.iso
+stat -c '%s' nixos.iso | numfmt --to=si
+ls -l --block-size=G nixos.iso
+ls -lh nixos.iso
+```
+Refs.:
+- https://unix.stackexchange.com/a/64149
+- https://unix.stackexchange.com/a/405713
+
+
+
+
+virt-sparsify nixos.iso --compress nixos-compressed.iso
+virt-sparsify nixos.qcow2 --compress nixos-compressed.qcow2
+
+https://serverfault.com/a/432342
+
+cp nixos.qcow2 nixos-backup.qcow2
+qemu-img resize nixos-backup.qcow2 2G
+qemu-img resize --shrink nixos-backup.qcow2 2G
+
+qemu-img convert -O qcow2 nixos-backup.qcow2 nixos-compressed.qcow2
+
+
+```bash
+nix build .#image.image \
+&& cp -fv result/nixos.qcow2 nixos.qcow2 \
+&& chmod -v 0755 nixos.qcow2 \
+&& qemu-img info nixos.qcow2 \
+&& qemu-img convert nixos.qcow2 nixos.iso \
+&& qemu-img info nixos.iso \
+&& sha256sum nixos.iso
+```
+cp -fv result/nixos.qcow2 ~/nixos.qcow2 \
+&& chmod -v 0755 ~/nixos.qcow2 \
+&& qemu-img info ~/nixos.qcow2 \
+&& sha256sum ~/nixos.qcow2 \
+&& qemu-img convert ~/nixos.qcow2 ~/nixos.iso
+
+```bash
+qemu-kvm \
+-m 16G \
+-nic user \
+-hda nixos.iso \
+-nographic \
+-enable-kvm \
+-cpu host \
+-smp $(nproc) \
+-device "rtl8139,netdev=net0" \
+-netdev "user,id=net0,hostfwd=tcp:127.0.0.1:10022-:29980"
+```
+
+
+```bash
+ssh-keygen -R [127.0.0.1]:10022 \
+&& ssh nixuser@127.0.0.1 -p 10022 -o StrictHostKeyChecking=no
+```
+Refs.:
+- https://serverfault.com/a/723917
+
+```bash
+podman pull docker.io/kindest/node:v1.21.1
+podman images
+export KIND_EXPERIMENTAL_PROVIDER=podman
+kind create cluster --retain --image=docker.io/kindest/node:v1.21.1
+```
+
+https://alpinelinux.org/downloads/

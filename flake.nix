@@ -185,6 +185,8 @@
             coreutils
             file
             inetutils
+            # libguestfs  # https://serverfault.com/a/432342
+            libguestfs-with-appliance  # https://github.com/NixOS/nixpkgs/issues/112920#issuecomment-912494811
             lsof
             neovim
             netcat
