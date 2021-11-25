@@ -179,6 +179,11 @@
           system = system;
         };
 
+        packages.iso-kubernetes = import ./iso-kubernetes.nix {
+          nixpkgs = nixpkgs;
+          system = system;
+        };
+
       # TODO
       # https://github.com/NixOS/nix/issues/2854
       defaultPackage = self.packages.${system}.image.image;
@@ -211,7 +216,8 @@
             sshVM
             VMKill
 
-            self.packages.${system}.image.image
+             # It slows a lot the nix develop
+#            self.packages.${system}.image.image
           ];
 
           shellHook = ''
