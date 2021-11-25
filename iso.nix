@@ -68,6 +68,10 @@ let
           '';
         };
 
+        # Disable sudo for the tests and play/hack up stuff
+        # Do NOT use it in PRODUCTION as false!
+        security.sudo.wheelNeedsPassword = true;
+
         # TODO: do a NixOS test about this!
         # cat /etc/sudoers.d/nixuser | rg -w 'nixuser ALL=(ALL) NOPASSWD: ALL' || echo $?
         # rg -c -q -e 'nixuser ALL=\(ALL\) NOPASSWD: ALL' /etc/sudoers.d/nixuser || echo 'Error!'
@@ -75,7 +79,7 @@ let
         environment.etc."sudoers.d/nixuser" = {
           mode="0644";
           text=''
-            Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:"${pkgs.podman}"/bin
+            Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:"${pkgs.podman}"/bin:"${pkgs.kind}"/bin
           '';
         };
 
@@ -240,7 +244,8 @@ let
         enable = true;
         shellAliases = {
           vim = "nvim";
-          podman = "sudo podman";
+#          podman = "sudo podman";
+#          kind = "sudo kind";
         };
         enableCompletion = true;
         autosuggestions.enable = true;

@@ -777,6 +777,9 @@ export KIND_EXPERIMENTAL_PROVIDER=podman
 kind create cluster --retain --image=docker.io/kindest/node:v1.21.1
 ```
 
+```bash
+kind delete cluster
+```
 
 ### ISO
 
