@@ -782,11 +782,18 @@ kind create cluster --retain --image=docker.io/kindest/node:v1.21.1
 
 
 ```bash
+nix build .#iso \
+&& cp result/iso/nixos-*.iso . \
+&& chmod +x nixos-*.iso \
+&& qemu-img create nixos.img 10G
+```
+
+```bash
 qemu-kvm \
 -boot d \
--cdrom nixos-21.11pre-git-x86_64-linux.iso \
--m 512 \
--nographic \
+-hda nixos.img \
+-cdrom nixos-*.iso \
+-m 10000 \
 -enable-kvm \
 -cpu host \
 -smp $(nproc) \
@@ -795,14 +802,15 @@ qemu-kvm \
 ```
 
 
-qemu-img create mydisk.img 10G
+rm -fv nixos.img nixos-*.iso
+
 
 ```bash
 qemu-kvm \
 -boot d \
--hda mydisk.img \
--cdrom nixos-21.11pre-git-x86_64-linux.iso \
--m 10000 \
+-cdrom nixos-*.iso \
+-m 512 \
+-nographic \
 -enable-kvm \
 -cpu host \
 -smp $(nproc) \

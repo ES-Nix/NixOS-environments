@@ -43,7 +43,7 @@ let
           # To crete a new one:
           # mkpasswd -m sha-512
           # https://unix.stackexchange.com/a/187337
-          hashedPassword = "$6$mjFTykvA04OgeQfm$lTo5uKI30VL816eBb.x11RErrBcLfyXsnaM2wKlQ41s14oZK27dVVy8McCCKYsaY4Byuqf3H6R8lFda.F/V3K1";
+          hashedPassword = "$6$XiENMV7S4t/XfN$lIZjnuRdNZVcY3qUjur7m4jCIMZCGi3obx1.wHVoQKaNFmEJJN4r.MKdZIkpFpXwt0d/lqI.ZlLnfdwZyXj0e/";
 
           # TODO: https://stackoverflow.com/a/67984113
           # https://www.vultr.com/docs/how-to-install-nixos-on-a-vultr-vps
@@ -75,7 +75,7 @@ let
         environment.etc."sudoers.d/nixuser" = {
           mode="0644";
           text=''
-            nixuser ALL=(ALL) NOPASSWD:SETENV: ALL
+            Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:"${pkgs.podman}"/bin
           '';
         };
 
@@ -240,6 +240,7 @@ let
         enable = true;
         shellAliases = {
           vim = "nvim";
+          podman = "sudo podman";
         };
         enableCompletion = true;
         autosuggestions.enable = true;
