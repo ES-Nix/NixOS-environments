@@ -174,6 +174,11 @@
           nixos = nixos;
         };
 
+        packages.iso = import ./iso.nix {
+          nixpkgs = nixpkgs;
+          system = system;
+        };
+
       # TODO
       # https://github.com/NixOS/nix/issues/2854
       defaultPackage = self.packages.${system}.image.image;
@@ -186,7 +191,7 @@
             file
             inetutils
             # libguestfs  # https://serverfault.com/a/432342
-            libguestfs-with-appliance  # https://github.com/NixOS/nixpkgs/issues/112920#issuecomment-912494811
+#            libguestfs-with-appliance  # https://github.com/NixOS/nixpkgs/issues/112920#issuecomment-912494811
             lsof
             neovim
             netcat

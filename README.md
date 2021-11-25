@@ -764,7 +764,7 @@ qemu-kvm \
 
 
 ```bash
-ssh-keygen -R [127.0.0.1]:10022 \
+ssh-keygen -R '[127.0.0.1]:10022' \
 && ssh nixuser@127.0.0.1 -p 10022 -o StrictHostKeyChecking=no
 ```
 Refs.:
@@ -775,6 +775,54 @@ podman pull docker.io/kindest/node:v1.21.1
 podman images
 export KIND_EXPERIMENTAL_PROVIDER=podman
 kind create cluster --retain --image=docker.io/kindest/node:v1.21.1
+```
+
+
+### ISO
+
+
+```bash
+qemu-kvm \
+-boot d \
+-cdrom nixos-21.11pre-git-x86_64-linux.iso \
+-m 512 \
+-nographic \
+-enable-kvm \
+-cpu host \
+-smp $(nproc) \
+-device "rtl8139,netdev=net0" \
+-netdev "user,id=net0,hostfwd=tcp:127.0.0.1:10022-:29980"
+```
+
+
+qemu-img create mydisk.img 10G
+
+```bash
+qemu-kvm \
+-boot d \
+-hda mydisk.img \
+-cdrom nixos-21.11pre-git-x86_64-linux.iso \
+-m 10000 \
+-enable-kvm \
+-cpu host \
+-smp $(nproc) \
+-device "rtl8139,netdev=net0" \
+-netdev "user,id=net0,hostfwd=tcp:127.0.0.1:10022-:29980"
+```
+
+-nographic \
+
+```bash
+qemu-kvm \
+-m 16G \
+-nic user \
+-hda nixos-21.11pre-git-x86_64-linux.iso \
+-nographic \
+-enable-kvm \
+-cpu host \
+-smp $(nproc) \
+-device "rtl8139,netdev=net0" \
+-netdev "user,id=net0,hostfwd=tcp:127.0.0.1:10022-:29980"
 ```
 
 https://alpinelinux.org/downloads/
