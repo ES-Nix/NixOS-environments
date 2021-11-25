@@ -198,6 +198,7 @@ in
       };
 
       # Who depends on it?
+      # https://github.com/dguibert/dotfiles/blob/f530a82ff250b857495b7684a9bfe6e77ec25b5d/admin/nixops/flake.nix#L638-L642
 #      hardware.opengl = {
 #        enable = true;
 #        driSupport = true;
@@ -487,6 +488,9 @@ in
   # https://discourse.nixos.org/t/dont-prompt-a-user-for-the-sudo-password/9163/2
   #
   # About hardenig https://www.reddit.com/r/NixOS/comments/l95gm4/goodbye_sudo/
+  #
+  # TODO: use a more nix like way, do not use the hardcoded path
+  # https://github.com/nixvital/vital-modules/blob/b99ee921b54428dbf7997f429fb35977eafe1491/foundations/container.nix#L39-L44
 #  security.sudo.extraConfig = ''
 #    %wheel      ALL=(root)      NOPASSWD:SETENV: /nix/store/h63yf7a2ccfimas30i0wn54fp8c8h3qf-podman-rootless-derivation/bin/podman
 #  '';

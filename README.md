@@ -771,10 +771,15 @@ Refs.:
 - https://serverfault.com/a/723917
 
 ```bash
-podman pull docker.io/kindest/node:v1.21.1
-podman images
-export KIND_EXPERIMENTAL_PROVIDER=podman
-kind create cluster --retain --image=docker.io/kindest/node:v1.21.1
+sudo kind create cluster --retain --image=docker.io/kindest/node:v1.21.1
+```
+
+In steps:
+```bash
+sudo podman pull docker.io/kindest/node:v1.21.1
+sudo podman images
+sudo export KIND_EXPERIMENTAL_PROVIDER=podman
+sudo kind create cluster --retain --image=docker.io/kindest/node:v1.21.1
 ```
 
 ```bash
@@ -803,7 +808,8 @@ qemu-kvm \
 -device "rtl8139,netdev=net0" \
 -netdev "user,id=net0,hostfwd=tcp:127.0.0.1:10022-:29980"
 ```
-
+Refs.:
+- [Booting from an ISO image using qemu](https://linux-tips.com/t/booting-from-an-iso-image-using-qemu/136)
 
 rm -fv nixos.img nixos-*.iso
 
