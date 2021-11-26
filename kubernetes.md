@@ -6,7 +6,7 @@
 
 ```bash
 nix build .#iso-kubernetes \
-&& cp result/iso/nixos-*.iso . \
+&& cp -fv result/iso/nixos-*.iso . \
 && chmod +x nixos-*.iso \
 && qemu-img create nixos.img 10G
 ```
@@ -99,7 +99,7 @@ test -f /var/lib/kubernetes/secrets/kube-apiserver.pem || echo 'Erro! ''The file
 
 ```bash
 # ss -tunlp
-sudo ss -tunlp | rg 'kube-apiserver|kubelet|kube-controller|kube-proxy|kube-scheduler|certmgr'
+sudo ss -tunlp | rg 'kube-*|certmgr'
 ```
 
 ```bash
