@@ -17,6 +17,15 @@ let
     ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDuusNUPijbWxn5CatgqKIZ9EIarqcEOy2K+hydUXhXDJHvdbMQl/pfftyehm+dW/ydZ5FAo+szK3lAiRoQGprN43FZ0wYlJ9JzUcCr89TBThU+a7b3JBJFVGmXVgRCT03azgiskxjj1zg8RI5FMEU+KxOSLONagpVAmfdPb1YQxk7fLG7TWBZieGh6ZGMLQ9GO0LJUutn4fe8paOXFb/diVPbpPaxiC+pDKtD+cjUQ42qU/aOfRMNIdY/NSZxr1njCZ9vqtLTMJkWGLftL8VNDl29u2nVu13rsYiwGukR0f5LZa3BwzKrj3ZvX2Gz+mwwK3goNSfUYpfst/li/bKwQZT2xknslBlqniOyM02DV/dReV3XszO3pCdDKvsUhFNl+Rsfrw3EPrR38hM9AqmZL22IX8KXvtZb+8CyokQOZZbsZWctm8dCEDhUK/F/weg5gB6LVRIllhTxfC0rArMRm7QYBBAgBlypMdYileY/xjNm2QU9tRv064rn31W+68XU=
   '';
 
+  alpine = pkgs.dockerTools.pullImage {
+    imageName = "alpine";
+    imageDigest = "sha256:635f0aa53d99017b38d1a0aa5b2082f7812b03e3cdb299103fe77b5c8a07f1d2";
+    sha256 = "F+9wfrolpzAWFPPDX16yRNdB6vq7A2XaTaw5H9JONX0=";
+#    finalImageTag = "3.14.3";
+#    finalImageName = "alpine";
+  };
+
+  # https://github.com/NixOS/nixpkgs/issues/59364#issuecomment-723906760
   kubeMasterIP = "10.1.1.2";
   kubeMasterHostname = "localhost";
   kubeMasterAPIServerPort = 6443;
@@ -34,7 +43,7 @@ let
           # https://nixos.wiki/wiki/Libvirt
           extraGroups = [
                           "audio"
-  #                        "docker"
+                          "docker"
                           "kvm"
                           "libvirtd"
                           "networkmanager"
@@ -58,7 +67,15 @@ let
         };
 
 
-        virtualisation.docker.enable = true;
+        virtualisation.docker = {
+          enable = true;
+          enableOnBoot = true;
+          extraOptions = ''--iptables=false --ip-masq=false -b cbr0'';
+        };
+
+        # https://t.me/nixosbrasil/26612
+        # services.smartd.enable = true;
+
 #        virtualisation.podman = {
 #            enable = true;
 #            # Create a `docker` alias for podman, to use it as a drop-in replacement
@@ -72,6 +89,26 @@ let
             registries = ['docker.io', 'localhost']
           '';
         };
+
+#          sudo systemctl restart docker
+#          sudo systemctl status docker
+#        environment.etc."docker/daemon.json" = {
+#          mode="0644";
+#          # It was conflicting:
+#          # "log-driver": "json-file",
+#          # The CLI invocation that caused in the conflict:
+#          # systemctl cat docker.service | grep 'log-driver=journald ' -A4 -B3
+#          #
+#          # "log-opts": {
+#          #    "max-size": "100m"
+#          # },
+#          # "storage-driver": "overlay2"
+#          text=''
+#            {
+#              "exec-opts": ["native.cgroupdriver=systemd"],
+#            }
+#          '';
+#        };
 
         # Disable sudo for the tests and play/hack up stuff
         # Do NOT use it in PRODUCTION as false!
@@ -91,67 +128,87 @@ let
           # Base minimal stuff
           bashInteractive
           coreutils
+          git
+          openssh
+          openssl
 
           binutils
           bottom  # the binary name is btm
-          git
           dnsutils
           file
           findutils
+          lsof
           neovim
-          oh-my-zsh
-          openssh
-          openssl
           ripgrep
           strace
           tree
           unzip
           util-linux
           which
+
+          oh-my-zsh
           zsh
           zsh-autosuggestions
           zsh-completions
-#          kind
+
           kubectl
           kubernetes
+
+          cni
+          cni-plugins
+          conntrack-tools
+          cri-o
+          cri-tools
+          docker
+          ebtables
+          ethtool
+          flannel
+          iptables
+          kubernetes
+          socat
+
+#          alpine
         ];
 
         environment.variables.KUBECONFIG = "/etc/kubernetes/cluster-admin.kubeconfig";
 
+        # https://discourse.nixos.org/t/issues-using-nixos-container-to-set-up-an-etcd-cluster/8438/3
+        # systemd.services.etcd.serviceConfig.Type = pkgs.lib.mkForce "exec";
         services.kubernetes = {
-          addonManager.enable = true;
-          addons = {
-            dashboard.enable = true;
-            dashboard.rbac.enable = true;
-            dns.enable = true;
-          };
+#          addonManager.enable = true;
+#          addons = {
+#            dashboard.enable = true;
+#            dashboard.rbac.enable = true;
+#            dns.enable = true;
+#          };
 
           apiserverAddress = "https://${kubeMasterHostname}:${toString kubeMasterAPIServerPort}";
 
           apiserver = {
             advertiseAddress = kubeMasterIP;
-            enable = true;
+#            enable = true;
             securePort = kubeMasterAPIServerPort;
           };
           controllerManager.enable = true;
-          flannel.enable = true;
+#          flannel.enable = true;
           masterAddress = "${toString kubeMasterHostname}";
-          proxy.enable = true;
-          roles = [ "master" "node" ];
-          scheduler.enable = true;
+#          proxy.enable = true;
+          roles = [ "master" ];
+#          roles = [ "master" "node" ];
+#          scheduler.enable = true;
           easyCerts = true;
-          kubelet.enable = true;
+#          kubelet.enable = true;
 
-    #      # needed if you use swap
-          kubelet.extraOpts = "--fail-swap-on=false";
+          # needed if you use swap
+          # kubelet.extraOpts = "--fail-swap-on=false";
         };
 
-        services = {
-          flannel = {
-            enable = true;
-            etcd.endpoints = [ "http://127.0.0.1:2379" ];
-          };
-        };
+#        services = {
+#          flannel = {
+#            enable = true;
+#            etcd.endpoints = [ "http://127.0.0.1:2379" ];
+#          };
+#        };
 
         # TODO: Fix this!
         networking.firewall.enable = false;
@@ -161,6 +218,8 @@ let
 
         # https://github.com/NixOS/nixpkgs/issues/27930#issuecomment-417943781
         boot.kernelModules = [ "kvm-intel" ];
+
+        swapDevices = pkgs.lib.mkForce [ ];
 
         # https://github.com/NixOS/nixpkgs/issues/19246#issuecomment-252206901
         services.openssh = {
