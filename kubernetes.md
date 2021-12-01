@@ -767,22 +767,24 @@ sudo kubeadm config images list
 sudo rm -frv /var/lib/etcd
 sudo kill $(sudo lsof -t -i:10259)
 sudo kill $(sudo lsof -t -i:6443)
+sudo kill $(sudo lsof -t -i:2379)
+sudo kill $(sudo lsof -t -i:2380)
 
 # sudo kubeadm reset --force
+
 sudo kubeadm init --pod-network-cidr=10.244.0.0/16
 ```
 
 ```bash
-sudo ss -lptn 'sport = :10259'
 sudo ss -lptn 'sport = :6443'
 ```
 
 
-
-
-
-sudo systemctl status containerd.service network.target kube-apiserver.service |
-
+```bash
+sudo systemctl status network.target
+sudo systemctl status containerd.service
+sudo systemctl status kube-apiserver.service
+```
 
 watch --interval=3 sudo systemctl status kubelet
 

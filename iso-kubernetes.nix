@@ -17,6 +17,11 @@ let
     ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDuusNUPijbWxn5CatgqKIZ9EIarqcEOy2K+hydUXhXDJHvdbMQl/pfftyehm+dW/ydZ5FAo+szK3lAiRoQGprN43FZ0wYlJ9JzUcCr89TBThU+a7b3JBJFVGmXVgRCT03azgiskxjj1zg8RI5FMEU+KxOSLONagpVAmfdPb1YQxk7fLG7TWBZieGh6ZGMLQ9GO0LJUutn4fe8paOXFb/diVPbpPaxiC+pDKtD+cjUQ42qU/aOfRMNIdY/NSZxr1njCZ9vqtLTMJkWGLftL8VNDl29u2nVu13rsYiwGukR0f5LZa3BwzKrj3ZvX2Gz+mwwK3goNSfUYpfst/li/bKwQZT2xknslBlqniOyM02DV/dReV3XszO3pCdDKvsUhFNl+Rsfrw3EPrR38hM9AqmZL22IX8KXvtZb+8CyokQOZZbsZWctm8dCEDhUK/F/weg5gB6LVRIllhTxfC0rArMRm7QYBBAgBlypMdYileY/xjNm2QU9tRv064rn31W+68XU=
   '';
 
+  # The ideia was to cache all images pulled using
+  # sudo kubeadm config images pull
+  # sudo kubeadm config images list
+  # but how to put it as it was loaded like using
+  # docker load < images.tar.gz ?
   alpine = pkgs.dockerTools.pullImage {
     imageName = "alpine";
     imageDigest = "sha256:635f0aa53d99017b38d1a0aa5b2082f7812b03e3cdb299103fe77b5c8a07f1d2";
@@ -34,6 +39,9 @@ let
       { pkgs, ... }:
       { imports = [
           "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix"
+
+          # Provide an initial copy of the NixOS channel so that the user
+          # doesn't need to run "nix-channel --update" first.
           "${nixpkgs}/nixos/modules/installer/cd-dvd/channel.nix"
         ];
 
@@ -69,8 +77,10 @@ let
 
         virtualisation.docker = {
           enable = true;
-          enableOnBoot = true;
-          extraOptions = ''--iptables=false --ip-masq=false -b cbr0'';
+          # enableOnBoot = true;
+
+          # Was this fixed?
+          # extraOptions = ''--iptables=false --ip-masq=false -b cbr0'';
         };
 
         # https://t.me/nixosbrasil/26612
@@ -129,8 +139,8 @@ let
           bashInteractive
           coreutils
           git
-          openssh
-          openssl
+          openssh # Is this needed?
+          openssl # Is this needed?
 
           binutils
           bottom  # the binary name is btm
@@ -151,9 +161,11 @@ let
           zsh-autosuggestions
           zsh-completions
 
+
+          # Looks like kubernetes needs atleast all this
           kubectl
           kubernetes
-
+          #
           cni
           cni-plugins
           conntrack-tools
@@ -164,7 +176,6 @@ let
           ethtool
           flannel
           iptables
-          kubernetes
           socat
 
 #          alpine
@@ -193,8 +204,8 @@ let
 #          flannel.enable = true;
           masterAddress = "${toString kubeMasterHostname}";
 #          proxy.enable = true;
-          roles = [ "master" ];
-#          roles = [ "master" "node" ];
+#          roles = [ "master" ];
+          roles = [ "master" "node" ];
 #          scheduler.enable = true;
           easyCerts = true;
 #          kubelet.enable = true;
@@ -219,6 +230,8 @@ let
         # https://github.com/NixOS/nixpkgs/issues/27930#issuecomment-417943781
         boot.kernelModules = [ "kvm-intel" ];
 
+        # Is this ok to kubernetes?
+        # Why free -h still show swap stuff but with 0?
         swapDevices = pkgs.lib.mkForce [ ];
 
         # https://github.com/NixOS/nixpkgs/issues/19246#issuecomment-252206901
@@ -269,20 +282,6 @@ let
           allowBroken = false;
           allowUnfree = true;
           # https://github.com/Pamplemousse/laptop/blob/f780c26bbef2fd0b681cac570fc016b4128de6ce/etc/nixos/packages.nix#L49
-          # TODO: test if it work
-          # config.pulseaudio = true;
-
-          # TODO: Test it
-          #config.firefox.enablePlasmaBrowserIntegration = true;
-
-          # TODO: Test it
-          #config.oraclejdk.accept_license = true;
-
-          #https://github.com/zyansheep/nixos-conf/blob/7b932af1b87bbe6cdf7bff1a8b7546d9b17f1720/nixos/development/platforms/android.nix#L13-L17
-      #    config.allowUnfreePackages = [ "android-studio" ];
-      #	  config.allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg) [
-      #		  "android-studio-stable"
-      #	  ];
 
           # What is it for?
           # nativeOnly = true;
