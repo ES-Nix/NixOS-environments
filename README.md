@@ -118,7 +118,8 @@ TODO:
 - https://www.reddit.com/r/NixOS/comments/pgymm4/listing_of_the_100_most_frequently_set_nixos/
 
 TODO:
-- https://mudrii.medium.com/nixos-native-flake-deployment-with-luks-drive-encryption-and-lvm-b7f3738b71ca
+- [Reproducible NixOS installation w/ flakes](https://www.youtube.com/watch?v=_j8kDS6GLJs)
+- [NixOs native flake deployment with LUKS drive encryption and LVM](https://mudrii.medium.com/nixos-native-flake-deployment-with-luks-drive-encryption-and-lvm-b7f3738b71ca)
 - https://www.reddit.com/r/NixOS/comments/owfmr0/tutorial_building_bootable_iso_image/
 
 
@@ -227,7 +228,9 @@ ls /etc/ssl/certs
 
 
 TODO:
+- [Erase your darlings](https://grahamc.com/blog/erase-your-darlings)
 - [NixOs Native Flake Deployment With LUKS Drive Encryption and LVM](https://dzone.com/articles/nixos-native-flake-deployment-with-luks-and-lvm)
+- [Encypted Btrfs Root with Opt-in State on NixOS](https://mt-caret.github.io/blog/posts/2020-06-29-optin-state.html)
 - https://www.reddit.com/r/NixOS/comments/ebgezb/passwordless_ssh_authentication_in_nixos/fb4r5cj/?utm_source=reddit&utm_medium=web2x&context=3
 
 TODO: the ssh thing
@@ -351,7 +354,7 @@ sudo podman network exists podman || sudo podman network create podman
 minikube start --driver=podman
 
 
-echo 'net.ipv4.ip_forward=1' > /etc/sysctl.con
+echo 'net.ipv4.ip_forward=1' > /etc/sysctl.conf
 
 
 ## Troubleshoot

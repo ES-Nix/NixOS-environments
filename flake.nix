@@ -182,6 +182,7 @@
         packages.iso-kubernetes = import ./iso-kubernetes.nix {
           nixpkgs = nixpkgs;
           system = system;
+          nixos = nixos;
         };
 
       # TODO

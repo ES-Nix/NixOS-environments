@@ -1,4 +1,4 @@
-{ nixpkgs ? <nixpkgs>, system ? "x86_64-linux" }:
+{ nixpkgs ? <nixpkgs>, system ? "x86_64-linux", nixos }:
 let
   pkgs = nixpkgs.legacyPackages.${system};
 
@@ -31,8 +31,10 @@ let
   };
 
   # https://github.com/NixOS/nixpkgs/issues/59364#issuecomment-723906760
+  # https://discourse.nixos.org/t/use-nixos-as-single-node-kubernetes-cluster/8858/7
   kubeMasterIP = "10.1.1.2";
-  kubeMasterHostname = "localhost";
+#  kubeMasterHostname = "localhost";
+  kubeMasterHostname = "api.kube";
   kubeMasterAPIServerPort = 6443;
 
   configuration =
@@ -187,11 +189,11 @@ let
         # systemd.services.etcd.serviceConfig.Type = pkgs.lib.mkForce "exec";
         services.kubernetes = {
 #          addonManager.enable = true;
-#          addons = {
+          addons = {
 #            dashboard.enable = true;
 #            dashboard.rbac.enable = true;
-#            dns.enable = true;
-#          };
+            dns.enable = true;
+          };
 
           apiserverAddress = "https://${kubeMasterHostname}:${toString kubeMasterAPIServerPort}";
 
@@ -200,7 +202,7 @@ let
 #            enable = true;
             securePort = kubeMasterAPIServerPort;
           };
-          controllerManager.enable = true;
+#          controllerManager.enable = true;
 #          flannel.enable = true;
           masterAddress = "${toString kubeMasterHostname}";
 #          proxy.enable = true;
@@ -211,7 +213,7 @@ let
 #          kubelet.enable = true;
 
           # needed if you use swap
-          # kubelet.extraOpts = "--fail-swap-on=false";
+           kubelet.extraOpts = "--fail-swap-on=false";
         };
 
 #        services = {
@@ -233,6 +235,33 @@ let
         # Is this ok to kubernetes?
         # Why free -h still show swap stuff but with 0?
         swapDevices = pkgs.lib.mkForce [ ];
+
+        # Is it a must for k8s?
+        # Take a look into:
+        # https://github.com/NixOS/nixpkgs/blob/9559834db0df7bb274062121cf5696b46e31bc8c/nixos/modules/services/cluster/kubernetes/kubelet.nix#L255-L259
+        boot.kernel.sysctl = {
+          # If it is enabled it conflict with what kubelet is doing
+          # "net.bridge.bridge-nf-call-ip6tables" = 1;
+          # "net.bridge.bridge-nf-call-iptables" = 1;
+          "vm.swappiness" = 0;
+        };
+
+      systemd.extraConfig = ''
+        DefaultCPUAccounting=yes
+        DefaultIOAccounting=yes
+        DefaultBlockIOAccounting=yes
+        DefaultMemoryAccounting=yes
+        DefaultTasksAccounting=yes
+      '';
+
+      boot.kernelParams = [ "cgroup_enable=memory" "swapaccount=0" ];
+
+      # TODO: how to test it?
+      # https://gist.github.com/andir/88458b13c26a04752854608aacb15c8f#file-configuration-nix-L11-L12
+      boot.loader.grub.extraConfig = ''
+        serial --unit=0 --speed=115200
+        terminal_output serial console; terminal_input serial console
+      '';
 
         # https://github.com/NixOS/nixpkgs/issues/19246#issuecomment-252206901
         services.openssh = {
@@ -321,7 +350,7 @@ let
 
           # Can be a hardening thing
           # https://github.com/sarahhodne/nix-system/blob/98dcfced5ff3bf08ccbd44a1d3619f1730f6fd71/modules/nixpkgs.nix#L16-L22
-          readOnlyStore = true;
+          readOnlyStore = false;
           # https://discourse.nixos.org/t/how-to-use-binary-cache-in-nixos/5202/4
           # https://www.reddit.com/r/NixOS/comments/p67ju0/cachix_configuration_in_configurationnix/h9b76fs/?utm_source=reddit&utm_medium=web2x&context=3
           binaryCaches = [
@@ -364,7 +393,74 @@ let
           promptInit = "";
         };
 
+        # Hack to fix annoying zsh warning, yes a hack...
+        # https://www.reddit.com/r/NixOS/comments/cg102t/how_to_run_a_shell_command_upon_startup/eudvtz1/?utm_source=reddit&utm_medium=web2x&context=3
+        #
+        # https://www.linuxquestions.org/questions/debian-26/how-can-i-change-a-user%27s-uid-and-gid-328241/
+        systemd.services.fix-zsh-warning = {
+          script = ''
 
+            # https://stackoverflow.com/questions/638975/how-do-i-tell-if-a-regular-file-does-not-exist-in-bash#comment25226870_638985
+            if [ ! -f /home/nixuser/.zshrc ]; then
+              echo "Fixing a zsh warning"
+              touch /home/nixuser/.zshrc
+              chown nixuser: /home/nixuser/.zshrc
+            fi
+
+            if [ ! -f /home/nixuser/.Xauthority ]; then
+              touch /home/nixuser/.Xauthority
+              chown nixuser: /home/nixuser/.Xauthority
+            fi
+
+          '';
+          wantedBy = [ "multi-user.target" ];
+        };
+
+#        systemd.services.kubelet = {
+#                description = "kubelet: The Kubernetes Node Agent";
+#                documentation = ["https://kubernetes.io/docs/home/"];
+#                environment = {
+#                  KUBELET_KUBECONFIG_ARGS="--bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --kubeconfig=/etc/kubernetes/kubelet.conf --config=/var/lib/kubelet/config.yaml";
+#                };
+#
+#                wants = ["network-online.target"];
+#                after = ["network-online.target"];
+#
+#                serviceConfig = {
+#                    ExecStart="${pkgs.kubernetes}/bin/kubelet";
+#                    Restart="always";
+#                    RestartSec=10;
+#                };
+##          script = ''
+##              KUBERNETES_BINS_NIX_PATH="$(nix eval --raw nixpkgs#kubernetes)/bin"
+##              cat <<EOF | sudo tee /etc/systemd/system/kubelet.service
+##
+##              [Service]
+##              ExecStart="$KUBERNETES_BINS_NIX_PATH"/kubelet
+##              Restart=always
+##              StartLimitInterval=0
+##              RestartSec=10
+##
+##              [Install]
+##              WantedBy=multi-user.target
+##
+##              # /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
+##              # Note: This dropin only works with kubeadm and kubelet v1.11+
+##              [Service]
+##              Environment="KUBELET_KUBECONFIG_ARGS=--bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --kubeconfig=/etc/kubernetes/kubelet.conf"
+##              Environment="KUBELET_CONFIG_ARGS=--config=/var/lib/kubelet/config.yaml"
+##              # This is a file that "kubeadm init" and "kubeadm join" generates at runtime, populating the KUBELET_KUBEADM_ARGS variable dynamically
+##              EnvironmentFile=-/var/lib/kubelet/kubeadm-flags.env
+##              # This is a file that the user can use for overrides of the kubelet args as a last resort. Preferably, the user should use
+##              # the .NodeRegistration.KubeletExtraArgs object in the configuration files instead. KUBELET_EXTRA_ARGS should be sourced from this file.
+##              EnvironmentFile=-/etc/default/kubelet
+##              ExecStart=
+##              ExecStart="$KUBERNETES_BINS_NIX_PATH"/kubelet \$KUBELET_KUBECONFIG_ARGS \$KUBELET_CONFIG_ARGS \$KUBELET_KUBEADM_ARGS \$KUBELET_EXTRA_ARGS
+##              EOF
+##
+##          '';
+#          wantedBy = [ "multi-user.target" ];
+#        };
 
       };
 

@@ -103,6 +103,7 @@ sudo ss -tunlp | rg 'kube-*|certmgr'
 ```bash
 PID=?
 tr '\0' '\n' < /proc/${PID}/cmdline
+strace -f -T -y -e trace=file
 ```
 
 ```bash
@@ -435,6 +436,8 @@ kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documen
 
 watch --interval=1  kubectl get pods -A
 ```
+Refs.:
+- https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/create-cluster-kubeadm/
 
 ```bash
 sudo kubeadm init -v9
@@ -562,7 +565,88 @@ COMMANDS
 ```
 
 
-### 
+### Use Docker from nixpkgs, the rest is from apt-get
+
+
+```bash
+nix \
+profile \
+install \
+nixpkgs#kubectl
+echo 'Start docker instalation...'
+nix \
+profile \
+install \
+nixpkgs#docker \
+&& sudo cp "$(nix eval --raw nixpkgs#docker)"/etc/systemd/system/{docker.service,docker.socket} /etc/systemd/system/ \
+&& getent group docker || sudo groupadd docker \
+&& sudo usermod --append --groups docker "$USER" \
+&& sudo systemctl enable --now docker
+&& docker --version 
+
+cat <<EOF | sudo tee /etc/docker/daemon.json
+{
+    "exec-opts": ["native.cgroupdriver=systemd"]
+}
+EOF
+echo 'End docker instalation!'
+
+
+echo 'Start bypass sudo stuff...' \
+&& DOCKER_NIX_PATH="$(nix eval --raw nixpkgs#docker)/bin" \
+&& NIX_KUBELET_PATH="$(nix eval --raw nixpkgs#kubelet)"/bin \
+&& echo 'Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:'"$DOCKER_NIX_PATH"':'"$NIX_KUBELET_PATH" | sudo tee -a /etc/sudoers.d/"$USER" \
+&& echo 'End bypass sudo stuff...'
+
+sudo apt-get update
+sudo apt-get install -y apt-transport-https ca-certificates curl
+
+sudo curl -fsSLo /usr/share/keyrings/kubernetes-archive-keyring.gpg https://packages.cloud.google.com/apt/doc/apt-key.gpg
+echo "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list
+echo 'Start kubelet kubeadm kubectl install actually...'
+sudo apt-get update
+sudo apt-get install -y kubelet kubeadm
+sudo apt-mark hold kubelet kubeadm
+
+cat <<EOF | sudo tee /etc/modules-load.d/k8s.conf
+br_netfilter
+EOF
+
+cat <<EOF | sudo tee /etc/sysctl.d/k8s.conf
+net.bridge.bridge-nf-call-ip6tables = 1
+net.bridge.bridge-nf-call-iptables = 1
+EOF
+sudo sysctl --system
+
+sudo \
+    sed \
+    --in-place \
+    's/^GRUB_CMDLINE_LINUX="/&swapaccount=0/' \
+    /etc/default/grub \
+&& sudo grub-mkconfig -o /boot/grub/grub.cfg
+# && sudo reboot
+echo 'vm.swappiness = 0' | sudo tee -a /etc/sysctl.conf
+sudo reboot
+```
+
+```bash
+sudo kubeadm config images pull
+sudo kubeadm config images list
+sudo kubeadm init --pod-network-cidr=10.244.0.0/16
+
+mkdir -pv "$HOME"/.kube
+sudo cp -iv /etc/kubernetes/admin.conf "$HOME"/.kube/config
+sudo chown -v $(id -u):$(id -g) "$HOME"/.kube/config
+
+kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
+
+watch --interval=1  kubectl get pods -A
+```
+Refs.:
+- https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/create-cluster-kubeadm/
+
+
+### All from nixpkgs using single user installation of nix
 
 
 ```bash
@@ -599,7 +683,7 @@ echo 'Start bypass sudo stuff...' \
 
 
 KUBERNETES_BINS_NIX_PATH="$(nix eval --raw nixpkgs#kubernetes)/bin"
-cat <<EOF | sudo tee /lib/systemd/system/kubelet.service
+cat <<EOF | sudo tee /etc/systemd/system/kubelet.service
 # /lib/systemd/system/kubelet.service
 [Unit]
 Description=kubelet: The Kubernetes Node Agent
@@ -630,34 +714,6 @@ ExecStart=
 ExecStart="$KUBERNETES_BINS_NIX_PATH"/kubelet \$KUBELET_KUBECONFIG_ARGS \$KUBELET_CONFIG_ARGS \$KUBELET_KUBEADM_ARGS \$KUBELET_EXTRA_ARGS
 EOF
 
-
-cat <<EOF | sudo tee /etc/cni/net.d/10-flannel.conflist
-{
-  "name": "cbr0",
-  "plugins": [
-    {
-      "type": "flannel",
-      "delegate": {
-        "hairpinMode": true,
-        "isDefaultGateway": true
-      }
-    },
-    {
-      "type": "portmap",
-      "capabilities": {
-        "portMappings": true
-      }
-    }
-  ]
-}
-EOF
-
-cat <<EOF | sudo tee /run/flannel/subnet.env
-FLANNEL_NETWORK=10.244.0.0/16
-FLANNEL_SUBNET=10.244.0.0/16
-FLANNEL_MTU=1450
-FLANNEL_IPMASQ=true
-EOF
 
 echo 'Start cni stuff...' \
 && sudo mkdir -pv /usr/lib/cni \
@@ -703,7 +759,7 @@ sudo \
     's/^GRUB_CMDLINE_LINUX="/&swapaccount=0/' \
     /etc/default/grub \
 && sudo grub-mkconfig -o /boot/grub/grub.cfg
-# && sudo reboot
+
 echo 'vm.swappiness = 0' | sudo tee -a /etc/sysctl.conf
 sudo reboot
 ```
@@ -716,20 +772,66 @@ Refs.:
 ```bash
 sudo kubeadm config images pull
 sudo kubeadm config images list
-sudo kubeadm init --pod-network-cidr=10.244.0.0/16
-#sudo kubeadm init --pod-network-cidr=10.244.0.0/16 --network-plugin=cni --cni-bin-dir="$(nix eval --raw nixpkgs#cni)"/bin
-#sudo kubeadm init --pod-network-cidr=10.244.0.0/16 --cri-socket /var/run/crio/crio.sock
-#sudo kubeadm init --pod-network-cidr=10.244.0.0/16 --token-ttl=0 --apiserver-advertise-address=https://localhost:6443 
+sudo kubeadm init --pod-network-cidr=192.168.0.0/16
 
 mkdir -pv "$HOME"/.kube
 sudo cp -iv /etc/kubernetes/admin.conf "$HOME"/.kube/config
 sudo chown -v $(id -u):$(id -g) "$HOME"/.kube/config
 
-kubectl -n kube-system apply -f https://raw.githubusercontent.com/flannel-io/flannel/master/Documentation/kube-flannel.yml
-#kubectl -n kube-system apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
+kubectl create -f https://docs.projectcalico.org/manifests/tigera-operator.yaml
+kubectl create -f https://docs.projectcalico.org/manifests/custom-resources.yaml
 
 watch --interval=1 kubectl get pods -A
 ```
+
+
+```bash
+sudo kubeadm reset --force \
+&& sudo systemctl stop docker \
+&& sudo systemctl stop kubelet \
+&& sudo rm -rf /etc/kubernetes/ \
+&& sudo rm -rf .kube/ \
+&& sudo rm -rf /var/lib/kubelet/ \
+&& sudo rm -rf /var/lib/cni/ \
+&& sudo rm -rf /etc/cni/ \
+&& sudo rm -rf /var/lib/etcd/
+```
+
+
+
+cat <<EOF | sudo tee /etc/cni/net.d/10-flannel.conflist
+{
+  "name": "cbr0",
+  "plugins": [
+    {
+      "type": "flannel",
+      "delegate": {
+        "hairpinMode": true,
+        "isDefaultGateway": true
+      }
+    },
+    {
+      "type": "portmap",
+      "capabilities": {
+        "portMappings": true
+      }
+    }
+  ]
+}
+EOF
+
+cat <<EOF | sudo tee /run/flannel/subnet.env
+FLANNEL_NETWORK=10.244.0.0/16
+FLANNEL_SUBNET=10.244.0.0/16
+FLANNEL_MTU=1450
+FLANNEL_IPMASQ=true
+EOF
+
+kubectl taint nodes --all node-role.kubernetes.io/master-
+
+kubectl -n kube-system apply -f https://raw.githubusercontent.com/flannel-io/flannel/master/Documentation/kube-flannel.yml
+kubectl -n kube-system apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
+
 
 kubectl -n kube-system delete pod coredns-
 
@@ -774,6 +876,8 @@ sudo kill $(sudo lsof -t -i:2380)
 
 sudo kubeadm init --pod-network-cidr=10.244.0.0/16
 ```
+Refs.:
+- https://unix.stackexchange.com/a/444585
 
 ```bash
 sudo ss -lptn 'sport = :6443'
@@ -797,3 +901,24 @@ test -f /var/lib/kubernetes/secrets/kubelet-key.pem || echo 'Error!'
 test -f /var/lib/kubernetes/secrets/kubelet.pem || echo 'Error!'
 test -f /var/lib/kubernetes/secrets/kubelet.pem || echo 'Error!'
 test -S /run/containerd/containerd.sock || echo 'Error!'
+
+
+- [Jaka Hudoklin: Kubernetes cluster on NixOS (NixCon 2015)](https://www.youtube.com/watch?v=1UTO9Sf4GPQ)
+- [Kubernetes cluster on NixOS](https://offlinehacker.github.io/slides.kubernetes_on_nixos/#/)
+- https://nixos.org/manual/nixos/stable/index.html#sec-kubernetes
+- https://nixos.wiki/wiki/Kubernetes#Troubleshooting
+- https://github.com/NixOS/nixpkgs/issues/39327
+- [Toy highly-available Kubernetes cluster on NixOS](https://www.reddit.com/r/NixOS/comments/qmsui6/toy_highlyavailable_kubernetes_cluster_on_nixos/)
+- https://github.com/NixOS/nixpkgs/issues/71040
+- https://github.com/NixOS/nixpkgs/issues/59364#issuecomment-896136015
+- https://github.com/NixOS/nixpkgs/issues/59364#issuecomment-485122860
+- https://github.com/NixOS/nixpkgs/issues/96083#issuecomment-806061869
+- https://github.com/NixOS/nixpkgs/issues/59364#issuecomment-485122860
+
+
+## The KinK inception
+
+
+[May CoreOS Meetup: Kubeception- Dalton Hubble](https://www.youtube.com/watch?v=tlUiQa2JYQU)
+
+https://gist.github.com/dghubble/c2dc319249b156db06aff1d49c15272e
