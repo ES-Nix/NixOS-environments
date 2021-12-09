@@ -133,8 +133,8 @@ in
 
         # https://nixos.wiki/wiki/Libvirt
         extraGroups = [
-          "audio"
-          #                        "docker"
+          # "audio"
+          # "docker"
           "kvm"
           "libvirtd"
           "networkmanager"
