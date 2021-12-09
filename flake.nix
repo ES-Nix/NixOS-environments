@@ -189,6 +189,12 @@
           nixos = nixos;
         };
 
+        packages.iso-base = import ./src/iso-base/iso-base.nix {
+          nixpkgs = nixpkgs;
+          system = system;
+          nixos = nixos;
+        };
+
         # TODO
         # https://github.com/NixOS/nix/issues/2854
         defaultPackage = self.packages.${system}.image.image;
