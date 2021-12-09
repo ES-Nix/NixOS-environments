@@ -43,6 +43,12 @@ in
   # Set it to, for example, the default value 10
   # boot.loader.timeout = 0;
 
+  # https://nixos.wiki/wiki/Libvirt
+  boot.extraModprobeConfig = "options kvm_intel nested=1";
+
+  # https://github.com/NixOS/nixpkgs/issues/27930#issuecomment-417943781
+  boot.kernelModules = [ "kvm-intel" ];
+
   # TODO: hardening
   # boot.blacklistedKernelModules = [ ];
 
@@ -62,9 +68,9 @@ in
   # Per-interface useDHCP will be mandatory in the future, so this generated config
   # replicates the default behaviour.
   networking.useDHCP = false;
-#  networking.interfaces.ens3.useDHCP = true;
+  # networking.interfaces.ens3.useDHCP = true;
   # May solve ip address?
-#  networking.interfaces.eth0.useDHCP = true;
+  networking.interfaces.eth0.useDHCP = true;
 
   # TODO: Fix this!
   #networking.firewall.enable = false;
@@ -92,8 +98,8 @@ in
 
     # https://nixos.wiki/wiki/Libvirt
     extraGroups = [
-      "audio"
-      "docker"
+      # "audio"
+      # "docker"
       "kvm"
       "libvirtd"
       "nixgroup"
