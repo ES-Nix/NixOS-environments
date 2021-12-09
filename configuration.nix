@@ -1,4 +1,4 @@
-{ pkgs ? import <nixpkgs> {}, ... }:
+{ pkgs ? import <nixpkgs> { }, ... }:
 let
 
   volumeMountHack = pkgs.writeShellScriptBin "volume-mount-hack" ''
@@ -47,10 +47,10 @@ let
   '';
 
   # https://github.com/Xe/nixos-configs/blob/ffa57412d4f93018491308892b114c155ac9fd49/media/autoinstall-paranoid/configuration.nix#L4-L5
-#  PedroRegisPOARKeys = pkgs.fetchurl {
-#    url = "https://github.com/PedroRegisPOAR.keys";
-#    hash = "sha256-Z5/a6L9XtZYZ/+2AA0vqQzf3LRa/x0k3VHkJkHBWfYY=";
-#  };
+  #  PedroRegisPOARKeys = pkgs.fetchurl {
+  #    url = "https://github.com/PedroRegisPOAR.keys";
+  #    hash = "sha256-Z5/a6L9XtZYZ/+2AA0vqQzf3LRa/x0k3VHkJkHBWfYY=";
+  #  };
 
   PedroRegisPOARKeys = pkgs.writeText "pedro-regis-keys.pub" ''
     ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDtmnCvUlP0tbWn7d9BvTqYWccTgDA2UEvTXMUdajDsoyLNaAqq/r+CiNuDepAgFsjRqI+vnDPvcUAogA2QbD9phJq1i5k57T6pnWBbxcoQ4CT7TPJPYk9jjkqIViANEM9P+XgVJo0XywChz9ryBngEGhNvIC+Muwln8NdKQBtH+4KvJHUInUh08m44dVom3G3uMcGEULabrRNxXM2SR+eJApoGwZsLlqIv91EZJmx2EjlAff423xoWcVrlqCERUNo7n++ywTeSDUx6criAfcIuvg65A6ybbbNNe4v8wk5Af2ig9FscPh23xV1Xo8hywM0+3XArIN8eaGltYPHKloEelOFnt/Jhberepu8T7NylOoOocBeBaOxvuTul+uvzPBfSgIBhyarfvr8vr8nl7RgnJIR83SoFh7Wc6KjvAAIfKpfyI60s4aPtUs8o9P+1qbGQu2yJMXod7KdO2qp4RMML6H5f+nIrNxOPGh5UTTJcFU84Yye3OdVD/Gr0ct4zBMU=
@@ -76,10 +76,10 @@ in
 
       # How much of the universe would break?!
       # https://christine.website/blog/paranoid-nixos-2021-07-18
-#      fileSystems."/".options = [ "noexec" ];
-#      fileSystems."/etc/nixos".options = [ "noexec" ];
-#      fileSystems."/srv".options = [ "noexec" ];
-#      fileSystems."/var/log".options = [ "noexec" ];
+      #      fileSystems."/".options = [ "noexec" ];
+      #      fileSystems."/etc/nixos".options = [ "noexec" ];
+      #      fileSystems."/srv".options = [ "noexec" ];
+      #      fileSystems."/var/log".options = [ "noexec" ];
     })
 
     # configure the bootloader
@@ -108,6 +108,8 @@ in
 
       # TODO: test it!
       # boot.kernelPackages = pkgs.linuxPackages_latest;
+      # boot.kernelPackages = pkgs.linux_5_15;
+      # boot.kernelPackages = pkgs.linuxKernel.kernels.linux_5_15_hardened;
 
       # TODO: document
       # https://github.com/freifunkMUC/infra/blob/2e6b341b047532b202b365edc3c01d5177fd2075/modules/gateway.nix#L239
@@ -120,6 +122,8 @@ in
 
       # https://nix.dev/tutorials/building-bootable-iso-image
       # Needed for https://github.com/NixOS/nixpkgs/issues/58959
+      # https://www.reddit.com/r/NixOS/comments/ni79b8/list_of_all_nixos_supported_file_systems/
+      # boot.supportedFilesystems = [ "btrfs" "ext2" "ext3" "ext4" "exfat" "f2fs" "fat8" "fat16" "fat32" "ntfs" "xfs" "zfs" ];
       # boot.supportedFilesystems = pkgs.lib.mkForce [ "btrfs" "reiserfs" "vfat" "f2fs" "xfs" "ntfs" "cifs" ];
 
       # Define a user account.
@@ -129,14 +133,14 @@ in
 
         # https://nixos.wiki/wiki/Libvirt
         extraGroups = [
-                        "audio"
-#                        "docker"
-                        "kvm"
-                        "libvirtd"
-                        "networkmanager"
-                        "nixgroup"
-                        "wheel"
-                      ];
+          "audio"
+          #                        "docker"
+          "kvm"
+          "libvirtd"
+          "networkmanager"
+          "nixgroup"
+          "wheel"
+        ];
 
         # It can be turned off, it is here for debug help
         # To crete a new one:
@@ -147,51 +151,51 @@ in
         # TODO: https://stackoverflow.com/a/67984113
         # https://www.vultr.com/docs/how-to-install-nixos-on-a-vultr-vps
         openssh.authorizedKeys.keyFiles = [
-#          ./vagrant.pub
+          #          ./vagrant.pub
           PedroRegisPOARKeys
           RodrigoKeys
           JoaoKeys
-          ];
+        ];
       };
 
-    # Disable sudo for the tests and play/hack up stuff
-    # Do NOT use it in PRODUCTION as false!
-    security.sudo.wheelNeedsPassword = true;
+      # Disable sudo for the tests and play/hack up stuff
+      # Do NOT use it in PRODUCTION as false!
+      security.sudo.wheelNeedsPassword = true;
 
-    # Is it usefull for some other thing?
-    #virtualisation.docker.enable = true;
+      # Is it usefull for some other thing?
+      #virtualisation.docker.enable = true;
 
-    virtualisation.podman = {
+      virtualisation.podman = {
         enable = true;
         # Create a `docker` alias for podman, to use it as a drop-in replacement
         #dockerCompat = true;
       };
 
-    environment.etc."containers/registries.conf" = {
-      mode="0644";
-      text=''
-        [registries.search]
-        registries = ['docker.io', 'localhost']
-      '';
-    };
+      environment.etc."containers/registries.conf" = {
+        mode = "0644";
+        text = ''
+          [registries.search]
+          registries = ['docker.io', 'localhost']
+        '';
+      };
 
-    # TODO: do a NixOS test about this!
-    # cat /etc/sudoers.d/nixuser | rg -w 'nixuser ALL=(ALL) NOPASSWD: ALL' || echo $?
-    # rg -c -q -e 'nixuser ALL=\(ALL\) NOPASSWD: ALL' /etc/sudoers.d/nixuser || echo 'Error!'
-    # https://unix.stackexchange.com/a/377385
-    environment.etc."sudoers.d/nixuser" = {
-      mode="0644";
-      text=''
-        nixuser ALL=(ALL) NOPASSWD:SETENV: ALL
-      '';
-    };
+      # TODO: do a NixOS test about this!
+      # cat /etc/sudoers.d/nixuser | rg -w 'nixuser ALL=(ALL) NOPASSWD: ALL' || echo $?
+      # rg -c -q -e 'nixuser ALL=\(ALL\) NOPASSWD: ALL' /etc/sudoers.d/nixuser || echo 'Error!'
+      # https://unix.stackexchange.com/a/377385
+      environment.etc."sudoers.d/nixuser" = {
+        mode = "0644";
+        text = ''
+          nixuser ALL=(ALL) NOPASSWD:SETENV: ALL
+        '';
+      };
 
-#    environment.etc."ssh/sshd_config" = {
-#      mode="0644";
-#      text=''
-#        X11UseLocalHost no
-#      '';
-#    };
+      #    environment.etc."ssh/sshd_config" = {
+      #      mode="0644";
+      #      text=''
+      #        X11UseLocalHost no
+      #      '';
+      #    };
 
       users.extraUsers.nixuser = {
         shell = pkgs.zsh;
@@ -199,10 +203,10 @@ in
 
       # Who depends on it?
       # https://github.com/dguibert/dotfiles/blob/f530a82ff250b857495b7684a9bfe6e77ec25b5d/admin/nixops/flake.nix#L638-L642
-#      hardware.opengl = {
-#        enable = true;
-#        driSupport = true;
-#      };
+      #      hardware.opengl = {
+      #        enable = true;
+      #        driSupport = true;
+      #      };
 
       # https://nixos.wiki/wiki/Libvirt
       boot.extraModprobeConfig = "options kvm_intel nested=1";
@@ -223,18 +227,18 @@ in
         forwardX11 = false;
 
         passwordAuthentication = true;
-        ports = [29980];
+        ports = [ 29980 ];
         # TODO: hardening, is it dangerous? How much?
         # Do NOT use it in PRODUCTION as yes!
         permitRootLogin = "yes";
-#        What is the difference about this and the one in
-#        users.extraUsers.nixuser.openssh.authorizedKeys.keyFiles ?
+        #        What is the difference about this and the one in
+        #        users.extraUsers.nixuser.openssh.authorizedKeys.keyFiles ?
         authorizedKeysFiles = [
-#                                "./vagrant.pub"
-                                "${ toString PedroRegisPOARKeys}"
-                                "${ toString RodrigoKeys}"
-                                "${ toString JoaoKeys}"
-                              ];
+          #                                "./vagrant.pub"
+          "${ toString PedroRegisPOARKeys}"
+          "${ toString RodrigoKeys}"
+          "${ toString JoaoKeys}"
+        ];
       };
       programs.ssh.forwardX11 = false;
 
@@ -242,8 +246,8 @@ in
       programs.ssh.setXAuthLocation = false;
 
       # Enable the X11 windowing system.
-#      services.xserver.enable = true;
-#      services.xserver.layout = "us";
+      #      services.xserver.enable = true;
+      #      services.xserver.layout = "us";
 
       #
       # https://discourse.nixos.org/t/how-to-disable-root-user-account-in-configuration-nix/13235/7
@@ -276,10 +280,10 @@ in
     #config.oraclejdk.accept_license = true;
 
     #https://github.com/zyansheep/nixos-conf/blob/7b932af1b87bbe6cdf7bff1a8b7546d9b17f1720/nixos/development/platforms/android.nix#L13-L17
-#    config.allowUnfreePackages = [ "android-studio" ];
-#	  config.allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg) [
-#		  "android-studio-stable"
-#	  ];
+    #    config.allowUnfreePackages = [ "android-studio" ];
+    #    config.allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg) [
+    #      "android-studio-stable"
+    #    ];
 
     # What is it for?
     # nativeOnly = true;
@@ -287,7 +291,7 @@ in
 
   nix = {
     package = pkgs.nixFlakes;
-    extraOptions =''
+    extraOptions = ''
       keep-outputs = true
       keep-derivations = true
       experimental-features = nix-command flakes ca-references ca-derivations
@@ -298,13 +302,13 @@ in
     # https://github.com/sherubthakur/dotfiles/blob/be96fe7c74df706a8b1b925ca4e7748cab703697/system/configuration.nix#L44
     # pointted by: https://github.com/NixOS/nixpkgs/issues/124215
     sandboxPaths = [
-                     "/bin/sh=${pkgs.bash}/bin/sh"
-                     # TODO: test it!
-                     # "/bin/sh=${pkgs.busybox-sandbox-shell}/bin/sh"
-                   ];
+      "/bin/sh=${pkgs.bash}/bin/sh"
+      # TODO: test it!
+      # "/bin/sh=${pkgs.busybox-sandbox-shell}/bin/sh"
+    ];
 
     # TODO: document it
-    trustedUsers = ["@wheel" "nixuser"];
+    trustedUsers = [ "@wheel" "nixuser" ];
     autoOptimiseStore = true;
 
     optimise.automatic = true;
@@ -340,21 +344,21 @@ in
   # https://gist.github.com/kendricktan/8c33019cf5786d666d0ad64c6a412526
   # The nixpkgs#xorg.xclock need some of them or not:
   # Warning: Missing charsets in String to FontSet conversion
-#  fonts = {
-#    fontDir.enable = true;
-#    fonts = with pkgs; [
-#      corefonts           # Microsoft free fonts
-#      fira                # Monospace
-#      fira-code
-#      font-awesome
-#      hack-font
-#      inconsolata         # Monospace
-#      iosevka
-#      powerline-fonts
-#      ubuntu_font_family
-#      unifont             # International languages
-#    ];
-#  };
+  #  fonts = {
+  #    fontDir.enable = true;
+  #    fonts = with pkgs; [
+  #      corefonts           # Microsoft free fonts
+  #      fira                # Monospace
+  #      fira-code
+  #      font-awesome
+  #      hack-font
+  #      inconsolata         # Monospace
+  #      iosevka
+  #      powerline-fonts
+  #      ubuntu_font_family
+  #      unifont             # International languages
+  #    ];
+  #  };
 
   # TODO: fix it!
   #time.timeZone = "Europe/London";
@@ -363,110 +367,110 @@ in
     bashInteractive
     #
     # https://discourse.nixos.org/t/ssl-peer-certificate-or-ssh-remote-key-was-not-ok-error-on-fresh-nix-install-on-macos/3582/4
-    cacert            # If it is not used, it is like not have internet! Really hard to figure out it!
+    cacert # If it is not used, it is like not have internet! Really hard to figure out it!
     coreutils
 
     #
-#    binutils
+    #    binutils
     #bottom  # the binary name is btm
     git
-#    dnsutils
+    #    dnsutils
     file
-#    findutils
-#    fzf
-#    inetutils
-#    lsof
+    #    findutils
+    #    fzf
+    #    inetutils
+    #    lsof
     neovim
-#    netcat
-#    nixpkgs-fmt
-#    nmap
-#    mtr
-#    sysstat
+    #    netcat
+    #    nixpkgs-fmt
+    #    nmap
+    #    mtr
+    #    sysstat
     oh-my-zsh
     openssh
     openssl
-#    ripgrep
-#    strace
-#    tree
-#    unzip
-#    util-linux
+    #    ripgrep
+    #    strace
+    #    tree
+    #    unzip
+    #    util-linux
     which
     zsh
     zsh-autosuggestions
     zsh-completions
 
-#    volumeMountHack
+    #    volumeMountHack
 
-#    minikube
+    #    minikube
     kind
     kubectl
-#     # shell stuff
-#     direnv
-#     fzf
-#     neovim
-#     oh-my-zsh
-#     zsh
-#     zsh-autosuggestions
-#     zsh-completions
-#     bottom  # the binary name is btm
-#
-#     # Some utils
-#     binutils
-#     coreutils
-#     dnsutils
-#     file
-#     findutils
-#     # inetutils # TODO: it was causing a conflict, insvestigate it!
-#     nixpkgs-fmt
-#     ripgrep
-#     strace
-#     util-linux
-#     unzip
-#     tree
-#
-#     gzip
-#     unrar
-#     unzip
-#
-#     curl
-#     wget
-#
-#     graphviz # dot command comes from here
-#     jq
-#     unixtools.xxd
+    #     # shell stuff
+    #     direnv
+    #     fzf
+    #     neovim
+    #     oh-my-zsh
+    #     zsh
+    #     zsh-autosuggestions
+    #     zsh-completions
+    #     bottom  # the binary name is btm
+    #
+    #     # Some utils
+    #     binutils
+    #     coreutils
+    #     dnsutils
+    #     file
+    #     findutils
+    #     # inetutils # TODO: it was causing a conflict, insvestigate it!
+    #     nixpkgs-fmt
+    #     ripgrep
+    #     strace
+    #     util-linux
+    #     unzip
+    #     tree
+    #
+    #     gzip
+    #     unrar
+    #     unzip
+    #
+    #     curl
+    #     wget
+    #
+    #     graphviz # dot command comes from here
+    #     jq
+    #     unixtools.xxd
 
-#     # Caching compilers
-#     gcc
-#     gcc6
-#
-##     anydesk
-##     discord
-##     firefox
-##     freeoffice
-##     gitkraken
-##     klavaro
-##     spectacle
-#     vlc
-#     xorg.xkill
-#
-##     amazon-ecs-cli
-##     awscli
-##     docker
-##     docker-compose
-##     git
-##     gnumake
-##     gnupg
-##     gparted
-#
-##     youtube-dl
-##     htop
-#     jetbrains.pycharm-community
-##     keepassxc
-##     okular
-##     # libreoffice
-##     python39Full
-##     peek
-##     insomnia
+    #     # Caching compilers
+    #     gcc
+    #     gcc6
+    #
+    ##     anydesk
+    ##     discord
+    ##     firefox
+    ##     freeoffice
+    ##     gitkraken
+    ##     klavaro
+    ##     spectacle
+    #     vlc
+    #     xorg.xkill
+    #
+    ##     amazon-ecs-cli
+    ##     awscli
+    ##     docker
+    ##     docker-compose
+    ##     git
+    ##     gnumake
+    ##     gnupg
+    ##     gparted
+    #
+    ##     youtube-dl
+    ##     htop
+    #     jetbrains.pycharm-community
+    ##     keepassxc
+    ##     okular
+    ##     # libreoffice
+    ##     python39Full
+    ##     peek
+    ##     insomnia
 
   ];
 
@@ -491,9 +495,9 @@ in
   #
   # TODO: use a more nix like way, do not use the hardcoded path
   # https://github.com/nixvital/vital-modules/blob/b99ee921b54428dbf7997f429fb35977eafe1491/foundations/container.nix#L39-L44
-#  security.sudo.extraConfig = ''
-#    %wheel      ALL=(root)      NOPASSWD:SETENV: /nix/store/h63yf7a2ccfimas30i0wn54fp8c8h3qf-podman-rootless-derivation/bin/podman
-#  '';
+  #  security.sudo.extraConfig = ''
+  #    %wheel      ALL=(root)      NOPASSWD:SETENV: /nix/store/h63yf7a2ccfimas30i0wn54fp8c8h3qf-podman-rootless-derivation/bin/podman
+  #  '';
 
   # https://github.com/NixOS/nixpkgs/blob/3a44e0112836b777b176870bb44155a2c1dbc226/nixos/modules/programs/zsh/oh-my-zsh.nix#L119
   # https://discourse.nixos.org/t/nix-completions-for-zsh/5532
@@ -529,50 +533,50 @@ in
   # https://www.linuxquestions.org/questions/debian-26/how-can-i-change-a-user%27s-uid-and-gid-328241/
   systemd.services.fix-zsh-warning = {
     script = ''
-      echo "Fixing a zsh warning"
+            echo "Fixing a zsh warning"
 
-      # https://stackoverflow.com/questions/638975/how-do-i-tell-if-a-regular-file-does-not-exist-in-bash#comment25226870_638985
-      if [ ! -f /home/nixuser/.zshrc ]; then
-        touch /home/nixuser/.zshrc
+            # https://stackoverflow.com/questions/638975/how-do-i-tell-if-a-regular-file-does-not-exist-in-bash#comment25226870_638985
+            if [ ! -f /home/nixuser/.zshrc ]; then
+              touch /home/nixuser/.zshrc
 
-#        echo 'sudo umount /home/nixuser/code' >> /home/nixuser/.zshrc
-#
-#        # Ohh eahh, it is a hack
-#        #echo 'volume-mount-hack' >> /home/nixuser/.zshrc
-#
-#        # Ohh eahh, it is a hack
-#        # Convert it to a heredocument
-#
-#        echo 'sudo mount -t 9p \' >> /home/nixuser/.zshrc
-#        echo '-o trans=virtio,access=any,cache=none,version=9p2000.L,cache=none,msize=262144,rw \' >> /home/nixuser/.zshrc
-#        echo 'hostshare /home/nixuser/code' >> /home/nixuser/.zshrc
-#
-#        echo '! test -w /home/nixuser || sudo chown nixuser: /home/nixuser' >> /home/nixuser/.zshrc
-#
-#        echo 'cd /home/nixuser/code' >> /home/nixuser/.zshrc
-#
-#        chown nixuser: /home/nixuser/.zshrc
-      fi
+      #        echo 'sudo umount /home/nixuser/code' >> /home/nixuser/.zshrc
+      #
+      #        # Ohh eahh, it is a hack
+      #        #echo 'volume-mount-hack' >> /home/nixuser/.zshrc
+      #
+      #        # Ohh eahh, it is a hack
+      #        # Convert it to a heredocument
+      #
+      #        echo 'sudo mount -t 9p \' >> /home/nixuser/.zshrc
+      #        echo '-o trans=virtio,access=any,cache=none,version=9p2000.L,cache=none,msize=262144,rw \' >> /home/nixuser/.zshrc
+      #        echo 'hostshare /home/nixuser/code' >> /home/nixuser/.zshrc
+      #
+      #        echo '! test -w /home/nixuser || sudo chown nixuser: /home/nixuser' >> /home/nixuser/.zshrc
+      #
+      #        echo 'cd /home/nixuser/code' >> /home/nixuser/.zshrc
+      #
+      #        chown nixuser: /home/nixuser/.zshrc
+            fi
 
-      if [ ! -f /home/nixuser/.Xauthority ]; then
-        touch /home/nixuser/.Xauthority
-        chown nixuser: /home/nixuser/.Xauthority
-      fi
+            if [ ! -f /home/nixuser/.Xauthority ]; then
+              touch /home/nixuser/.Xauthority
+              chown nixuser: /home/nixuser/.Xauthority
+            fi
 
-      if [ ! -f /home/nixuser/code ]; then
-        mkdir -p /home/nixuser/code
-        chown nixuser: /home/nixuser
-      fi
+            if [ ! -f /home/nixuser/code ]; then
+              mkdir -p /home/nixuser/code
+              chown nixuser: /home/nixuser
+            fi
     '';
     wantedBy = [ "multi-user.target" ];
   };
 
   # TODO: study about this
   # https://github.com/thiagokokada/dotfiles/blob/a221bf1186fd96adcb537a76a57d8c6a19592d0f/_nixos/etc/nixos/misc-configuration.nix#L124-L128
-#  zramSwap = {
-#    enable = true;
-#    algorithm = "zstd";
-#  };
+  #  zramSwap = {
+  #    enable = true;
+  #    algorithm = "zstd";
+  #  };
 
 
 }

@@ -19,223 +19,224 @@ let
 
 
   configuration =
-      { pkgs, ... }:
-      { imports = [
-          "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix"
-          "${nixpkgs}/nixos/modules/installer/cd-dvd/channel.nix"
-        ];
+    { pkgs, ... }:
+    {
+      imports = [
+        "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix"
+        "${nixpkgs}/nixos/modules/installer/cd-dvd/channel.nix"
+      ];
 
-        users.extraUsers.nixuser = {
-          isNormalUser = true;
-
-          # https://nixos.wiki/wiki/Libvirt
-          extraGroups = [
-                          "audio"
-  #                        "docker"
-                          "kvm"
-                          "libvirtd"
-                          "networkmanager"
-                          "nixgroup"
-                          "wheel"
-                        ];
-
-          # It can be turned off, it is here for debug help
-          # To crete a new one:
-          # mkpasswd -m sha-512
-          # https://unix.stackexchange.com/a/187337
-          hashedPassword = "$6$XiENMV7S4t/XfN$lIZjnuRdNZVcY3qUjur7m4jCIMZCGi3obx1.wHVoQKaNFmEJJN4r.MKdZIkpFpXwt0d/lqI.ZlLnfdwZyXj0e/";
-
-          # TODO: https://stackoverflow.com/a/67984113
-          # https://www.vultr.com/docs/how-to-install-nixos-on-a-vultr-vps
-          openssh.authorizedKeys.keyFiles = [
-              PedroRegisPOARKeys
-              RodrigoKeys
-              JoaoKeys
-            ];
-        };
-
-        virtualisation.podman = {
-            enable = true;
-            # Create a `docker` alias for podman, to use it as a drop-in replacement
-            #dockerCompat = true;
-          };
-
-        environment.etc."containers/registries.conf" = {
-          mode="0644";
-          text=''
-            [registries.search]
-            registries = ['docker.io', 'localhost']
-          '';
-        };
-
-        # Disable sudo for the tests and play/hack up stuff
-        # Do NOT use it in PRODUCTION as false!
-        security.sudo.wheelNeedsPassword = true;
-
-        # TODO: do a NixOS test about this!
-        # cat /etc/sudoers.d/nixuser | rg -w 'nixuser ALL=(ALL) NOPASSWD: ALL' || echo $?
-        # rg -c -q -e 'nixuser ALL=\(ALL\) NOPASSWD: ALL' /etc/sudoers.d/nixuser || echo 'Error!'
-        # https://unix.stackexchange.com/a/377385
-        environment.etc."sudoers.d/nixuser" = {
-          mode="0644";
-          text=''
-            Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:"${pkgs.podman}"/bin:"${pkgs.kind}"/bin
-          '';
-        };
-
-        users.extraUsers.nixuser = {
-          shell = pkgs.zsh;
-        };
-
-        environment.systemPackages = with pkgs; [
-          bashInteractive
-          #
-          # https://discourse.nixos.org/t/ssl-peer-certificate-or-ssh-remote-key-was-not-ok-error-on-fresh-nix-install-on-macos/3582/4
-          cacert            # If it is not used, it is like not have internet! Really hard to figure out it!
-          coreutils
-
-          binutils
-          bottom  # the binary name is btm
-          git
-          dnsutils
-          file
-          findutils
-          neovim
-          oh-my-zsh
-          openssh
-          openssl
-          ripgrep
-          strace
-          tree
-          unzip
-          util-linux
-          which
-          zsh
-          zsh-autosuggestions
-          zsh-completions
-          kind
-          kubectl
-        ];
+      users.extraUsers.nixuser = {
+        isNormalUser = true;
 
         # https://nixos.wiki/wiki/Libvirt
-        boot.extraModprobeConfig = "options kvm_intel nested=1";
+        extraGroups = [
+          "audio"
+          #                        "docker"
+          "kvm"
+          "libvirtd"
+          "networkmanager"
+          "nixgroup"
+          "wheel"
+        ];
 
-        # https://github.com/NixOS/nixpkgs/issues/27930#issuecomment-417943781
-        boot.kernelModules = [ "kvm-intel" ];
-
-        # https://github.com/NixOS/nixpkgs/issues/19246#issuecomment-252206901
-        services.openssh = {
-          allowSFTP = true;
-          challengeResponseAuthentication = false;
-          enable = true;
-          forwardX11 = false;
-
-          passwordAuthentication = true;
-          ports = [29980];
-          # TODO: hardening, is it dangerous? How much?
-          # Do NOT use it in PRODUCTION as yes!
-          permitRootLogin = "yes";
-  #        What is the difference about this and the one in
-  #        users.extraUsers.nixuser.openssh.authorizedKeys.keyFiles ?
-          authorizedKeysFiles = [
-                                  "${ toString PedroRegisPOARKeys}"
-                                  "${ toString RodrigoKeys}"
-                                  "${ toString JoaoKeys}"
-                                ];
-        };
-        programs.ssh.forwardX11 = false;
-
-        # What is it for?
-        programs.ssh.setXAuthLocation = false;
-
-        # Enable the X11 windowing system.
-  #      services.xserver.enable = true;
-  #      services.xserver.layout = "us";
-
-        #
-        # https://discourse.nixos.org/t/how-to-disable-root-user-account-in-configuration-nix/13235/7
-        # users.users."root".initialPassword = "r00t";
-        #
+        # It can be turned off, it is here for debug help
         # To crete a new one:
         # mkpasswd -m sha-512
         # https://unix.stackexchange.com/a/187337
-        users.users."root".hashedPassword = "$6$gCCW9SQfMdwAmmAJ$fQDoVPYZerCi10z2wpjyk4ZxWrVrZkVcoPOTjFTZ5BJw9I9qsOAUCUPAouPsEMG.5Kk1rvFSwUB.NeUuPt/SC/";
+        hashedPassword = "$6$XiENMV7S4t/XfN$lIZjnuRdNZVcY3qUjur7m4jCIMZCGi3obx1.wHVoQKaNFmEJJN4r.MKdZIkpFpXwt0d/lqI.ZlLnfdwZyXj0e/";
 
-        # https://www.linode.com/docs/guides/install-nixos-on-linode/
-        # networking.usePredictableInterfaceNames = false;
-        # networking.useDHCP = false; # Disable DHCP globally as we will not need it.
-        ## required for ssh?
-        #networking.interfaces.eth0.useDHCP = true;
+        # TODO: https://stackoverflow.com/a/67984113
+        # https://www.vultr.com/docs/how-to-install-nixos-on-a-vultr-vps
+        openssh.authorizedKeys.keyFiles = [
+          PedroRegisPOARKeys
+          RodrigoKeys
+          JoaoKeys
+        ];
+      };
 
-        nixpkgs.config = {
-          allowBroken = false;
-          allowUnfree = true;
-          # https://github.com/Pamplemousse/laptop/blob/f780c26bbef2fd0b681cac570fc016b4128de6ce/etc/nixos/packages.nix#L49
-          # TODO: test if it work
-          # config.pulseaudio = true;
+      virtualisation.podman = {
+        enable = true;
+        # Create a `docker` alias for podman, to use it as a drop-in replacement
+        #dockerCompat = true;
+      };
 
-          # TODO: Test it
-          #config.firefox.enablePlasmaBrowserIntegration = true;
+      environment.etc."containers/registries.conf" = {
+        mode = "0644";
+        text = ''
+          [registries.search]
+          registries = ['docker.io', 'localhost']
+        '';
+      };
 
-          # TODO: Test it
-          #config.oraclejdk.accept_license = true;
+      # Disable sudo for the tests and play/hack up stuff
+      # Do NOT use it in PRODUCTION as false!
+      security.sudo.wheelNeedsPassword = true;
 
-          #https://github.com/zyansheep/nixos-conf/blob/7b932af1b87bbe6cdf7bff1a8b7546d9b17f1720/nixos/development/platforms/android.nix#L13-L17
-      #    config.allowUnfreePackages = [ "android-studio" ];
-      #	  config.allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg) [
-      #		  "android-studio-stable"
-      #	  ];
+      # TODO: do a NixOS test about this!
+      # cat /etc/sudoers.d/nixuser | rg -w 'nixuser ALL=(ALL) NOPASSWD: ALL' || echo $?
+      # rg -c -q -e 'nixuser ALL=\(ALL\) NOPASSWD: ALL' /etc/sudoers.d/nixuser || echo 'Error!'
+      # https://unix.stackexchange.com/a/377385
+      environment.etc."sudoers.d/nixuser" = {
+        mode = "0644";
+        text = ''
+          Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:"${pkgs.podman}"/bin:"${pkgs.kind}"/bin
+        '';
+      };
 
-          # What is it for?
-          # nativeOnly = true;
+      users.extraUsers.nixuser = {
+        shell = pkgs.zsh;
+      };
+
+      environment.systemPackages = with pkgs; [
+        bashInteractive
+        #
+        # https://discourse.nixos.org/t/ssl-peer-certificate-or-ssh-remote-key-was-not-ok-error-on-fresh-nix-install-on-macos/3582/4
+        cacert # If it is not used, it is like not have internet! Really hard to figure out it!
+        coreutils
+
+        binutils
+        bottom # the binary name is btm
+        git
+        dnsutils
+        file
+        findutils
+        neovim
+        oh-my-zsh
+        openssh
+        openssl
+        ripgrep
+        strace
+        tree
+        unzip
+        util-linux
+        which
+        zsh
+        zsh-autosuggestions
+        zsh-completions
+        kind
+        kubectl
+      ];
+
+      # https://nixos.wiki/wiki/Libvirt
+      boot.extraModprobeConfig = "options kvm_intel nested=1";
+
+      # https://github.com/NixOS/nixpkgs/issues/27930#issuecomment-417943781
+      boot.kernelModules = [ "kvm-intel" ];
+
+      # https://github.com/NixOS/nixpkgs/issues/19246#issuecomment-252206901
+      services.openssh = {
+        allowSFTP = true;
+        challengeResponseAuthentication = false;
+        enable = true;
+        forwardX11 = false;
+
+        passwordAuthentication = true;
+        ports = [ 29980 ];
+        # TODO: hardening, is it dangerous? How much?
+        # Do NOT use it in PRODUCTION as yes!
+        permitRootLogin = "yes";
+        #        What is the difference about this and the one in
+        #        users.extraUsers.nixuser.openssh.authorizedKeys.keyFiles ?
+        authorizedKeysFiles = [
+          "${ toString PedroRegisPOARKeys}"
+          "${ toString RodrigoKeys}"
+          "${ toString JoaoKeys}"
+        ];
+      };
+      programs.ssh.forwardX11 = false;
+
+      # What is it for?
+      programs.ssh.setXAuthLocation = false;
+
+      # Enable the X11 windowing system.
+      #      services.xserver.enable = true;
+      #      services.xserver.layout = "us";
+
+      #
+      # https://discourse.nixos.org/t/how-to-disable-root-user-account-in-configuration-nix/13235/7
+      # users.users."root".initialPassword = "r00t";
+      #
+      # To crete a new one:
+      # mkpasswd -m sha-512
+      # https://unix.stackexchange.com/a/187337
+      users.users."root".hashedPassword = "$6$gCCW9SQfMdwAmmAJ$fQDoVPYZerCi10z2wpjyk4ZxWrVrZkVcoPOTjFTZ5BJw9I9qsOAUCUPAouPsEMG.5Kk1rvFSwUB.NeUuPt/SC/";
+
+      # https://www.linode.com/docs/guides/install-nixos-on-linode/
+      # networking.usePredictableInterfaceNames = false;
+      # networking.useDHCP = false; # Disable DHCP globally as we will not need it.
+      ## required for ssh?
+      #networking.interfaces.eth0.useDHCP = true;
+
+      nixpkgs.config = {
+        allowBroken = false;
+        allowUnfree = true;
+        # https://github.com/Pamplemousse/laptop/blob/f780c26bbef2fd0b681cac570fc016b4128de6ce/etc/nixos/packages.nix#L49
+        # TODO: test if it work
+        # config.pulseaudio = true;
+
+        # TODO: Test it
+        #config.firefox.enablePlasmaBrowserIntegration = true;
+
+        # TODO: Test it
+        #config.oraclejdk.accept_license = true;
+
+        #https://github.com/zyansheep/nixos-conf/blob/7b932af1b87bbe6cdf7bff1a8b7546d9b17f1720/nixos/development/platforms/android.nix#L13-L17
+        #    config.allowUnfreePackages = [ "android-studio" ];
+        #    config.allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg) [
+        #      "android-studio-stable"
+        #    ];
+
+        # What is it for?
+        # nativeOnly = true;
+      };
+
+      nix = {
+        package = pkgs.nixFlakes;
+        extraOptions = ''
+          keep-outputs = true
+          keep-derivations = true
+          experimental-features = nix-command flakes ca-references ca-derivations
+          system-features = benchmark big-parallel kvm nixos-test
+        '';
+
+        # From:
+        # https://github.com/sherubthakur/dotfiles/blob/be96fe7c74df706a8b1b925ca4e7748cab703697/system/configuration.nix#L44
+        # pointted by: https://github.com/NixOS/nixpkgs/issues/124215
+        sandboxPaths = [
+          "/bin/sh=${pkgs.bash}/bin/sh"
+          # TODO: test it!
+          # "/bin/sh=${pkgs.busybox-sandbox-shell}/bin/sh"
+        ];
+
+        # TODO: document it
+        trustedUsers = [ "@wheel" "nixuser" ];
+        autoOptimiseStore = true;
+
+        optimise.automatic = true;
+
+        gc = {
+          automatic = true;
+          options = "--delete-older-than 1d";
         };
 
-        nix = {
-          package = pkgs.nixFlakes;
-          extraOptions =''
-            keep-outputs = true
-            keep-derivations = true
-            experimental-features = nix-command flakes ca-references ca-derivations
-            system-features = benchmark big-parallel kvm nixos-test
-          '';
+        buildCores = 4;
+        maxJobs = 4;
 
-          # From:
-          # https://github.com/sherubthakur/dotfiles/blob/be96fe7c74df706a8b1b925ca4e7748cab703697/system/configuration.nix#L44
-          # pointted by: https://github.com/NixOS/nixpkgs/issues/124215
-          sandboxPaths = [
-                           "/bin/sh=${pkgs.bash}/bin/sh"
-                           # TODO: test it!
-                           # "/bin/sh=${pkgs.busybox-sandbox-shell}/bin/sh"
-                         ];
-
-          # TODO: document it
-          trustedUsers = ["@wheel" "nixuser"];
-          autoOptimiseStore = true;
-
-          optimise.automatic = true;
-
-          gc = {
-            automatic = true;
-            options = "--delete-older-than 1d";
-          };
-
-          buildCores = 4;
-          maxJobs = 4;
-
-          # Can be a hardening thing
-          # https://github.com/sarahhodne/nix-system/blob/98dcfced5ff3bf08ccbd44a1d3619f1730f6fd71/modules/nixpkgs.nix#L16-L22
-          readOnlyStore = true;
-          # https://discourse.nixos.org/t/how-to-use-binary-cache-in-nixos/5202/4
-          # https://www.reddit.com/r/NixOS/comments/p67ju0/cachix_configuration_in_configurationnix/h9b76fs/?utm_source=reddit&utm_medium=web2x&context=3
-          binaryCaches = [
-            "https://nix-community.cachix.org"
-            "https://cache.nixos.org"
-          ];
-          binaryCachePublicKeys = [
-            "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
-            "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
-          ];
-        };
+        # Can be a hardening thing
+        # https://github.com/sarahhodne/nix-system/blob/98dcfced5ff3bf08ccbd44a1d3619f1730f6fd71/modules/nixpkgs.nix#L16-L22
+        readOnlyStore = true;
+        # https://discourse.nixos.org/t/how-to-use-binary-cache-in-nixos/5202/4
+        # https://www.reddit.com/r/NixOS/comments/p67ju0/cachix_configuration_in_configurationnix/h9b76fs/?utm_source=reddit&utm_medium=web2x&context=3
+        binaryCaches = [
+          "https://nix-community.cachix.org"
+          "https://cache.nixos.org"
+        ];
+        binaryCachePublicKeys = [
+          "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
+          "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
+        ];
+      };
 
       # https://github.com/NixOS/nixpkgs/blob/3a44e0112836b777b176870bb44155a2c1dbc226/nixos/modules/programs/zsh/oh-my-zsh.nix#L119
       # https://discourse.nixos.org/t/nix-completions-for-zsh/5532
@@ -244,8 +245,8 @@ let
         enable = true;
         shellAliases = {
           vim = "nvim";
-#          podman = "sudo podman";
-#          kind = "sudo kind";
+          #          podman = "sudo podman";
+          #          kind = "sudo kind";
         };
         enableCompletion = true;
         autosuggestions.enable = true;
@@ -268,8 +269,8 @@ let
       };
 
 
-      };
+    };
 
-    iso-image = import "${nixpkgs}/nixos" { inherit system configuration; };
+  iso-image = import "${nixpkgs}/nixos" { inherit system configuration; };
 in
 iso-image.config.system.build.isoImage

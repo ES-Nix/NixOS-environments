@@ -498,6 +498,9 @@ alpine:3.14.3 \
 ```
 Refs.:
 - https://stackoverflow.com/a/63726105
+- https://docs.docker.com/engine/install/linux-postinstall/#your-kernel-does-not-support-cgroup-swap-limit-capabilities
+- https://stackoverflow.com/a/48590230
+- https://fabianlee.org/2020/01/18/docker-placing-limits-on-container-memory-using-cgroups/
 
 
 
@@ -507,6 +510,19 @@ free -hm
 blkid  
 lsblk
 ```
+
+
+```bash
+sudo systemctl list-units --type=swap --state=active
+```
+Refs.:
+- https://stackoverflow.com/a/59577261
+
+```bash
+sudo swapon --show
+```
+Refs.:
+- https://graspingtech.com/disable-swap-ubuntu/ 
 
 
 
@@ -838,6 +854,9 @@ kubectl -n kube-system delete pod coredns-
 kubectl -n kube-system get cm kubeadm-config -o yaml
 
 
+sudo journalctl --no-hostname --no-pager -b -u docker.service
+
+
 sudo systemctl daemon-reload \
 && sudo systemctl enable etcd \
 && sudo systemctl start
@@ -922,3 +941,80 @@ test -S /run/containerd/containerd.sock || echo 'Error!'
 [May CoreOS Meetup: Kubeception- Dalton Hubble](https://www.youtube.com/watch?v=tlUiQa2JYQU)
 
 https://gist.github.com/dghubble/c2dc319249b156db06aff1d49c15272e
+
+
+## 
+
+
+```bash
+nix build .#iso-kubernetes \
+&& cp -fv result/iso/nixos-*.iso . \
+&& chmod +x nixos-*.iso \
+&& qemu-img create nixos-ssh.img 12G \
+&& echo \
+&& qemu-kvm \
+-boot d \
+-hda nixos-ssh.img \
+-cdrom nixos-21.11*-git-x86_64-linux.iso \
+-m 5000 \
+-enable-kvm \
+-cpu host \
+-smp $(nproc) \
+-device "rtl8139,netdev=net0" \
+-netdev "user,id=net0,hostfwd=tcp:127.0.0.1:10023-:29980"
+```
+
+
+```bash
+qemu-kvm \
+-boot a \
+-cpu host \
+-device "rtl8139,netdev=net0" \
+-drive format=raw,file=nixos.img \
+-enable-kvm \
+-m 10G \
+-netdev "user,id=net0,hostfwd=tcp:127.0.0.1:10023-:29980" \
+-nographic \
+-smp $(nproc) < /dev/null &
+```
+
+```bash
+kill -9 $(pidof qemu-system-x86_64)
+```
+
+
+```bash
+cat << EOF > '/etc/nixos/'flake.nix
+{
+  outputs = { self, nixpkgs }: {
+     nixosConfigurations.nixos = nixpkgs.lib.nixosSystem {
+       system = "x86_64-linux";
+       modules = [ ./configuration.nix ];
+     };
+  };
+}
+EOF
+
+cd /etc/nixos
+git init
+git add .
+
+nixos-rebuild switch --flake '/etc/nixos'#"$(hostname)"
+```
+
+
+```bash
+nixos-rebuild switch --flake '/etc/nixos'#"$(hostname)"
+```
+
+qemu-img resize -fmt raw
+qemu-img info
+
+TODO: test it
+https://github.com/NixOS/nixpkgs/blob/nixos-21.11/nixos/modules/config/system-path.nix#L10-L49
+https://github.com/NixOS/nixpkgs/issues/32405#issuecomment-678659550
+
+
+nixos-rebuild test \
+&& nixos-rebuild switch \
+&& reboot

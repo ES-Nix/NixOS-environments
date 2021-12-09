@@ -1,4 +1,4 @@
-{ pkgs ? import <nixpkgs> {}, nixos }:
+{ pkgs ? import <nixpkgs> { }, nixos }:
 let
   #
   # https://hoverbear.org/blog/nix-flake-live-media/
@@ -7,7 +7,7 @@ let
     system = "x86_64-linux";
     modules = [
       # expression that exposes the configuration as vm image
-      ({config, lib, pkgs, ...}: {
+      ({ config, lib, pkgs, ... }: {
         system.build.qcow2 = import "${nixos}/nixos/lib/make-disk-image.nix" {
           inherit lib config pkgs;
           diskSize = 2500;

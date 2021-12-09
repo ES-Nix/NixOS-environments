@@ -3,3 +3,4 @@ result
 .idea/*
 *.iso
 nixos.img
+*.img.backup
