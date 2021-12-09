@@ -62,9 +62,9 @@ in
   # Per-interface useDHCP will be mandatory in the future, so this generated config
   # replicates the default behaviour.
   networking.useDHCP = false;
-  networking.interfaces.ens3.useDHCP = true;
+#  networking.interfaces.ens3.useDHCP = true;
   # May solve ip address?
-  networking.interfaces.eth0.useDHCP = true;
+#  networking.interfaces.eth0.useDHCP = true;
 
   # TODO: Fix this!
   #networking.firewall.enable = false;
