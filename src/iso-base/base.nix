@@ -52,7 +52,7 @@ in
   # boot.kernelPackages = pkgs.linuxKernel.kernels.linux_5_15_hardened;
 
   users.extraUsers.root.initialHashedPassword = "";
-  # networking.hostName = "nixos"; # Define your hostname.
+  networking.hostName = "nixos"; # Define your hostname.
   # networking.wireless.enable = true;  # Enables wireless support via wpa_supplicant.
 
   # Set your time zone.
@@ -63,6 +63,11 @@ in
   # replicates the default behaviour.
   networking.useDHCP = false;
   networking.interfaces.ens3.useDHCP = true;
+  # May solve ip address?
+  networking.interfaces.eth0.useDHCP = true;
+
+  # TODO: Fix this!
+  #networking.firewall.enable = false;
 
   # Configure network proxy if necessary
   # networking.proxy.default = "http://user:password@proxy:port/";
