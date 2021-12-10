@@ -15,82 +15,16 @@ let
     ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC8wXcAjwVJZ71MZkhFIfc1gCCTuZ8PRTKlUbqKdW68u0VToS35OYfYTmTRzFDrulXPX/HOZMtQ83UfY5igTtn0FMw1V16FNFmycGLIciCqYBdfB8Ex0xxbf8ZDAxgZ5BG+/lg+PXpNxX1fU7ltW47krYoWueJrGB2ACP53uhI/KcBVvpIW0XqPpYaoXseap89sOXZ0AkKUsC/YtB1bXz5p8oqXJfTyrQx+tHQ+zNg8QX6J84HkKXKoNEVTFjYP8VvKZAa32FkHrAvjRjqakemRxL7hnmoIvjAmFS3CfluYZRun/3AkQ4DsukxVLJxT1yL+WQQgNXc5Zbo5hYiPWXtSuFNQ5xE54qlJzkazp2ky9DNnwgDsvPEoILQwihYERpHQzgU6B4T3anvBQLKHDXkGFaVcA2eTf59D8GxGPeq9ylUZ9qDwjCIbX5biNw4InhockKmzhNsIq1tiqzpx5jR5BlrRxwtJDUnx+C1aX/GRKYedCQk1+yXHJ7WQIS3jSxk=
   '';
 
-#  helperConfiguration = pkgs.fetchurl {
-#      url = "https://raw.githubusercontent.com/ES-Nix/NixOS-environments/6f0eb51a328158067750b504de6c0aed713965dc/src/base/base-configuration.nix";
-##      url = "https://raw.githubusercontent.com/ES-Nix/NixOS-environments/box/src/base/base-configuration.nix";
-#      sha256 = "ELI7UWfW0CtG4moCVrH1IHGXRj4eq6Zi5Z8vFrzV//k=";
-#  };
-
-  exampleConfigurationScript = pkgs.writeScriptBin "example-configuration" ''
-    cp -v ${./example-configuration.nix} /mnt/etc/nixos/configuration.nix
-
-    echo 'nixos-install --no-root-passwd'
-  '';
-
-  exampleConfiguration = pkgs.stdenv.mkDerivation {
-    name = "example-configuration";
-    installPhase = ''
-      mkdir -p $out/bin
-      install -t $out/bin ${exampleConfigurationScript}/bin/example-configuration
-    '';
-    phases = [ "buildPhase" "installPhase" "fixupPhase" ];
-  };
-
-  examplePartitionScript = pkgs.writeScriptBin "example-partition" ''
-    # TODO: Add an check that only root can run this script!
-    parted -s /dev/sda -- mklabel msdos
-    parted -s /dev/sda -- mkpart primary 1MiB -2GiB
-    parted -s /dev/sda -- mkpart primary linux-swap -1GiB 100%
-
-    mkfs.ext4 -L nixos /dev/sda1
-    mkswap -L swap /dev/sda2
-
-    mount /dev/disk/by-label/nixos /mnt
-    swapon /dev/sda2
-
-    nixos-generate-config --root /mnt
-
-    # hello | figlet
-  '';
-
-  examplePartition = pkgs.stdenv.mkDerivation {
-    name = "example-partition";
-
-    dontUnpack = true;
-
-    installPhase = ''
-      mkdir -p $out/bin
-      install -t $out/bin ${examplePartitionScript}/bin/example-partition
-    '';
-
-    phases = [ "buildPhase" "installPhase" "fixupPhase" ];
-
-    # TODO: it is not working :[
-    # Why hello and figlet does not get into PATH?
-    # https://discourse.nixos.org/t/can-i-package-a-shell-script-without-rewriting-it/8420/8
-    # https://discourse.nixos.org/t/how-to-create-a-script-with-dependencies/7970/6
-    # buildInputs = with pkgs; [
-    #  e2fsprogs
-    #  figlet
-    #  hello
-    #  parted
-    #  nixos-install-tools
-    #  mount
-    #  util-linux
-    # ];
-    #
-    # propagatedBuildInputs = with pkgs; [ e2fsprogs figlet hello parted nixos-install-tools mount util-linux ];
-  };
-
 in
 {
   imports =
     [
-        "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix"
+        # It errors with infinite recursion encoutered :/
+        # "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix"
 
         # Provide an initial copy of the NixOS channel so that the user
         # doesn't need to run "nix-channel --update" first.
-        "${nixpkgs}/nixos/modules/installer/cd-dvd/channel.nix"
+        # "${nixpkgs}/nixos/modules/installer/cd-dvd/channel.nix"
 
         # TODO: Is it good?
         # https://discourse.nixos.org/t/whats-the-rationale-behind-not-detected-nix/5403
@@ -106,6 +40,8 @@ in
   # boot.loader.efi.efiSysMountPoint = "/boot/efi";
   # Define on which hard drive you want to install Grub.
   boot.loader.grub.device = "/dev/sda"; # or "nodev" for efi only
+
+  fileSystems."/".device = "/dev/disk/by-label/nixos";
 
   # DEBUG: it may be hard to debug it with zero time to access grub and hit some key.
   # Set it to, for example, the default value 10
@@ -400,10 +336,6 @@ in
     zsh
     zsh-autosuggestions
     zsh-completions
-
-    # hello
-    exampleConfiguration
-    examplePartition
   ];
 
   # Broken now, it needs the config somehow

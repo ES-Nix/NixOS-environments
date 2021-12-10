@@ -951,7 +951,7 @@ nix build .#iso-base \
 && cp -fv result/iso/nixos-21.11pre-git-x86_64-linux.iso . \
 && chmod +x nixos-21.11pre-git-x86_64-linux.iso \
 && qemu-img create nixos.img 18G \
-&& echo 'Startin VM' \
+&& echo 'Starting VM' \
 && qemu-kvm \
 -boot d \
 -drive format=raw,file=nixos.img \
@@ -972,7 +972,7 @@ qemu-kvm \
 -device "rtl8139,netdev=net0" \
 -drive format=raw,file=nixos.img \
 -enable-kvm \
--m 10G \
+-m 18G \
 -netdev "user,id=net0,hostfwd=tcp:127.0.0.1:10023-:29980" \
 -nographic \
 -smp $(nproc) < /dev/null &
