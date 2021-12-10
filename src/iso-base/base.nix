@@ -68,8 +68,7 @@ in
   # Per-interface useDHCP will be mandatory in the future, so this generated config
   # replicates the default behaviour.
   networking.useDHCP = false;
-  # networking.interfaces.ens3.useDHCP = true;
-  # May solve ip address?
+  # To it work on proxmox the interface's name has to be this
   networking.interfaces.eth0.useDHCP = true;
 
   # TODO: Fix this!
