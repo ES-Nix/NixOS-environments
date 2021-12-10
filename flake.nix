@@ -189,11 +189,21 @@
           nixos = nixos;
         };
 
-        packages.iso-base = import ./src/iso-base/iso-base.nix {
+        packages.iso-base = import ./src/base/iso.nix {
           nixpkgs = nixpkgs;
           system = system;
           nixos = nixos;
         };
+
+        packages.qcow2-base = (import ./src/base/qcow2-compressed.nix {
+          pkgs = nixpkgs.legacyPackages.${system};
+          nixos = nixos;
+        }).image;
+
+        packages.iso-minimal = (import ./src/base/iso-minimal.nix {
+          pkgs = nixpkgs.legacyPackages.${system};
+          nixos = nixos;
+        }).image;
 
         # TODO
         # https://github.com/NixOS/nix/issues/2854

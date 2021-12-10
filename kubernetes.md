@@ -947,21 +947,21 @@ https://gist.github.com/dghubble/c2dc319249b156db06aff1d49c15272e
 
 
 ```bash
-nix build .#iso-kubernetes \
-&& cp -fv result/iso/nixos-*.iso . \
-&& chmod +x nixos-*.iso \
-&& qemu-img create nixos-ssh.img 12G \
+nix build .#iso-base \
+&& cp -fv result/iso/nixos-21.11pre-git-x86_64-linux.iso . \
+&& chmod +x nixos-21.11pre-git-x86_64-linux.iso \
+&& qemu-img create nixos-ssh.img 18G \
 && echo \
 && qemu-kvm \
 -boot d \
 -hda nixos-ssh.img \
--cdrom nixos-21.11*-git-x86_64-linux.iso \
--m 5000 \
+-cdrom nixos-21.11pre-git-x86_64-linux.iso \
+-m 18G \
 -enable-kvm \
 -cpu host \
 -smp $(nproc) \
 -device "rtl8139,netdev=net0" \
--netdev "user,id=net0,hostfwd=tcp:127.0.0.1:10023-:29980"
+-netdev "user,id=net0,hostfwd=tcp:127.0.0.1:10023-:29980" < /dev/null &
 ```
 
 
@@ -1018,3 +1018,5 @@ https://github.com/NixOS/nixpkgs/issues/32405#issuecomment-678659550
 nixos-rebuild test \
 && nixos-rebuild switch \
 && reboot
+
+-device "rtl8139,netdev=net0"

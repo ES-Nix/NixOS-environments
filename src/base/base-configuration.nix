@@ -14,6 +14,17 @@ let
   RodrigoKeys = pkgs.writeText "rodrigo-keys.pub" ''
     ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC8wXcAjwVJZ71MZkhFIfc1gCCTuZ8PRTKlUbqKdW68u0VToS35OYfYTmTRzFDrulXPX/HOZMtQ83UfY5igTtn0FMw1V16FNFmycGLIciCqYBdfB8Ex0xxbf8ZDAxgZ5BG+/lg+PXpNxX1fU7ltW47krYoWueJrGB2ACP53uhI/KcBVvpIW0XqPpYaoXseap89sOXZ0AkKUsC/YtB1bXz5p8oqXJfTyrQx+tHQ+zNg8QX6J84HkKXKoNEVTFjYP8VvKZAa32FkHrAvjRjqakemRxL7hnmoIvjAmFS3CfluYZRun/3AkQ4DsukxVLJxT1yL+WQQgNXc5Zbo5hYiPWXtSuFNQ5xE54qlJzkazp2ky9DNnwgDsvPEoILQwihYERpHQzgU6B4T3anvBQLKHDXkGFaVcA2eTf59D8GxGPeq9ylUZ9qDwjCIbX5biNw4InhockKmzhNsIq1tiqzpx5jR5BlrRxwtJDUnx+C1aX/GRKYedCQk1+yXHJ7WQIS3jSxk=
   '';
+
+  helperConfiguration = fetchurl {
+      url = "http://download.redis.io/releases/${name}.tar.gz";
+      sha256 = "1kjsx79jhhssh5k9v17s9mifaclkl6mfsrsv0cvi583qyiw9gizk";
+  };
+
+#  helperConfiguration = pkgs.runCommand "minimal-derivation-example" { buildInputs = [ ]; }
+#  ''
+#    cp ${../../vagrant} $out
+#  '';
+
 in
 {
   imports =
@@ -332,6 +343,9 @@ in
     zsh
     zsh-autosuggestions
     zsh-completions
+
+    hello
+    helperConfiguration
   ];
 
   # Broken now, it needs the config somehow
