@@ -950,11 +950,11 @@ https://gist.github.com/dghubble/c2dc319249b156db06aff1d49c15272e
 nix build .#iso-base \
 && cp -fv result/iso/nixos-21.11pre-git-x86_64-linux.iso . \
 && chmod +x nixos-21.11pre-git-x86_64-linux.iso \
-&& qemu-img create nixos-ssh.img 18G \
-&& echo \
+&& qemu-img create nixos.img 18G \
+&& echo 'Startin VM' \
 && qemu-kvm \
 -boot d \
--hda nixos-ssh.img \
+-drive format=raw,file=nixos.img \
 -cdrom nixos-21.11pre-git-x86_64-linux.iso \
 -m 18G \
 -enable-kvm \

@@ -4,3 +4,5 @@ result
 *.iso
 nixos.img
 *.img.backup
+nixos-ssh.img
+

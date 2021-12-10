@@ -15,15 +15,60 @@ let
     ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC8wXcAjwVJZ71MZkhFIfc1gCCTuZ8PRTKlUbqKdW68u0VToS35OYfYTmTRzFDrulXPX/HOZMtQ83UfY5igTtn0FMw1V16FNFmycGLIciCqYBdfB8Ex0xxbf8ZDAxgZ5BG+/lg+PXpNxX1fU7ltW47krYoWueJrGB2ACP53uhI/KcBVvpIW0XqPpYaoXseap89sOXZ0AkKUsC/YtB1bXz5p8oqXJfTyrQx+tHQ+zNg8QX6J84HkKXKoNEVTFjYP8VvKZAa32FkHrAvjRjqakemRxL7hnmoIvjAmFS3CfluYZRun/3AkQ4DsukxVLJxT1yL+WQQgNXc5Zbo5hYiPWXtSuFNQ5xE54qlJzkazp2ky9DNnwgDsvPEoILQwihYERpHQzgU6B4T3anvBQLKHDXkGFaVcA2eTf59D8GxGPeq9ylUZ9qDwjCIbX5biNw4InhockKmzhNsIq1tiqzpx5jR5BlrRxwtJDUnx+C1aX/GRKYedCQk1+yXHJ7WQIS3jSxk=
   '';
 
-  helperConfiguration = fetchurl {
-      url = "http://download.redis.io/releases/${name}.tar.gz";
-      sha256 = "1kjsx79jhhssh5k9v17s9mifaclkl6mfsrsv0cvi583qyiw9gizk";
+  helperConfiguration = pkgs.fetchurl {
+      url = "https://raw.githubusercontent.com/ES-Nix/NixOS-environments/61e2b237af48c835d92d8fad6bb2ed42f9f94e23/src/base/base-configuration.nix";
+#      url = "https://raw.githubusercontent.com/ES-Nix/NixOS-environments/box/src/base/base-configuration.nix";
+      sha256 = "u1Ml8bVs5NCEpaS9JO8tyCBb/Z2CcWO29arJazJjCs8=";
   };
 
-#  helperConfiguration = pkgs.runCommand "minimal-derivation-example" { buildInputs = [ ]; }
-#  ''
-#    cp ${../../vagrant} $out
-#  '';
+  exampleConfigurationScript = pkgs.writeScriptBin "example-configuration" ''
+    cat "${helperConfiguration}"
+  '';
+
+  exampleConfiguration = pkgs.stdenv.mkDerivation {
+    name = "example-configuration";
+    installPhase = ''
+      mkdir -p $out/bin
+      install -t $out/bin ${exampleConfigurationScript}/bin/example-configuration
+    '';
+    phases = [ "buildPhase" "installPhase" "fixupPhase" ];
+  };
+
+  examplePartitionScript = pkgs.writeScriptBin "example-partition" ''
+    # TODO: Add an check that only root can run this script!
+    parted -s /dev/sda -- mklabel msdos
+    parted -s /dev/sda -- mkpart primary 1MiB -2GiB
+    parted -s /dev/sda -- mkpart primary linux-swap -1GiB 100%
+
+    mkfs.ext4 -L nixos /dev/sda1
+    mkswap -L swap /dev/sda2
+
+    mount /dev/disk/by-label/nixos /mnt
+    swapon /dev/sda2
+
+    nixos-generate-config --root /mnt
+  '';
+
+  examplePartition = pkgs.stdenv.mkDerivation {
+    name = "example-partition";
+
+    dontUnpack = true;
+#    src = ./parted.sh;
+
+    # cp -v "${helperConfiguration}" $out/bin/helper-configuration
+    # cp -v "$src" $out/bin
+    #
+    # install -t $out/bin ${examplePartitionScript}/bin/example-partition-script
+    installPhase = ''
+      mkdir -p $out/bin
+      install -t $out/bin ${examplePartitionScript}/bin/example-partition
+    '';
+
+    phases = [ "buildPhase" "installPhase" "fixupPhase" ];
+
+    buildInputs = with pkgs; [ e2fsprogs figlet parted nixos-install-tools mount util-linux ];
+    # propagatedBuildInputs = with pkgs; [ e2fsprogs figlet parted nixos-install-tools mount util-linux ];
+  };
 
 in
 {
@@ -344,8 +389,9 @@ in
     zsh-autosuggestions
     zsh-completions
 
-    hello
-    helperConfiguration
+    # hello
+    exampleConfiguration
+    examplePartition
   ];
 
   # Broken now, it needs the config somehow
