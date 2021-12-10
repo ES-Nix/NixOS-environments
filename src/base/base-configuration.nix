@@ -16,7 +16,7 @@ let
   '';
 
   helperConfiguration = pkgs.fetchurl {
-      url = "https://raw.githubusercontent.com/ES-Nix/NixOS-environments/61e2b237af48c835d92d8fad6bb2ed42f9f94e23/src/base/base-configuration.nix";
+      url = "https://raw.githubusercontent.com/ES-Nix/NixOS-environments/46bf740a8e28077cc328c4464542e6b50bebe08c/src/base/base-configuration.nix";
 #      url = "https://raw.githubusercontent.com/ES-Nix/NixOS-environments/box/src/base/base-configuration.nix";
       sha256 = "u1Ml8bVs5NCEpaS9JO8tyCBb/Z2CcWO29arJazJjCs8=";
   };
