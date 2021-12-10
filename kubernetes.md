@@ -998,25 +998,24 @@ EOF
 cd /etc/nixos
 git init
 git add .
-
-nixos-rebuild switch --flake '/etc/nixos'#"$(hostname)"
 ```
 
 
 ```bash
 nixos-rebuild switch --flake '/etc/nixos'#"$(hostname)"
+sudo reboot
 ```
 
-qemu-img resize -fmt raw
-qemu-img info
+```bash
+qemu-img info nixos.img
+```
+
+```bash
+nixos-rebuild test \
+&& nixos-rebuild switch \
+&& reboot
+```
 
 TODO: test it
 https://github.com/NixOS/nixpkgs/blob/nixos-21.11/nixos/modules/config/system-path.nix#L10-L49
 https://github.com/NixOS/nixpkgs/issues/32405#issuecomment-678659550
-
-
-nixos-rebuild test \
-&& nixos-rebuild switch \
-&& reboot
-
--device "rtl8139,netdev=net0"
