@@ -82,6 +82,23 @@ let
     # propagatedBuildInputs = with pkgs; [ e2fsprogs figlet hello parted nixos-install-tools mount util-linux ];
   };
 
+  exampleFlakeScript = pkgs.writeScriptBin "example-flake" ''
+    cp -v ${./base-flake.nix} /mnt/etc/nixos/flake.nix
+
+    cd /mnt/etc/nixos
+    git init
+    git add .
+  '';
+
+  exampleFlake = pkgs.stdenv.mkDerivation {
+    name = "example-flake";
+    installPhase = ''
+      mkdir -p $out/bin
+      install -t $out/bin ${exampleFlakeScript}/bin/example-flake
+    '';
+    phases = [ "buildPhase" "installPhase" "fixupPhase" ];
+  };
+
 in
 {
   imports =
@@ -403,6 +420,7 @@ in
 
     # hello
     exampleConfiguration
+    exampleFlake
     examplePartition
   ];
 
