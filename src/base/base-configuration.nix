@@ -135,28 +135,28 @@ in
   # https://github.com/NixOS/nixpkgs/issues/27930#issuecomment-417943781
   boot.kernelModules = [ "kvm-intel" ];
 
-  # TODO: how to test it?
-  # TODO: hardening
-  # https://gist.github.com/andir/88458b13c26a04752854608aacb15c8f#file-configuration-nix-L11-L12
-  boot.loader.grub.extraConfig = ''
-    serial --unit=0 --speed=115200
-    terminal_output serial console; terminal_input serial console
-  '';
+#  # TODO: how to test it?
+#  # TODO: hardening
+#  # https://gist.github.com/andir/88458b13c26a04752854608aacb15c8f#file-configuration-nix-L11-L12
+#  boot.loader.grub.extraConfig = ''
+#    serial --unit=0 --speed=115200
+#    terminal_output serial console; terminal_input serial console
+#  '';
 
-  # TODO: hardening
-  boot.kernelParams = [
-    # About the console=ttyS0
-    # https://fadeevab.com/how-to-setup-qemu-output-to-console-and-automate-using-shell-script/
-    # https://www.linode.com/docs/guides/install-nixos-on-linode/
-    "console=tty0"
-    "console=ttyS0::respawn:/sbin/getty -L ttyS0 115200 vt100"
-    # Set sensible kernel parameters
-    # https://nixos.wiki/wiki/Bootloader
-    # https://git.redbrick.dcu.ie/m1cr0man/nix-configs-rb/commit/ddb4d96dacc52357e5eaec5870d9733a1ea63a5a?lang=pt-PT
-    "boot.shell_on_fail"
-    "panic=30"
-    "boot.panic_on_fail" # reboot the machine upon fatal boot issues
-  ];
+#  # TODO: hardening
+#  boot.kernelParams = [
+#    # About the console=ttyS0
+#    # https://fadeevab.com/how-to-setup-qemu-output-to-console-and-automate-using-shell-script/
+#    # https://www.linode.com/docs/guides/install-nixos-on-linode/
+#    "console=tty0"
+#    "console=ttyS0::respawn:/sbin/getty -L ttyS0 115200 vt100"
+#    # Set sensible kernel parameters
+#    # https://nixos.wiki/wiki/Bootloader
+#    # https://git.redbrick.dcu.ie/m1cr0man/nix-configs-rb/commit/ddb4d96dacc52357e5eaec5870d9733a1ea63a5a?lang=pt-PT
+#    "boot.shell_on_fail"
+#    "panic=30"
+#    "boot.panic_on_fail" # reboot the machine upon fatal boot issues
+#  ];
 
   # TODO: hardening
   # boot.blacklistedKernelModules = [ ];
