@@ -22,7 +22,7 @@ let
   };
 
   exampleConfigurationScript = pkgs.writeScriptBin "example-configuration" ''
-    cat "${helperConfiguration}"
+    cp -v ${helperConfiguration} /mnt/etc/nixos/configuration.nix
   '';
 
   exampleConfiguration = pkgs.stdenv.mkDerivation {
