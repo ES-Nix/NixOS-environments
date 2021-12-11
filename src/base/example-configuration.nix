@@ -35,6 +35,10 @@ in
   boot.loader.grub.enable = true;
   boot.loader.grub.version = 2;
 
+  # Do we need it?
+  # https://www.linode.com/docs/guides/install-nixos-on-linode/
+  # boot.loader.grub.forceInstall = true;
+
   # boot.loader.grub.efiSupport = true;
   # boot.loader.grub.efiInstallAsRemovable = true;
   # boot.loader.efi.efiSysMountPoint = "/boot/efi";

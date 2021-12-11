@@ -23,8 +23,6 @@ let
 
   exampleConfigurationScript = pkgs.writeScriptBin "example-configuration" ''
     cp -v ${./example-configuration.nix} /mnt/etc/nixos/configuration.nix
-
-    echo 'nixos-install --no-root-passwd'
   '';
 
   exampleConfiguration = pkgs.stdenv.mkDerivation {
@@ -96,6 +94,26 @@ let
     installPhase = ''
       mkdir -p $out/bin
       install -t $out/bin ${exampleFlakeScript}/bin/example-flake
+    '';
+    phases = [ "buildPhase" "installPhase" "fixupPhase" ];
+  };
+
+
+  myInstallScript = pkgs.writeScriptBin "my-install" ''
+
+    ${examplePartition}/bin/example-partition \
+    && ${exampleFlake}/bin/example-flake \
+    && ${exampleConfiguration}/bin/example-configuration \
+    && nixos-install --no-root-passwd
+
+    # poweroff
+  '';
+
+  myInstall = pkgs.stdenv.mkDerivation {
+    name = "my-install";
+    installPhase = ''
+      mkdir -p $out/bin
+      install -t $out/bin ${myInstallScript}/bin/my-install
     '';
     phases = [ "buildPhase" "installPhase" "fixupPhase" ];
   };
@@ -443,9 +461,8 @@ in
     zsh-completions
 
     # hello
-    exampleConfiguration
-    exampleFlake
-    examplePartition
+
+    myInstall
   ];
 
   # Broken now, it needs the config somehow
