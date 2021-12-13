@@ -1002,7 +1002,7 @@ git add .
 
 
 ```bash
-nixos-rebuild switch --flake '/etc/nixos'#"$(hostname)"
+sudo nixos-rebuild switch --flake '/etc/nixos'#"$(hostname)"
 sudo reboot
 ```
 
@@ -1014,6 +1014,50 @@ qemu-img info nixos.img
 nixos-rebuild test \
 && nixos-rebuild switch \
 && reboot
+```
+
+```bash
+kill -9 $(pidof qemu-system-x86_64); \
+rm -fv nixos.img \
+&& nix build .#iso-base \
+&& cp -fv result/iso/nixos-21.11pre-git-x86_64-linux.iso . \
+&& chmod +x nixos-21.11pre-git-x86_64-linux.iso \
+&& qemu-img create nixos.img 18G \
+&& echo 'Starting VM' \
+&& { qemu-kvm \
+-boot d \
+-drive format=raw,file=nixos.img \
+-cdrom nixos-21.11pre-git-x86_64-linux.iso \
+-m 18G \
+-enable-kvm \
+-cpu host \
+-smp $(nproc) \
+-device "rtl8139,netdev=net0" \
+-netdev "user,id=net0,hostfwd=tcp:127.0.0.1:10023-:29980" < /dev/null & } \
+&& sleep 20 \
+&& ssh-keygen -R '[127.0.0.1]:10023' \
+&& { ssh nixuser@127.0.0.1 -p 10023 -o StrictHostKeyChecking=no <<EOF
+sudo my-install
+sudo poweroff
+EOF
+} && echo 'End.'
+```
+
+```bash
+kill -9 $(pidof qemu-system-x86_64); \
+{ qemu-kvm \
+-boot a \
+-cpu host \
+-device "rtl8139,netdev=net0" \
+-drive format=raw,file=nixos.img \
+-enable-kvm \
+-m 18G \
+-netdev "user,id=net0,hostfwd=tcp:127.0.0.1:10023-:29980" \
+-nographic \
+-smp $(nproc) < /dev/null & } \
+&& sleep 20 \
+&& ssh-keygen -R '[127.0.0.1]:10023' \
+&& ssh nixuser@127.0.0.1 -p 10023 -o StrictHostKeyChecking=no
 ```
 
 TODO: test it
