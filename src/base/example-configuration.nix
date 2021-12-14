@@ -355,8 +355,8 @@ in
     coreutils
     git
 
-    # If used pkgs.lib.mkForce
-    nix
+    # If used pkgs.lib.mkForce?
+    # nix
     neovim
 
     fzf
@@ -394,6 +394,14 @@ in
   # networking.firewall.allowedUDPPorts = [ ... ];
   # Or disable the firewall altogether.
   # networking.firewall.enable = false;
+
+  # From:
+  # https://discourse.nixos.org/t/creating-directories-and-files-declararively/9349/2
+  # https://discourse.nixos.org/t/adding-folders-and-scripts/5114/4
+  # TODO: remove herdcoded user ang group names
+  systemd.tmpfiles.rules = [
+    "f /home/nixuser/.zshrc 0755 nixuser nixgroup"
+  ];
 
   # TODO: minimal
   # https://nixos.wiki/wiki/Kernel_Debugging_with_QEMU

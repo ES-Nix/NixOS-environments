@@ -47,7 +47,11 @@ let
     mount /dev/disk/by-label/nixos /mnt
     swapon /dev/sda2
 
-    nixos-generate-config --root /mnt
+    # Is it needed?
+    # mkdir -p /mnt/boot
+    # mount /dev/disk/by-label/boot /mnt/boot
+
+    nixos-generate-config --root /mnt-root
 
     # hello | figlet
   '';
@@ -494,6 +498,15 @@ in
   # networking.firewall.allowedUDPPorts = [ ... ];
   # Or disable the firewall altogether.
   # networking.firewall.enable = false;
+
+  # Broken?
+  # From:
+  # https://discourse.nixos.org/t/creating-directories-and-files-declararively/9349/2
+  # https://discourse.nixos.org/t/adding-folders-and-scripts/5114/4
+  # TODO: remove herdcoded user ang group names
+  systemd.tmpfiles.rules = [
+    "f /home/nixuser/.zshrc 0755 nixuser nixgroup"
+  ];
 
   # TODO: minimal
   # https://nixos.wiki/wiki/Kernel_Debugging_with_QEMU
