@@ -1041,9 +1041,6 @@ sudo my-install
 sudo poweroff
 EOF
 } && echo 'End.'
-```
-
-```bash
 kill -9 $(pidof qemu-system-x86_64); \
 { qemu-kvm \
 -boot a \
