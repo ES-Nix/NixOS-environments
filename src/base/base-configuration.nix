@@ -51,7 +51,7 @@ let
     # mkdir -p /mnt/boot
     # mount /dev/disk/by-label/boot /mnt/boot
 
-    nixos-generate-config --root /mnt-root
+    nixos-generate-config --root /mnt
 
     # hello | figlet
   '';
