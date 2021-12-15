@@ -1060,3 +1060,11 @@ kill -9 $(pidof qemu-system-x86_64); \
 TODO: test it
 https://github.com/NixOS/nixpkgs/blob/nixos-21.11/nixos/modules/config/system-path.nix#L10-L49
 https://github.com/NixOS/nixpkgs/issues/32405#issuecomment-678659550
+
+```bash
+sudo nix-env --profile /nix/var/nix/profiles/system --list-generations
+```
+
+```bash
+sudo nix-env --profile /nix/var/nix/profiles/system --delete-generations old
+```

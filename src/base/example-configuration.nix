@@ -118,8 +118,8 @@ in
 
   # Enable the X11 windowing system.
   # services.xserver.enable = true;
-
-  users.extraUsers.nixuser = {
+  users.groups.nixgroup.members = [ "nixuser" ];
+  users.users.nixuser = {
 
     # TODO:
     # hardening
@@ -229,9 +229,8 @@ in
     # https://github.com/sherubthakur/dotfiles/blob/be96fe7c74df706a8b1b925ca4e7748cab703697/system/configuration.nix#L44
     # pointted by: https://github.com/NixOS/nixpkgs/issues/124215
     sandboxPaths = [
-      "/bin/sh=${pkgs.bash}/bin/sh"
-      # TODO: test it! hardening
-      # "/bin/sh=${pkgs.busybox-sandbox-shell}/bin/sh"
+      # "/bin/sh=${pkgs.bash}/bin/sh"
+      "/bin/sh=${pkgs.busybox-sandbox-shell}/bin/sh"
     ];
 
     # TODO: document it hardening

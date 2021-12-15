@@ -167,6 +167,15 @@
           && ssh-vm
         '';
 
+        my-script-deps = with pkgsAllowUnfree; [ figlet hello ];
+        my-script = pkgsAllowUnfree.runCommandLocal "my-script.sh"
+          { nativeBuildInputs = [ pkgsAllowUnfree.makeWrapper ]; }
+          ''
+            install -m755 ${./my-script.sh} -D $out/bin/my-script.sh
+            patchShebangs $out/bin/my-script.sh
+            wrapProgram "$out/bin/my-script.sh"
+            --prefix PATH : ${pkgsAllowUnfree.lib.makeBinPath my-script-deps}
+          '';
       in
       {
         packages.image = import ./default.nix {
@@ -237,6 +246,7 @@
             sshVM
             VMKill
 
+            my-script
             # It slows a lot the nix develop
             #            self.packages.${system}.image.image
           ];
