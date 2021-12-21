@@ -173,7 +173,7 @@
           ''
             install -m755 ${./my-script.sh} -D $out/bin/my-script.sh
             patchShebangs $out/bin/my-script.sh
-            wrapProgram "$out/bin/my-script.sh"
+            wrapProgram "$out/bin/my-script.sh" \
             --prefix PATH : ${pkgsAllowUnfree.lib.makeBinPath my-script-deps}
           '';
       in
@@ -245,6 +245,8 @@
             runVMKVM
             sshVM
             VMKill
+
+            OVMFFull
 
             my-script
             # It slows a lot the nix develop

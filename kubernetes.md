@@ -1002,6 +1002,9 @@ git add .
 
 
 ```bash
+nixos-rebuild switch --flake '/etc/nixos'#"$(hostname)"
+reboot
+
 sudo nixos-rebuild switch --flake '/etc/nixos'#"$(hostname)"
 sudo reboot
 ```
@@ -1037,10 +1040,12 @@ rm -fv nixos.img \
 && sleep 20 \
 && ssh-keygen -R '[127.0.0.1]:10023' \
 && { ssh nixuser@127.0.0.1 -p 10023 -o StrictHostKeyChecking=no <<EOF
-sudo my-install
+sudo my-install-mrb
 sudo poweroff
 EOF
 } && echo 'End.'
+
+
 kill -9 $(pidof qemu-system-x86_64); \
 { qemu-kvm \
 -boot a \
@@ -1068,3 +1073,40 @@ sudo nix-env --profile /nix/var/nix/profiles/system --list-generations
 ```bash
 sudo nix-env --profile /nix/var/nix/profiles/system --delete-generations old
 ```
+
+
+```bash
+boot.loader.systemd-boot.enable = false;
+boot.loader.efi.canTouchEfiVariables = true;
+boot.loader.efi.efiSysMountPoint = "/boot/efi";
+boot.loader.grub = {
+    enable = true;
+    device = "nodev";
+    version = 2;
+    efiSupport = true;
+    configurationLimit = 4;
+    default = 0;
+    extraEntries =
+        ''
+        menuentry "ArchLinux" {
+            # set root=(hd0,1)
+            # chainloader /efi/grub/grubx64.efi
+            set root='hd0,gpt3'
+            linux /vmlinuz-linux root=UUID=d964aa71-d90f-4f8e-af02-b08053c9f51f rw
+            initrd /intel-ucode.img /initramfs-linux.img
+        }
+        '';
+};
+```
+
+
+```bash
+boot.loader = {
+  systemd-boot.enable = true;
+  efi.canTouchEfiVariables = true;
+  efi.efiSysMountPoint = "/boot";
+  timeout = 1;
+};
+```
+
+cat $(readlink $(which my-install)) 
