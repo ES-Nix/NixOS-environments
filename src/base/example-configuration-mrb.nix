@@ -362,7 +362,16 @@ in
     zsh
     zsh-autosuggestions
     zsh-completions
+
+    kind
+    kubectl
   ];
+
+  virtualisation.podman = {
+    enable = true;
+    # Create a `docker` alias for podman, to use it as a drop-in replacement
+    #dockerCompat = true;
+  };
 
   # Broken now, it needs the config somehow
   # https://www.reddit.com/r/NixOS/comments/fsummx/how_to_list_all_installed_packages_on_nixos/
