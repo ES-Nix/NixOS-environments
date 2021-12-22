@@ -209,10 +209,9 @@
           nixos = nixos;
         }).image;
 
-        packages.iso-minimal = (import ./src/base/iso-minimal.nix {
-          pkgs = nixpkgs.legacyPackages.${system};
-          nixos = nixos;
-        }).image;
+        packages.iso-minimal = import ./src/base/iso-minimal.nix {
+          nixpkgs = nixpkgs;
+        };
 
         # TODO
         # https://github.com/NixOS/nix/issues/2854

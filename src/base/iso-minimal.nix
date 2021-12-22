@@ -1,4 +1,4 @@
-{ nixpkgs ? <nixpkgs>, system ? "x86_64-linux", nixos }:
+{ nixpkgs ? <nixpkgs>, system ? "x86_64-linux"}:
 let
   pkgs = nixpkgs.legacyPackages.${system};
   configuration = import ./nixos-minimal-configuration.nix { pkgs = pkgs; nixpkgs = nixpkgs;};
