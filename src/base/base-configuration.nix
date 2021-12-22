@@ -135,6 +135,10 @@ in
         # TODO: Is it good?
         # https://discourse.nixos.org/t/whats-the-rationale-behind-not-detected-nix/5403
         # "${nixpkgs}/nixos/modules/installer/scan/not-detected.nix"
+
+        # To be able to build the config.system.build.vm
+#        "${nixpkgs}/nixos/modules/profiles/qemu-guest.nix"
+#        "${nixpkgs}/nixos/modules/virtualisation/qemu-vm.nix"
     ];
 
   # Use the GRUB 2 boot loader.
@@ -170,7 +174,7 @@ in
 #  '';
 
 #  # TODO: hardening
-  boot.kernelParams = [
+#  boot.kernelParams = [
 #    # About the console=ttyS0
 #    # https://fadeevab.com/how-to-setup-qemu-output-to-console-and-automate-using-shell-script/
 #    # https://www.linode.com/docs/guides/install-nixos-on-linode/
@@ -179,10 +183,10 @@ in
 #    # Set sensible kernel parameters
 #    # https://nixos.wiki/wiki/Bootloader
 #    # https://git.redbrick.dcu.ie/m1cr0man/nix-configs-rb/commit/ddb4d96dacc52357e5eaec5870d9733a1ea63a5a?lang=pt-PT
-    "boot.shell_on_fail"
-    "panic=30"
-    "boot.panic_on_fail" # reboot the machine upon fatal boot issues
-  ];
+#     "boot.shell_on_fail"
+#     "panic=30"
+#     "boot.panic_on_fail" # reboot the machine upon fatal boot issues
+#  ];
 
   # TODO: hardening
   # boot.blacklistedKernelModules = [ ];
@@ -257,6 +261,10 @@ in
     shell = pkgs.zsh;
   };
 
+#  users.users.nixosvmtest.group = "nixosvmtest";
+#  users.groups.nixosvmtest = {};
+#  users.users.nixosvmtest.initialPassword = "test";
+#  users.users.nixosvmtest.isSystemUser = true;
 
   # TODO: hardning
   # https://nixos.wiki/wiki/Kernel_Debugging_with_QEMU
