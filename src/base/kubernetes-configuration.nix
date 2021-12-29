@@ -15,21 +15,28 @@ let
     ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC8wXcAjwVJZ71MZkhFIfc1gCCTuZ8PRTKlUbqKdW68u0VToS35OYfYTmTRzFDrulXPX/HOZMtQ83UfY5igTtn0FMw1V16FNFmycGLIciCqYBdfB8Ex0xxbf8ZDAxgZ5BG+/lg+PXpNxX1fU7ltW47krYoWueJrGB2ACP53uhI/KcBVvpIW0XqPpYaoXseap89sOXZ0AkKUsC/YtB1bXz5p8oqXJfTyrQx+tHQ+zNg8QX6J84HkKXKoNEVTFjYP8VvKZAa32FkHrAvjRjqakemRxL7hnmoIvjAmFS3CfluYZRun/3AkQ4DsukxVLJxT1yL+WQQgNXc5Zbo5hYiPWXtSuFNQ5xE54qlJzkazp2ky9DNnwgDsvPEoILQwihYERpHQzgU6B4T3anvBQLKHDXkGFaVcA2eTf59D8GxGPeq9ylUZ9qDwjCIbX5biNw4InhockKmzhNsIq1tiqzpx5jR5BlrRxwtJDUnx+C1aX/GRKYedCQk1+yXHJ7WQIS3jSxk=
   '';
 
+  # https://github.com/NixOS/nixpkgs/issues/59364#issuecomment-723906760
+  # https://discourse.nixos.org/t/use-nixos-as-single-node-kubernetes-cluster/8858/7
+  kubeMasterIP = "10.1.1.2";
+  kubeMasterHostname = "localhost";
+  # kubeMasterHostname = "api.kube";
+  kubeMasterAPIServerPort = 6443;
+
 #  helperConfiguration = pkgs.fetchurl {
 #      url = "https://raw.githubusercontent.com/ES-Nix/NixOS-environments/6f0eb51a328158067750b504de6c0aed713965dc/src/base/base-configuration.nix";
 ##      url = "https://raw.githubusercontent.com/ES-Nix/NixOS-environments/box/src/base/base-configuration.nix";
 #      sha256 = "ELI7UWfW0CtG4moCVrH1IHGXRj4eq6Zi5Z8vFrzV//k=";
 #  };
 
-  exampleConfigurationMRBScript = pkgs.writeScriptBin "example-configuration-mrb" ''
-    cp -v ${./example-configuration-mrb.nix} /mnt/etc/nixos/configuration.nix
+  exampleConfigurationMRBScript = pkgs.writeScriptBin "kubernetes-configuration-mrb" ''
+    cp -v ${./kubernetes-configuration-mrb.nix} /mnt/etc/nixos/configuration.nix
   '';
 
   exampleConfigurationMRB = pkgs.stdenv.mkDerivation {
     name = "example-configuration-mrb";
     installPhase = ''
       mkdir -p $out/bin
-      install -t $out/bin ${exampleConfigurationMRBScript}/bin/example-configuration-mrb
+      install -t $out/bin ${exampleConfigurationMRBScript}/bin/kubernetes-configuration-mrb
     '';
     phases = [ "buildPhase" "installPhase" "fixupPhase" ];
   };
@@ -84,6 +91,7 @@ let
     cp -v ${./base-flake.nix} /mnt/etc/nixos/flake.nix
 
     cd /mnt/etc/nixos
+    echo 'result' > .gitignore
     git init
     git add .
     git config --global user.email "you@example.com"
@@ -116,7 +124,7 @@ let
     ${partitionMRBScript}/bin/partition-mrb \
     && nixos-generate-config --root /mnt \
     && ${exampleFlake}/bin/example-flake \
-    && ${exampleConfigurationMRB}/bin/example-configuration-mrb \
+    && ${exampleConfigurationMRB}/bin/kubernetes-configuration-mrb \
     && nixos-install --no-root-passwd
 
     # poweroff
@@ -480,12 +488,66 @@ in
     myInstallScriptMRB
     myInstallScriptUEFI
 
-    kind
+    # Looks like kubernetes needs atleast all this
     kubectl
+    kubernetes
+    #
+    cni
+    cni-plugins
+    conntrack-tools
+    cri-o
+    cri-tools
+    docker
+    ebtables
+    ethtool
+    flannel
+    iptables
+    socat
   ];
+
+  environment.variables.KUBECONFIG = "/etc/kubernetes/cluster-admin.kubeconfig";
 
   virtualisation.docker.enable = true;
 
+  services.kubernetes = {
+
+    # addonManager.enable = true;
+
+    addons = {
+      # dashboard.enable = true;
+      # dashboard.rbac.enable = true;
+      dns.enable = true;
+    };
+
+    apiserverAddress = "https://${kubeMasterHostname}:${toString kubeMasterAPIServerPort}";
+
+    apiserver = {
+      advertiseAddress = kubeMasterIP;
+      enable = true;
+      securePort = kubeMasterAPIServerPort;
+    };
+
+    controllerManager.enable = true;
+    # flannel.enable = true;
+    masterAddress = "${toString kubeMasterHostname}";
+    # proxy.enable = true;
+    roles = [ "master" ];
+    # roles = [ "master" "node" ];
+    # scheduler.enable = true;
+    easyCerts = true;
+
+    kubelet.enable = true;
+
+    # needed if you use swap
+    kubelet.extraOpts = "--fail-swap-on=false";
+  };
+
+   services = {
+     flannel = {
+       enable = true;
+       etcd.endpoints = [ "http://127.0.0.1:2379" ];
+     };
+   };
 
   # Broken now, it needs the config somehow
   # https://www.reddit.com/r/NixOS/comments/fsummx/how_to_list_all_installed_packages_on_nixos/

@@ -88,6 +88,21 @@ systemctl status kube-scheduler.service | rg $QUIET -e 'Active: active' || echo 
 systemctl status certmgr.service | rg $QUIET -e 'Active: active' || echo 'Error!'
 ```
 
+systemctl status certmgr.service | rg $QUIET -e 'Active: active' || echo 'Error!'
+systemctl status cfssl.service | rg $QUIET -e 'Active: active' || echo 'Error!'
+systemctl status containerd.service | rg $QUIET -e 'Active: active' || echo 'Error!'
+systemctl status flannel.service | rg $QUIET -e 'Active: active' || echo 'Error!'
+systemctl status kube-addon-manager.service | rg $QUIET -e 'Active: active' || echo 'Error!'
+systemctl status kube-apiserver.service | rg $QUIET -e 'Active: active' || echo 'Error!'
+systemctl status kube-controller-manager.service | rg $QUIET -e 'Active: active' || echo 'Error!'
+systemctl status kube-proxy.service | rg $QUIET -e 'Active: active' || echo 'Error!'
+systemctl status kube-scheduler.service | rg $QUIET -e 'Active: active' || echo 'Error!'
+systemctl status kubelet.service | rg $QUIET -e 'Active: active' || echo 'Error!'
+systemctl status kubernetes.target | rg $QUIET -e 'Active: active' || echo 'Error!'
+
+```bash
+rm -frv /var/lib/kubernetes/secrets /var/lib/cfssl
+```
 
 ```bash
 test -f /var/lib/kubernetes/secrets/ca.pem || echo 'Erro! ''The file does not existe'
@@ -378,7 +393,7 @@ sudo cat /lib/systemd/system/kubelet.service | wc -l  grep 14 || echo 'Error!!'
 
 
 ```bash
-echo 'Start docker instalation...' \
+echo 'Start docker installation...' \
 && curl -fsSL https://get.docker.com | sudo sh \
 && getent group docker || sudo groupadd docker \
 && sudo usermod --append --groups docker "$USER" \
@@ -389,7 +404,7 @@ cat <<EOF | sudo tee /etc/docker/daemon.json
     "exec-opts": ["native.cgroupdriver=systemd"]
 }
 EOF
-echo 'End docker instalation!'
+echo 'End docker installation!'
 
 sudo apt-get update
 sudo apt-get install -y apt-transport-https ca-certificates curl
@@ -589,7 +604,8 @@ nix \
 profile \
 install \
 nixpkgs#kubectl
-echo 'Start docker instalation...'
+
+echo 'Start docker installation...'
 nix \
 profile \
 install \
@@ -597,7 +613,7 @@ nixpkgs#docker \
 && sudo cp "$(nix eval --raw nixpkgs#docker)"/etc/systemd/system/{docker.service,docker.socket} /etc/systemd/system/ \
 && getent group docker || sudo groupadd docker \
 && sudo usermod --append --groups docker "$USER" \
-&& sudo systemctl enable --now docker
+&& sudo systemctl enable --now docker \
 && docker --version 
 
 cat <<EOF | sudo tee /etc/docker/daemon.json
@@ -605,12 +621,12 @@ cat <<EOF | sudo tee /etc/docker/daemon.json
     "exec-opts": ["native.cgroupdriver=systemd"]
 }
 EOF
-echo 'End docker instalation!'
+echo 'End docker installation!'
 
 
 echo 'Start bypass sudo stuff...' \
 && DOCKER_NIX_PATH="$(nix eval --raw nixpkgs#docker)/bin" \
-&& NIX_KUBELET_PATH="$(nix eval --raw nixpkgs#kubelet)"/bin \
+&& NIX_KUBELET_PATH="$(nix eval --raw nixpkgs#kubernetes)"/bin \
 && echo 'Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:'"$DOCKER_NIX_PATH"':'"$NIX_KUBELET_PATH" | sudo tee -a /etc/sudoers.d/"$USER" \
 && echo 'End bypass sudo stuff...'
 
@@ -730,34 +746,13 @@ ExecStart=
 ExecStart="$KUBERNETES_BINS_NIX_PATH"/kubelet \$KUBELET_KUBECONFIG_ARGS \$KUBELET_CONFIG_ARGS \$KUBELET_KUBEADM_ARGS \$KUBELET_EXTRA_ARGS
 EOF
 
-
-echo 'Start cni stuff...' \
-&& sudo mkdir -pv /usr/lib/cni \
-&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/bandwidth /usr/lib/cni/bandwidth \
-&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/bridge /usr/lib/cni/bridge \
-&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/dhcp /usr/lib/cni/dhcp \
-&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/firewall /usr/lib/cni/firewall \
-&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/host-device /usr/lib/cni/host-device \
-&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/host-local /usr/lib/cni/host-local \
-&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/ipvlan /usr/lib/cni/ipvlan \
-&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/loopback /usr/lib/cni/loopback \
-&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/macvlan /usr/lib/cni/macvlan \
-&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/portmap /usr/lib/cni/portmap \
-&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/ptp /usr/lib/cni/ptp \
-&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/sbr /usr/lib/cni/sbr \
-&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/static /usr/lib/cni/static \
-&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/tuning /usr/lib/cni/tuning \
-&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/vlan /usr/lib/cni/vlan \
-&& sudo ln -fsv "$(nix eval --raw nixpkgs#cni-plugins)"/bin/vrf /usr/lib/cni/vrf \
-&& echo 'End cni stuff...' 
-
-
 cat <<EOF | sudo tee /etc/docker/daemon.json
 {
     "exec-opts": ["native.cgroupdriver=systemd"]
 }
 EOF
 
+sudo systemctl enable --now kubelet
 
 cat <<EOF | sudo tee /etc/modules-load.d/k8s.conf
 br_netfilter
@@ -777,6 +772,10 @@ sudo \
 && sudo grub-mkconfig -o /boot/grub/grub.cfg
 
 echo 'vm.swappiness = 0' | sudo tee -a /etc/sysctl.conf
+
+nix store gc --verbose \
+&& nix store optimise --verbose
+
 sudo reboot
 ```
 Refs.:
@@ -1072,8 +1071,15 @@ sudo nix-env --profile /nix/var/nix/profiles/system --list-generations
 
 ```bash
 sudo nix-env --profile /nix/var/nix/profiles/system --delete-generations old
+
+nix store gc --verbose \
+&& nix store optimise --verbose
 ```
 
+```bash
+netstat -lnt
+ss -lnt
+```
 
 ```bash
 boot.loader.systemd-boot.enable = false;
@@ -1109,4 +1115,389 @@ boot.loader = {
 };
 ```
 
-cat $(readlink $(which my-install)) 
+cat $(readlink $(which my-install-mrb))
+
+```bash
+nixos-rebuild switch --flake '/etc/nixos'#"$(hostname)"
+reboot
+```
+
+sudo systemctl status cfssl 
+sudo systemctl status certmgr
+sudo systemctl status containerd
+
+sudo systemctl list-dependencies etcd
+
+
+### build.vm
+
+127.0.0.1:10023-:29980
+
+export QEMU_NET_OPTS="hostfwd=tcp::2221-:22,hostfwd=tcp::8080-:80"
+
+export QEMU_NET_OPTS="hostfwd=tcp:127.0.0.1:10023-:29980"
+
+
+
+#### Using nix CLI + nix expression
+
+```bash
+nix build --impure --expr "(import <nixpkgs> {}).nixos ./configuration.nix"
+```
+
+
+```bash
+nix build --impure --expr "(import <nixpkgs> {}).nixos ./src/base/nixos-minimal-configuration.nix"
+```
+
+
+```bash
+nix \
+build \
+--no-link \
+--impure \
+--expr \
+'(import <nixpkgs> {}).nixos <nixpkgs>/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix'
+```
+
+```bash
+nix \
+build \
+--no-link \
+--impure \
+--expr \
+'(import <nixpkgs> {system ? "x86_64-linux"}).nixos <nixpkgs>/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix'
+```
+
+
+```bash
+nix \
+eval \
+--impure \
+--expr \
+'(import <nixpkgs> { }).pkgs'
+```
+
+```bash
+nix \
+build \
+--no-link \
+--impure \
+--expr \
+'with import <nixpkgs> {}; nixos.lib.nixosSystem { system = "x86_64-linux"; modules = [<nixpkgs>/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix];}'
+```
+
+```bash
+nix \
+build \
+--impure \
+--expr \
+'{
+  outputs = { self, nixpkgs }: {
+    nixosConfigurations.nixos-minimal = nixpkgs.lib.nixosSystem {
+      system = "x86_64-linux";
+      modules = [ ({ config, lib, pkgs, ... }: { system.build.nixos = import <nixpkgs>/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix { }; }) ];
+    };
+  };
+}'
+```
+
+```bash
+nix \
+build \
+--impure \
+--expr \
+'{
+  outputs = { self, nixpkgs }: {
+    nixosConfigurations.nixos-minimal = nixpkgs.lib.nixosSystem {
+      system = "x86_64-linux";
+      modules = [ <nixpkgs>/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix ];
+    };
+  };
+}'
+```
+
+```bash
+.config.system.build.toplevel
+
+({ config, lib, pkgs, ... }: {
+        system.build.toplevel = import "${nixos}/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix" { };
+})
+```
+
+```bash
+nix \
+build \
+--impure \
+--expr \
+'
+{
+  description = "";
+  inputs = {
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-21.11";
+  };
+  outputs = { nixpkgs, ... }: {
+    nixosConfigurations = {
+      nixtst = nixpkgs.lib.nixosSystem {
+        system = "x86_64-linux";
+        modules = [
+          <nixpkgs>/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix
+        ];
+      };
+    };
+  };
+}'
+```
+
+```bash
+nix \
+build \
+--impure \
+--expr \
+'with import <nixpkgs/nixos> {};
+let
+  nixos-minimal = lib.nixosSystem {
+    system = "x86_64-linux";
+    modules = [
+      <nixpkgs>/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix
+    ];
+  };
+in 
+  nixos-minimal
+'
+```
+
+```bash
+nix \
+build \
+--impure \
+--expr \
+'with import <nixpkgs> {};
+let
+  pkgs = import <nixpkgs> { };
+  nixos-minimal = nixos.lib.nixosSystem {  
+    system = "x86_64-linux";
+    modules = [
+      <nixpkgs>/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix
+    ];
+  };
+in 
+  nixos-minimal
+'
+```
+
+
+
+```bash
+nix \
+eval \
+--impure \
+--expr \
+'{
+  outputs = { self, nixpkgs }: {
+    nixosConfigurations.nixos-minimal = nixpkgs.lib.nixosSystem {
+      system = "x86_64-linux";
+      modules = [ <nixpkgs>/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix ]; 
+    };
+  };
+}'
+```
+
+```bash
+nix \                        
+eval \
+--impure \
+--expr \
+'{
+  outputs = { nixpkgs, nixos-minimal }: {
+    nixosConfigurations.nixos-minimal = nixpkgs.lib.nixosSystem {
+      system = "x86_64-linux";
+      modules = [ <nixpkgs>/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix ]; 
+    };
+  };
+}' --apply builtins.tryEval outputs.nixosConfigurations.nixos-minimal.config.system.build.toplevel
+```
+
+
+
+### ???
+
+
+```bash
+nix build .#iso-kubernetes
+```
+
+```bash
+nix build .#iso-kubernetes
+```
+
+```bash
+kill -9 $(pidof qemu-system-x86_64); \
+rm -fv nixos.img \
+&& nix build .#iso-kubernetes \
+&& cp -fv result/iso/nixos-21.11pre-git-x86_64-linux.iso nixos-21.11pre-git-x86_64-linux-kubernetes.iso  \
+&& chmod +x nixos-21.11pre-git-x86_64-linux-kubernetes.iso \
+&& qemu-img create nixos.img 18G \
+&& echo 'Starting VM' \
+&& { qemu-kvm \
+-boot d \
+-drive format=raw,file=nixos.img \
+-cdrom nixos-21.11pre-git-x86_64-linux-kubernetes.iso \
+-m 18G \
+-enable-kvm \
+-cpu host \
+-smp $(nproc) \
+-device "rtl8139,netdev=net0" \
+-netdev "user,id=net0,hostfwd=tcp:127.0.0.1:10023-:29980" < /dev/null & } \
+&& sleep 30 \
+&& ssh-keygen -R '[127.0.0.1]:10023' \
+&& { ssh nixuser@127.0.0.1 -p 10023 -o StrictHostKeyChecking=no <<EOF
+sudo my-install-mrb
+sudo poweroff
+EOF
+} && echo 'End.'
+
+kill -9 $(pidof qemu-system-x86_64); 
+cp nixos.img.backup nixos.img
+
+kill -9 $(pidof qemu-system-x86_64); \
+{ qemu-kvm \
+-boot a \
+-cpu host \
+-device "rtl8139,netdev=net0" \
+-drive format=raw,file=nixos.img \
+-enable-kvm \
+-m 18G \
+-netdev "user,id=net0,hostfwd=tcp:127.0.0.1:10023-:29980" \
+-nographic \
+-smp $(nproc) < /dev/null & } \
+&& sleep 60 \
+&& ssh-keygen -R '[127.0.0.1]:10023' \
+&& { ssh nixuser@127.0.0.1 -p 10023 -o StrictHostKeyChecking=no <<EOF
+
+echo 'sha512sum' | sudo -k -S nixos-rebuild test --flake '/etc/nixos'#"\$(hostname)" 
+
+echo 'sha512sum' | sudo -k -S nixos-rebuild test --flake '/etc/nixos'#"\$(hostname)" \
+&& echo 'sha512sum' | sudo -k -S nixos-rebuild switch --flake '/etc/nixos'#"\$(hostname)" \
+&& cd /etc/nixos \
+&& echo 'sha512sum' | sudo -k -S su -c 'echo result > .gitignore' \
+&& echo 'sha512sum' | sudo -k -S git add . \
+&& echo 'sha512sum' | sudo -k -S git config --global user.email "you@example.com" \
+&& echo 'sha512sum' | sudo -k -S git config --global user.name "Your Name" \
+&& echo 'sha512sum' | sudo -k -S git commit -m 'Second commit'
+
+echo 'sha512sum' | sudo -k -S nix-env --profile /nix/var/nix/profiles/system --list-generations \
+&& echo 'sha512sum' | sudo -k -S nix-env --profile /nix/var/nix/profiles/system --delete-generations old \
+&& echo 'sha512sum' | sudo -k -S nix store gc --verbose \
+&& echo 'sha512sum' | sudo -k -S nix-collect-garbage --delete-old \
+&& echo 'sha512sum' | sudo -k -S nix store optimise --verbose \
+&& df -h / \
+&& echo 'sha512sum' | sudo -k -S reboot
+
+EOF
+} && echo 'End.'
+
+kill -9 $(pidof qemu-system-x86_64); \
+{ qemu-kvm \
+-boot a \
+-cpu host \
+-device "rtl8139,netdev=net0" \
+-drive format=raw,file=nixos.img \
+-enable-kvm \
+-m 18G \
+-netdev "user,id=net0,hostfwd=tcp:127.0.0.1:10023-:29980" \
+-nographic \
+-smp $(nproc) < /dev/null & } \
+&& sleep 20 \
+&& ssh-keygen -R '[127.0.0.1]:10023' \
+&& ssh nixuser@127.0.0.1 -p 10023 -o StrictHostKeyChecking=no
+```
+
+```bash
+sudo su
+
+sudo nixos-rebuild test --flake '/etc/nixos'#"$(hostname)" \
+&& sudo nixos-rebuild switch --flake '/etc/nixos'#"$(hostname)"
+```
+
+```bash
+nix profile install nixpkgs#lsof nixpkgs#ripgrep nixpkgs#jq
+
+sudo kill $(sudo lsof -t -i:10259)
+sudo kill $(sudo lsof -t -i:10250)
+sudo kill -9 $(sudo lsof -t -i:6443)
+sudo kill -9 $(sudo lsof -t -i:6443)
+sudo kill -9 $(sudo lsof -t -i:6443)
+sudo kill $(sudo lsof -t -i:2379)
+sudo kill $(sudo lsof -t -i:2380)
+
+sudo kubeadm reset --force
+sudo rm -frv /etc/cni/net.d "$HOME"/.kube /etc/kubernetes/manifests/ /var/lib/etcd
+sudo mkdir -pv /var/lib/etcd
+
+sudo kubeadm init --pod-network-cidr=10.244.0.0/16 --ignore-preflight-errors=true -v5
+sudo kubeadm init --token-ttl=0 --apiserver-advertise-address=https://localhost:6443 --v=9
+
+mkdir -pv "$HOME"/.kube
+sudo cp -iv /etc/kubernetes/admin.conf "$HOME"/.kube/config
+sudo chown -v $(id -u):$(id -g) "$HOME"/.kube/config
+
+kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
+
+watch --interval=1 kubectl get pods -A
+```
+Refs.:
+- https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/create-cluster-kubeadm/
+
+```bash
+# QUIET='-q'
+systemctl status certmgr.service | rg $QUIET -e 'Active: active' || echo 'Error!'
+systemctl status cfssl.service | rg $QUIET -e 'Active: active' || echo 'Error!'
+systemctl status containerd.service | rg $QUIET -e 'Active: active' || echo 'Error!'
+systemctl status flannel.service | rg $QUIET -e 'Active: active' || echo 'Error!'
+systemctl status kube-addon-manager.service | rg $QUIET -e 'Active: active' || echo 'Error!'
+systemctl status kube-apiserver.service | rg $QUIET -e 'Active: active' || echo 'Error!'
+systemctl status kube-controller-manager.service | rg $QUIET -e 'Active: active' || echo 'Error!'
+systemctl status kube-proxy.service | rg $QUIET -e 'Active: active' || echo 'Error!'
+systemctl status kube-scheduler.service | rg $QUIET -e 'Active: active' || echo 'Error!'
+systemctl status kubelet.service | rg $QUIET -e 'Active: active' || echo 'Error!'
+systemctl status kubernetes.target | rg $QUIET -e 'Active: active' || echo 'Error!'
+```
+
+```bash
+systemctl status kube-controller-manager.service | rg $QUIET -e 'Active: active' || echo 'Error!'
+systemctl status kube-proxy.service | rg $QUIET -e 'Active: active' || echo 'Error!'
+systemctl status kube-scheduler.service | rg $QUIET -e 'Active: active' || echo 'Error!'
+systemctl status kubelet.service | rg $QUIET -e 'Active: active' || echo 'Error!'
+```
+
+
+```bash
+systemctl list-dependencies --reverse kube-controller-manager
+systemctl list-dependencies --reverse kube-proxy
+systemctl list-dependencies --reverse kube-scheduler
+systemctl list-dependencies --reverse kubelet
+```
+
+```bash
+systemctl list-dependencies kube-controller-manager
+systemctl list-dependencies kube-proxy
+systemctl list-dependencies kube-scheduler
+systemctl list-dependencies kubelet
+```
+
+
+PID=$(systemctl show kube-controller-manager | grep ExecMainPID | cut -d= -f2)                                                            
+tr '\0' '\n' < /proc/${PID}/cmdline
+
+
+kubectl config view
+sudo kubectl config view
+
+cat /var/lib/kubelet/kubeconfig
+
+kubectl config set-credentials myuser --username=myusername --password=mypassword
+kubectl config set-cluster local-server --server=https://localhost:6443 
+kubectl config set-context default-context --cluster=local-server --user=myuser
+kubectl config use-context default-context
+kubectl config set contexts.default-context.namespace mynamespace

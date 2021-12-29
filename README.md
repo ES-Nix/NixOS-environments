@@ -846,3 +846,76 @@ qemu-kvm \
 ```
 
 https://alpinelinux.org/downloads/
+
+
+### NixOS minimal
+
+
+```bash
+podman \
+run \
+--device=/dev/kvm \
+--env=PATH=/root/.nix-profile/bin:/usr/bin:/bin \
+--env="DISPLAY=${DISPLAY:-:0.0}" \
+--interactive=true \
+--log-level=error \
+--privileged=true \
+--tty=true \
+--rm=true \
+--user=0 \
+--volume="$(pwd)":/code \
+--workdir=/code \
+docker.nix-community.org/nixpkgs/nix-flakes
+
+nix build .#iso-minimal
+
+sha256sum result/iso/nixos-21.11pre-git-x86_64-linux.iso
+
+ISO_SHA256='66d7c39ebf2f92549c5ca7a01dcee2ea4787d628ba6bdaa72822ada22afe8a09'
+echo "$ISO_SHA256" result/iso/nixos-21.11pre-git-x86_64-linux.iso | sha256sum -c
+```
+
+```bash
+podman \
+run \
+--interactive=true \
+--privileged=true \
+--tty=false \
+--rm=true \
+docker.nix-community.org/nixpkgs/nix-flakes \
+bash \
+<< COMMANDS
+echo 'Build start:'
+
+nix build github:ES-Nix/NixOS-environments/box#iso-minimal
+
+sha256sum result/iso/nixos-21.11pre-git-x86_64-linux.iso
+
+echo 'd7576766d5c6873357923bd04e3b166a8151c718a09b254de214762778864967  result/iso/nixos-21.11pre-git-x86_64-linux.iso' | sha256sum -c
+
+echo 'Build end!'
+COMMANDS
+```
+
+```bash
+podman \
+run \
+--interactive=true \
+--privileged=true \
+--tty=false \
+--rm=true \
+--volume="$(pwd)":/code \
+--workdir=/code \
+docker.nix-community.org/nixpkgs/nix-flakes \
+bash \
+<< COMMANDS
+echo 'Build start:'
+
+nix build .#iso-minimal
+
+ISO_SHA256='66d7c39ebf2f92549c5ca7a01dcee2ea4787d628ba6bdaa72822ada22afe8a09'
+echo "$ISO_SHA256" result/bin/nixos-21.11pre-git-x86_64-linux.iso | sha256sum -c
+
+echo 'Build end!'
+COMMANDS
+```
