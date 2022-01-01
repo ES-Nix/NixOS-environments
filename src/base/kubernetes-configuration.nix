@@ -130,6 +130,32 @@ let
     # poweroff
   '';
 
+  startKubernetesScriptDeps = with pkgs; [
+                                          # Looks like kubernetes needs atleast all this
+                                          kubectl
+                                          kubernetes
+                                          #
+                                          cni
+                                          cni-plugins
+                                          conntrack-tools
+                                          cri-o
+                                          cri-tools
+                                          docker
+                                          ebtables
+                                          ethtool
+                                          flannel
+                                          iptables
+                                          socat
+                                         ];
+  startKubernetesScript = pkgs.runCommandLocal "start-kubernetes"
+    { nativeBuildInputs = [ pkgs.makeWrapper ]; }
+    ''
+      install -m755 ${./start-kubernetes.sh} -D $out/bin/start-kubernetes
+      patchShebangs $out/bin/start-kubernetes
+      wrapProgram "$out/bin/start-kubernetes" \
+      --prefix PATH : ${pkgs.lib.makeBinPath startKubernetesScriptDeps}
+    '';
+
 in
 {
   imports =
@@ -487,6 +513,8 @@ in
 
     myInstallScriptMRB
     myInstallScriptUEFI
+
+    startKubernetesScript
 
     # Looks like kubernetes needs atleast all this
     kubectl

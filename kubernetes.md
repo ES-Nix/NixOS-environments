@@ -386,7 +386,7 @@ free -th | rg --case-sensitive 'total|Swap'
 ```
 
 ```bash
-sudo cat /lib/systemd/system/kubelet.service | wc -l  grep 14 || echo 'Error!!'
+sudo cat /lib/systemd/system/kubelet.service | wc -l | grep 14 || echo 'Error!!'
 ```
 
 ## Installing in a VM made with QEMU + KVM and Ubuntu 21.04 cloud image
@@ -1358,7 +1358,7 @@ EOF
 } && echo 'End.'
 
 kill -9 $(pidof qemu-system-x86_64); 
-cp nixos.img.backup nixos.img
+cp -f nixos.img.backup nixos.img
 
 kill -9 $(pidof qemu-system-x86_64); \
 { qemu-kvm \
@@ -1374,26 +1374,7 @@ kill -9 $(pidof qemu-system-x86_64); \
 && sleep 60 \
 && ssh-keygen -R '[127.0.0.1]:10023' \
 && { ssh nixuser@127.0.0.1 -p 10023 -o StrictHostKeyChecking=no <<EOF
-
-echo 'sha512sum' | sudo -k -S nixos-rebuild test --flake '/etc/nixos'#"\$(hostname)" 
-
-echo 'sha512sum' | sudo -k -S nixos-rebuild test --flake '/etc/nixos'#"\$(hostname)" \
-&& echo 'sha512sum' | sudo -k -S nixos-rebuild switch --flake '/etc/nixos'#"\$(hostname)" \
-&& cd /etc/nixos \
-&& echo 'sha512sum' | sudo -k -S su -c 'echo result > .gitignore' \
-&& echo 'sha512sum' | sudo -k -S git add . \
-&& echo 'sha512sum' | sudo -k -S git config --global user.email "you@example.com" \
-&& echo 'sha512sum' | sudo -k -S git config --global user.name "Your Name" \
-&& echo 'sha512sum' | sudo -k -S git commit -m 'Second commit'
-
-echo 'sha512sum' | sudo -k -S nix-env --profile /nix/var/nix/profiles/system --list-generations \
-&& echo 'sha512sum' | sudo -k -S nix-env --profile /nix/var/nix/profiles/system --delete-generations old \
-&& echo 'sha512sum' | sudo -k -S nix store gc --verbose \
-&& echo 'sha512sum' | sudo -k -S nix-collect-garbage --delete-old \
-&& echo 'sha512sum' | sudo -k -S nix store optimise --verbose \
-&& df -h / \
-&& echo 'sha512sum' | sudo -k -S reboot
-
+sudo start-kubernetes
 EOF
 } && echo 'End.'
 
@@ -1408,7 +1389,7 @@ kill -9 $(pidof qemu-system-x86_64); \
 -netdev "user,id=net0,hostfwd=tcp:127.0.0.1:10023-:29980" \
 -nographic \
 -smp $(nproc) < /dev/null & } \
-&& sleep 20 \
+&& sleep 60 \
 && ssh-keygen -R '[127.0.0.1]:10023' \
 && ssh nixuser@127.0.0.1 -p 10023 -o StrictHostKeyChecking=no
 ```
@@ -1436,7 +1417,17 @@ sudo rm -frv /etc/cni/net.d "$HOME"/.kube /etc/kubernetes/manifests/ /var/lib/et
 sudo mkdir -pv /var/lib/etcd
 
 sudo kubeadm init --pod-network-cidr=10.244.0.0/16 --ignore-preflight-errors=true -v5
-sudo kubeadm init --token-ttl=0 --apiserver-advertise-address=https://localhost:6443 --v=9
+# sudo kubeadm init --token-ttl=0 --apiserver-advertise-address=https://localhost:6443 --v=9
+
+# --apiserver-advertise-address=https://localhost:6443 \
+
+sudo \
+kubeadm \
+init \
+--ignore-preflight-errors=true \
+--pod-network-cidr=10.244.0.0/16 \
+--token-ttl=0 \
+--v=9
 
 mkdir -pv "$HOME"/.kube
 sudo cp -iv /etc/kubernetes/admin.conf "$HOME"/.kube/config
@@ -1465,31 +1456,27 @@ systemctl status kubernetes.target | rg $QUIET -e 'Active: active' || echo 'Erro
 ```
 
 ```bash
-systemctl status kube-controller-manager.service | rg $QUIET -e 'Active: active' || echo 'Error!'
-systemctl status kube-proxy.service | rg $QUIET -e 'Active: active' || echo 'Error!'
-systemctl status kube-scheduler.service | rg $QUIET -e 'Active: active' || echo 'Error!'
 systemctl status kubelet.service | rg $QUIET -e 'Active: active' || echo 'Error!'
 ```
 
 
 ```bash
-systemctl list-dependencies --reverse kube-controller-manager
-systemctl list-dependencies --reverse kube-proxy
-systemctl list-dependencies --reverse kube-scheduler
 systemctl list-dependencies --reverse kubelet
 ```
 
 ```bash
-systemctl list-dependencies kube-controller-manager
-systemctl list-dependencies kube-proxy
-systemctl list-dependencies kube-scheduler
 systemctl list-dependencies kubelet
 ```
 
-
+```bash
 PID=$(systemctl show kube-controller-manager | grep ExecMainPID | cut -d= -f2)                                                            
 tr '\0' '\n' < /proc/${PID}/cmdline
+```
 
+```bash
+PID=$(sudo ss -Hltnup 'sport = :6443' | cut -d'=' -f2 | cut -d',' -f1)
+tr '\0' '\n' < /proc/${PID}/cmdline
+```
 
 kubectl config view
 sudo kubectl config view
@@ -1501,3 +1488,33 @@ kubectl config set-cluster local-server --server=https://localhost:6443
 kubectl config set-context default-context --cluster=local-server --user=myuser
 kubectl config use-context default-context
 kubectl config set contexts.default-context.namespace mynamespace
+
+
+```bash
+sudo kubectl config set-context default-system --cluster=default-cluster --user=default-admin
+sudo kubectl config use-context default-system
+
+kubectl config view
+sudo kubectl config view
+
+mkdir -pv ~/.kube                              
+sudo ln -s /etc/static/kubernetes/cluster-admin.kubeconfig ~/.kube/config
+```
+
+
+```bash
+kubectl --server=https://localhost:6443 get pods -A 
+```
+
+
+```bash
+sudo netstat -lnpt | grep kube
+```
+
+```bash
+kubectl config view
+sudo kubectl config view
+
+sudo kubeadm config print init-defaults --component-configs KubeletConfiguration
+sudo kubeadm config print join-defaults --component-configs KubeletConfiguration
+```
