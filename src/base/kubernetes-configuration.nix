@@ -32,6 +32,10 @@ let
     cp -v ${./kubernetes-configuration-mrb.nix} /mnt/etc/nixos/configuration.nix
   '';
 
+  copyFirstRebuildSwitchScript = pkgs.writeScriptBin "copy-first-rebuild-switch" ''
+    cp -v ${./first-rebuild-switch.sh} /mnt/etc/nixos/first-rebuild-switch.sh
+  '';
+
   exampleConfigurationMRB = pkgs.stdenv.mkDerivation {
     name = "example-configuration-mrb";
     installPhase = ''
@@ -112,6 +116,7 @@ let
 
     ${partitionUEFIScript}/bin/partition-uefi \
     && nixos-generate-config --root /mnt \
+    && ${copyFirstRebuildSwitchScript}/bin/copy-first-rebuild-switch \
     && ${exampleFlake}/bin/example-flake \
     && ${exampleConfigurationUEFI}/bin/example-configuration-uefi \
     && nixos-install --no-root-passwd
@@ -123,6 +128,7 @@ let
 
     ${partitionMRBScript}/bin/partition-mrb \
     && nixos-generate-config --root /mnt \
+    && ${copyFirstRebuildSwitchScript}/bin/copy-first-rebuild-switch \
     && ${exampleFlake}/bin/example-flake \
     && ${exampleConfigurationMRB}/bin/kubernetes-configuration-mrb \
     && nixos-install --no-root-passwd
@@ -282,7 +288,8 @@ in
     # To crete a new one:
     # mkpasswd -m sha-512
     # https://unix.stackexchange.com/a/187337
-    hashedPassword = "$6$XiENMV7S4t/XfN$lIZjnuRdNZVcY3qUjur7m4jCIMZCGi3obx1.wHVoQKaNFmEJJN4r.MKdZIkpFpXwt0d/lqI.ZlLnfdwZyXj0e/";
+    # hashedPassword = "$6$XiENMV7S4t/XfN$lIZjnuRdNZVcY3qUjur7m4jCIMZCGi3obx1.wHVoQKaNFmEJJN4r.MKdZIkpFpXwt0d/lqI.ZlLnfdwZyXj0e/";
+    hashedPassword = "$6$kRN5UwTB5XN22u9Z$oYFLbpRLo4wWi6zQ/oi5lqhYG3qJvlfTodOvgSiCJcJPO/rnjbbi7XYXPqcliYPyt2DScMUGhqRzxy9QQ63Jr0";
 
     # TODO: https://stackoverflow.com/a/67984113
     # https://www.vultr.com/docs/how-to-install-nixos-on-a-vultr-vps
@@ -531,6 +538,11 @@ in
     flannel
     iptables
     socat
+
+    # Debug helpers
+    lsof
+    ripgrep
+    jq
   ];
 
   environment.variables.KUBECONFIG = "/etc/kubernetes/cluster-admin.kubeconfig";

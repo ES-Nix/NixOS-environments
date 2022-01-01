@@ -16,5 +16,4 @@ nix-env --profile /nix/var/nix/profiles/system --list-generations \
 && nix store gc --verbose \
 && nix-collect-garbage --delete-old \
 && nix store optimise --verbose \
-&& df -h / \
-&& reboot
+&& df -h /

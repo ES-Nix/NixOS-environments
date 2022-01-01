@@ -1347,6 +1347,7 @@ rm -fv nixos.img \
 -enable-kvm \
 -cpu host \
 -smp $(nproc) \
+-nographic \
 -device "rtl8139,netdev=net0" \
 -netdev "user,id=net0,hostfwd=tcp:127.0.0.1:10023-:29980" < /dev/null & } \
 && sleep 30 \
@@ -1357,8 +1358,13 @@ sudo poweroff
 EOF
 } && echo 'End.'
 
-kill -9 $(pidof qemu-system-x86_64); 
-cp -f nixos.img.backup nixos.img
+# Maybe make a backup?
+# kill -9 $(pidof qemu-system-x86_64); \
+# cp -f nixos.img nixos-mrb-part-1.img.backup
+
+# Maybe restore a backup?
+# kill -9 $(pidof qemu-system-x86_64); \
+# cp -f nixos.img.backup nixos.img
 
 kill -9 $(pidof qemu-system-x86_64); \
 { qemu-kvm \
@@ -1374,7 +1380,9 @@ kill -9 $(pidof qemu-system-x86_64); \
 && sleep 60 \
 && ssh-keygen -R '[127.0.0.1]:10023' \
 && { ssh nixuser@127.0.0.1 -p 10023 -o StrictHostKeyChecking=no <<EOF
-sudo start-kubernetes
+echo '123' | sudo -S nixos-rebuild test --flake '/etc/nixos'#"\$(hostname)"
+echo '123' | sudo -S first-rebuild-switch
+echo '123' | sudo -S reboot
 EOF
 } && echo 'End.'
 
@@ -1453,6 +1461,10 @@ systemctl status kube-proxy.service | rg $QUIET -e 'Active: active' || echo 'Err
 systemctl status kube-scheduler.service | rg $QUIET -e 'Active: active' || echo 'Error!'
 systemctl status kubelet.service | rg $QUIET -e 'Active: active' || echo 'Error!'
 systemctl status kubernetes.target | rg $QUIET -e 'Active: active' || echo 'Error!'
+```
+
+```bash
+systemctl is-active --quiet kubelet || systemctl restart kubelet
 ```
 
 ```bash

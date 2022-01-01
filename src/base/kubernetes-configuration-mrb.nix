@@ -22,6 +22,22 @@ let
   # kubeMasterHostname = "api.kube";
   kubeMasterAPIServerPort = 6443;
 
+  firstRebuildSwitchScriptDeps = with pkgs; [
+                                            bash
+                                            coreutils
+                                            git
+                                            # nix  #
+                                            nixos-rebuild
+                                          ];
+  firstRebuildSwitchScript = pkgs.runCommandLocal "first-rebuild-switch"
+    { nativeBuildInputs = [ pkgs.makeWrapper ]; }
+    ''
+      install -m755 ${./first-rebuild-switch.sh} -D $out/bin/first-rebuild-switch
+      patchShebangs $out/bin/first-rebuild-switch
+      wrapProgram "$out/bin/first-rebuild-switch" \
+      --prefix PATH : ${pkgs.lib.makeBinPath firstRebuildSwitchScriptDeps}
+    '';
+
 in
 {
   imports =
@@ -147,7 +163,8 @@ in
     # To crete a new one:
     # mkpasswd -m sha-512
     # https://unix.stackexchange.com/a/187337
-    hashedPassword = "$6$XiENMV7S4t/XfN$lIZjnuRdNZVcY3qUjur7m4jCIMZCGi3obx1.wHVoQKaNFmEJJN4r.MKdZIkpFpXwt0d/lqI.ZlLnfdwZyXj0e/";
+    # hashedPassword = "$6$XiENMV7S4t/XfN$lIZjnuRdNZVcY3qUjur7m4jCIMZCGi3obx1.wHVoQKaNFmEJJN4r.MKdZIkpFpXwt0d/lqI.ZlLnfdwZyXj0e/";
+    hashedPassword = "$6$kRN5UwTB5XN22u9Z$oYFLbpRLo4wWi6zQ/oi5lqhYG3qJvlfTodOvgSiCJcJPO/rnjbbi7XYXPqcliYPyt2DScMUGhqRzxy9QQ63Jr0";
 
     # TODO: https://stackoverflow.com/a/67984113
     # https://www.vultr.com/docs/how-to-install-nixos-on-a-vultr-vps
@@ -370,6 +387,8 @@ in
     zsh-autosuggestions
     zsh-completions
 
+    firstRebuildSwitchScript
+
     # Looks like kubernetes needs atleast all this
     kubectl
     kubernetes
@@ -385,6 +404,11 @@ in
     flannel
     iptables
     socat
+
+    # Debug helpers
+    lsof
+    ripgrep
+    jq
   ];
 
   environment.variables.KUBECONFIG = "/etc/kubernetes/cluster-admin.kubeconfig";
