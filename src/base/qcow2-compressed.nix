@@ -15,7 +15,7 @@ let
           configFile = ./base-configuration.nix;
         };
       })
-          # configure the mountpoint of the root device
+      # configure the mountpoint of the root device
       ({
         fileSystems."/".device = "/dev/disk/by-label/nixos";
         boot.loader.grub.device = "/dev/sda";

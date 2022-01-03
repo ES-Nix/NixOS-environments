@@ -1,7 +1,7 @@
-{ nixpkgs ? <nixpkgs>, system ? "x86_64-linux"}:
+{ nixpkgs ? <nixpkgs>, system ? "x86_64-linux" }:
 let
   pkgs = nixpkgs.legacyPackages.${system};
-  configuration = import ./nixos-minimal-configuration.nix { pkgs = pkgs; nixpkgs = nixpkgs;};
+  configuration = import ./nixos-minimal-configuration.nix { pkgs = pkgs; nixpkgs = nixpkgs; };
 
   iso-image = import "${nixpkgs}/nixos" { inherit system configuration; };
 in

@@ -22,11 +22,11 @@ let
   # kubeMasterHostname = "api.kube";
   kubeMasterAPIServerPort = 6443;
 
-#  helperConfiguration = pkgs.fetchurl {
-#      url = "https://raw.githubusercontent.com/ES-Nix/NixOS-environments/6f0eb51a328158067750b504de6c0aed713965dc/src/base/base-configuration.nix";
-##      url = "https://raw.githubusercontent.com/ES-Nix/NixOS-environments/box/src/base/base-configuration.nix";
-#      sha256 = "ELI7UWfW0CtG4moCVrH1IHGXRj4eq6Zi5Z8vFrzV//k=";
-#  };
+  #  helperConfiguration = pkgs.fetchurl {
+  #      url = "https://raw.githubusercontent.com/ES-Nix/NixOS-environments/6f0eb51a328158067750b504de6c0aed713965dc/src/base/base-configuration.nix";
+  ##      url = "https://raw.githubusercontent.com/ES-Nix/NixOS-environments/box/src/base/base-configuration.nix";
+  #      sha256 = "ELI7UWfW0CtG4moCVrH1IHGXRj4eq6Zi5Z8vFrzV//k=";
+  #  };
 
   exampleConfigurationMRBScript = pkgs.writeScriptBin "kubernetes-configuration-mrb" ''
     cp -v ${./kubernetes-configuration-mrb.nix} /mnt/etc/nixos/configuration.nix
@@ -59,14 +59,14 @@ let
   };
 
   partitionUEFIScriptDeps = with pkgs; [
-                                          figlet
-                                          hello
+    figlet
+    hello
 
-                                          e2fsprogs
-                                          parted
-                                          mount
-                                          util-linux
-                                          ];
+    e2fsprogs
+    parted
+    mount
+    util-linux
+  ];
   partitionUEFIScript = pkgs.runCommandLocal "partition-uefi"
     { nativeBuildInputs = [ pkgs.makeWrapper ]; }
     ''
@@ -77,11 +77,11 @@ let
     '';
 
   partitionMRBScriptDeps = with pkgs; [
-                                          e2fsprogs
-                                          parted
-                                          mount
-                                          util-linux
-                                          ];
+    e2fsprogs
+    parted
+    mount
+    util-linux
+  ];
   partitionMRBScript = pkgs.runCommandLocal "parted-mrb"
     { nativeBuildInputs = [ pkgs.makeWrapper ]; }
     ''
@@ -137,22 +137,22 @@ let
   '';
 
   startKubernetesScriptDeps = with pkgs; [
-                                          # Looks like kubernetes needs atleast all this
-                                          kubectl
-                                          kubernetes
-                                          #
-                                          cni
-                                          cni-plugins
-                                          conntrack-tools
-                                          cri-o
-                                          cri-tools
-                                          docker
-                                          ebtables
-                                          ethtool
-                                          flannel
-                                          iptables
-                                          socat
-                                         ];
+    # Looks like kubernetes needs atleast all this
+    kubectl
+    kubernetes
+    #
+    cni
+    cni-plugins
+    conntrack-tools
+    cri-o
+    cri-tools
+    docker
+    ebtables
+    ethtool
+    flannel
+    iptables
+    socat
+  ];
   startKubernetesScript = pkgs.runCommandLocal "start-kubernetes"
     { nativeBuildInputs = [ pkgs.makeWrapper ]; }
     ''
@@ -166,30 +166,30 @@ in
 {
   imports =
     [
-        "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix"
+      "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix"
 
-        # Provide an initial copy of the NixOS channel so that the user
-        # doesn't need to run "nix-channel --update" first.
-        "${nixpkgs}/nixos/modules/installer/cd-dvd/channel.nix"
+      # Provide an initial copy of the NixOS channel so that the user
+      # doesn't need to run "nix-channel --update" first.
+      "${nixpkgs}/nixos/modules/installer/cd-dvd/channel.nix"
 
-        # TODO: Is it good?
-        # https://discourse.nixos.org/t/whats-the-rationale-behind-not-detected-nix/5403
-        # "${nixpkgs}/nixos/modules/installer/scan/not-detected.nix"
+      # TODO: Is it good?
+      # https://discourse.nixos.org/t/whats-the-rationale-behind-not-detected-nix/5403
+      # "${nixpkgs}/nixos/modules/installer/scan/not-detected.nix"
 
-        # To be able to build the config.system.build.vm
-#        "${nixpkgs}/nixos/modules/profiles/qemu-guest.nix"
-#        "${nixpkgs}/nixos/modules/virtualisation/qemu-vm.nix"
+      # To be able to build the config.system.build.vm
+      #        "${nixpkgs}/nixos/modules/profiles/qemu-guest.nix"
+      #        "${nixpkgs}/nixos/modules/virtualisation/qemu-vm.nix"
     ];
 
   # Use the GRUB 2 boot loader.
   # boot.loader.grub.enable = true;
   # boot.loader.grub.version = 2;
 
-#  boot.loader.grub.efiSupport = true;
-#  boot.loader.grub.efiInstallAsRemovable = true;
- # boot.loader.efi.efiSysMountPoint = "/boot/efi";
+  #  boot.loader.grub.efiSupport = true;
+  #  boot.loader.grub.efiInstallAsRemovable = true;
+  # boot.loader.efi.efiSysMountPoint = "/boot/efi";
   # Define on which hard drive you want to install Grub.
-#  boot.loader.grub.device = "/dev/sda"; # or "nodev" for efi only
+  #  boot.loader.grub.device = "/dev/sda"; # or "nodev" for efi only
 
   boot.loader.grub.efiSupport = true;
   boot.loader.grub.efiInstallAsRemovable = true;
@@ -231,28 +231,28 @@ in
   # "cgroup_enable=memory"
   boot.kernelParams = [ "swapaccount=0" ];
 
-#  # TODO: how to test it?
-#  # TODO: hardening
-#  # https://gist.github.com/andir/88458b13c26a04752854608aacb15c8f#file-configuration-nix-L11-L12
-#  boot.loader.grub.extraConfig = ''
-#    serial --unit=0 --speed=115200
-#    terminal_output serial console; terminal_input serial console
-#  '';
+  #  # TODO: how to test it?
+  #  # TODO: hardening
+  #  # https://gist.github.com/andir/88458b13c26a04752854608aacb15c8f#file-configuration-nix-L11-L12
+  #  boot.loader.grub.extraConfig = ''
+  #    serial --unit=0 --speed=115200
+  #    terminal_output serial console; terminal_input serial console
+  #  '';
 
-#  # TODO: hardening
-#  boot.kernelParams = [
-#    # About the console=ttyS0
-#    # https://fadeevab.com/how-to-setup-qemu-output-to-console-and-automate-using-shell-script/
-#    # https://www.linode.com/docs/guides/install-nixos-on-linode/
-#    "console=tty0"
-#    "console=ttyS0::respawn:/sbin/getty -L ttyS0 115200 vt100"
-#    # Set sensible kernel parameters
-#    # https://nixos.wiki/wiki/Bootloader
-#    # https://git.redbrick.dcu.ie/m1cr0man/nix-configs-rb/commit/ddb4d96dacc52357e5eaec5870d9733a1ea63a5a?lang=pt-PT
-#     "boot.shell_on_fail"
-#     "panic=30"
-#     "boot.panic_on_fail" # reboot the machine upon fatal boot issues
-#  ];
+  #  # TODO: hardening
+  #  boot.kernelParams = [
+  #    # About the console=ttyS0
+  #    # https://fadeevab.com/how-to-setup-qemu-output-to-console-and-automate-using-shell-script/
+  #    # https://www.linode.com/docs/guides/install-nixos-on-linode/
+  #    "console=tty0"
+  #    "console=ttyS0::respawn:/sbin/getty -L ttyS0 115200 vt100"
+  #    # Set sensible kernel parameters
+  #    # https://nixos.wiki/wiki/Bootloader
+  #    # https://git.redbrick.dcu.ie/m1cr0man/nix-configs-rb/commit/ddb4d96dacc52357e5eaec5870d9733a1ea63a5a?lang=pt-PT
+  #     "boot.shell_on_fail"
+  #     "panic=30"
+  #     "boot.panic_on_fail" # reboot the machine upon fatal boot issues
+  #  ];
 
   # TODO: hardening
   # boot.blacklistedKernelModules = [ ];
@@ -329,10 +329,10 @@ in
     shell = pkgs.zsh;
   };
 
-#  users.users.nixosvmtest.group = "nixosvmtest";
-#  users.groups.nixosvmtest = {};
-#  users.users.nixosvmtest.initialPassword = "test";
-#  users.users.nixosvmtest.isSystemUser = true;
+  #  users.users.nixosvmtest.group = "nixosvmtest";
+  #  users.groups.nixosvmtest = {};
+  #  users.users.nixosvmtest.initialPassword = "test";
+  #  users.users.nixosvmtest.isSystemUser = true;
 
   # TODO: hardning
   # https://nixos.wiki/wiki/Kernel_Debugging_with_QEMU
@@ -621,23 +621,23 @@ in
     kubelet.extraOpts = "--fail-swap-on=false";
   };
 
-   services = {
-     flannel = {
-       enable = true;
-       etcd.endpoints = [ "http://127.0.0.1:2379" ];
-     };
-   };
+  services = {
+    flannel = {
+      enable = true;
+      etcd.endpoints = [ "http://127.0.0.1:2379" ];
+    };
+  };
 
   # Broken now, it needs the config somehow
   # https://www.reddit.com/r/NixOS/comments/fsummx/how_to_list_all_installed_packages_on_nixos/
   # https://discourse.nixos.org/t/can-i-inspect-the-installed-versions-of-system-packages/2763/15
-#  environment.etc."current-system-packages".text =
-#    let
-#      packages = builtins.map (p: "${p.name}") config.environment.systemPackages;
-#      sortedUnique = builtins.sort builtins.lessThan (pkgs.lib.unique packages);
-#      formatted = builtins.concatStringsSep "\n" sortedUnique;
-#    in
-#    formatted;
+  #  environment.etc."current-system-packages".text =
+  #    let
+  #      packages = builtins.map (p: "${p.name}") config.environment.systemPackages;
+  #      sortedUnique = builtins.sort builtins.lessThan (pkgs.lib.unique packages);
+  #      formatted = builtins.concatStringsSep "\n" sortedUnique;
+  #    in
+  #    formatted;
 
   # Some programs need SUID wrappers, can be configured further or are
   # started in user sessions.
