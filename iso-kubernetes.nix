@@ -303,13 +303,13 @@ let
       };
 
       # https://github.com/NixOS/nixpkgs/issues/29095#issuecomment-368463984
-      #      systemd.extraConfig = ''
-      #        DefaultCPUAccounting=yes
-      #        DefaultIOAccounting=yes
-      #        DefaultBlockIOAccounting=yes
-      #        DefaultMemoryAccounting=yes
-      #        DefaultTasksAccounting=yes
-      #      '';
+      #systemd.extraConfig = ''
+      #  DefaultCPUAccounting=yes
+      #  DefaultIOAccounting=yes
+      #  DefaultBlockIOAccounting=yes
+      #  DefaultMemoryAccounting=yes
+      #  DefaultTasksAccounting=yes
+      #'';
 
       # "cgroup_enable=memory"
       boot.kernelParams = [ "swapaccount=0" ];

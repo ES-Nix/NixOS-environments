@@ -205,6 +205,32 @@ in
   # https://github.com/NixOS/nixpkgs/issues/27930#issuecomment-417943781
   boot.kernelModules = [ "kvm-intel" ];
 
+  # Is this ok to kubernetes?
+  # Why free -h still show swap stuff but with 0?
+  swapDevices = pkgs.lib.mkForce [ ];
+
+  # Is it a must for k8s?
+  # Take a look into:
+  # https://github.com/NixOS/nixpkgs/blob/9559834db0df7bb274062121cf5696b46e31bc8c/nixos/modules/services/cluster/kubernetes/kubelet.nix#L255-L259
+  boot.kernel.sysctl = {
+    # If it is enabled it conflict with what kubelet is doing
+    # "net.bridge.bridge-nf-call-ip6tables" = 1;
+    # "net.bridge.bridge-nf-call-iptables" = 1;
+    "vm.swappiness" = 0;
+  };
+
+  # https://github.com/NixOS/nixpkgs/issues/29095#issuecomment-368463984
+  #systemd.extraConfig = ''
+  #  DefaultCPUAccounting=yes
+  #  DefaultIOAccounting=yes
+  #  DefaultBlockIOAccounting=yes
+  #  DefaultMemoryAccounting=yes
+  #  DefaultTasksAccounting=yes
+  #'';
+
+  # "cgroup_enable=memory"
+  boot.kernelParams = [ "swapaccount=0" ];
+
 #  # TODO: how to test it?
 #  # TODO: hardening
 #  # https://gist.github.com/andir/88458b13c26a04752854608aacb15c8f#file-configuration-nix-L11-L12
@@ -545,11 +571,22 @@ in
     ripgrep
     jq
     openssl
+    dmidecode
+    telnet
+    file
   ];
 
   environment.variables.KUBECONFIG = "/etc/kubernetes/cluster-admin.kubeconfig";
 
   virtualisation.docker.enable = true;
+
+  environment.etc."containers/registries.conf" = {
+    mode = "0644";
+    text = ''
+      [registries.search]
+      registries = ['docker.io', 'localhost']
+    '';
+  };
 
   services.kubernetes = {
 

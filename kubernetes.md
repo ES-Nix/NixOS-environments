@@ -326,11 +326,14 @@ Refs.:
 
 
 ```bash
-ip route show default | awk '/default/ {print $5}'
+# ip link show docker0 | grep link/ether | awk '{print $2}'
+ip link show docker0 | grep link/ether | cut -d' ' -f 6 | grep -o -E '([[:xdigit:]]{1,2}:){5}[[:xdigit:]]{1,2}' || echo 'Error' 'ip link show docker0'
 
-ip link show docker0 | grep link/ether | awk '{print $2}'
+ifconfig docker0 | grep -o -E '([[:xdigit:]]{1,2}:){5}[[:xdigit:]]{1,2}' || echo 'Error' 'ifconfig docker0 error'
 
-ifconfig docker0 | grep -o -E '([[:xdigit:]]{1,2}:){5}[[:xdigit:]]{1,2}'
+# ip route show default | awk '/default/ {print $5}' | grep -E 'eth0' || echo 'Error'
+ip route show default | cut -d' ' -f5 | grep -E 'eth0' || echo 'Error' 'ip route show default'
+ifconfig eth0 | grep -o -E -q '([[:xdigit:]]{1,2}:){5}[[:xdigit:]]{1,2}' || echo 'Error' 'ifconfig eth0 error'
 ```
 Refs.: 
 - https://stackoverflow.com/a/68784841
@@ -353,13 +356,7 @@ lsmod | grep br_netfilter | wc -l | grep -q 2 || echo 'Error, kernel module br_n
 
 
 ```bash
-sudo sysctl --system | grep 'Invalid argument'
-```
-
-
-```bash
-timeout 5 telnet 127.0.0.1 6443
-echo $?
+timeout 1 telnet 127.0.0.1 6443 || test $? -eq 124 || echo 'Error' 'telnet 127.0.0.1 6443 fails, firewall maybe?'
 ```
 Refs.:
 - https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/#check-required-ports
@@ -367,11 +364,17 @@ Refs.:
 
 
 ```bash
-sudo netstat -lnpt | grep kube
+sudo netstat -lnpt | grep kube | wc -l | grep 9
 netstat -a | grep 6443
 ```
 Refs.: 
 - https://medium.com/@texasdave2/troubleshoot-kubectl-connection-refused-6f5445a396ed
+
+
+```bash
+free -th | grep --no-ignore-case -E 'total|Swap'
+free -th | rg --case-sensitive 'total|Swap'
+```
 
 
 ```bash
@@ -381,12 +384,7 @@ Refs.:
 - https://stackoverflow.com/a/51141230
 
 ```bash
-free -th | grep --no-ignore-case -E 'total|Swap'
-free -th | rg --case-sensitive 'total|Swap'
-```
-
-```bash
-sudo cat /lib/systemd/system/kubelet.service | wc -l | grep 14 || echo 'Error!!'
+sudo sysctl --system | grep 'Invalid argument'
 ```
 
 ## Installing in a VM made with QEMU + KVM and Ubuntu 21.04 cloud image
@@ -1338,7 +1336,7 @@ rm -fv nixos.img \
 && nix build .#iso-kubernetes \
 && cp -fv result/iso/nixos-21.11pre-git-x86_64-linux.iso nixos-21.11pre-git-x86_64-linux-kubernetes.iso  \
 && chmod +x nixos-21.11pre-git-x86_64-linux-kubernetes.iso \
-&& qemu-img create nixos.img 18G 
+&& qemu-img create nixos.img 12G 
 )
 
 time ( 
@@ -1347,13 +1345,14 @@ echo 'Starting VM' \
 -boot d \
 -drive format=raw,file=nixos.img \
 -cdrom nixos-21.11pre-git-x86_64-linux-kubernetes.iso \
--m 18G \
+-m 12G \
 -enable-kvm \
 -cpu host \
 -smp $(nproc) \
 -nographic \
 -device "rtl8139,netdev=net0" \
--netdev "user,id=net0,hostfwd=tcp:127.0.0.1:10023-:29980" < /dev/null & } \
+-netdev "user,id=net0,hostfwd=tcp:127.0.0.1:10023-:29980" \
+-uuid 366f0d14-0de1-11e4-b0fa-82c9dd2b1400 < /dev/null & } \
 && sleep 30 \
 && ssh-keygen -R '[127.0.0.1]:10023' \
 && { ssh nixuser@127.0.0.1 -p 10023 -o StrictHostKeyChecking=no <<EOF
@@ -1382,10 +1381,11 @@ kill -9 $(pidof qemu-system-x86_64); \
 -device "rtl8139,netdev=net0" \
 -drive format=raw,file=nixos.img \
 -enable-kvm \
--m 18G \
+-m 12G \
 -netdev "user,id=net0,hostfwd=tcp:127.0.0.1:10023-:29980" \
 -nographic \
--smp $(nproc) < /dev/null & } \
+-smp $(nproc) \
+-uuid 366f0d14-0de1-11e4-b0fa-82c9dd2b1400 < /dev/null & } \
 && sleep 60 \
 && ssh-keygen -R '[127.0.0.1]:10023' \
 && { ssh nixuser@127.0.0.1 -p 10023 -o StrictHostKeyChecking=no <<EOF
@@ -1407,6 +1407,7 @@ EOF
 # cp -f nixos-mrb-part-2.img.backup nixos.img
 # )
 
+time ( 
 kill -9 $(pidof qemu-system-x86_64); \
 { qemu-kvm \
 -boot a \
@@ -1414,10 +1415,52 @@ kill -9 $(pidof qemu-system-x86_64); \
 -device "rtl8139,netdev=net0" \
 -drive format=raw,file=nixos.img \
 -enable-kvm \
--m 18G \
+-m 12G \
 -netdev "user,id=net0,hostfwd=tcp:127.0.0.1:10023-:29980" \
 -nographic \
--smp $(nproc) < /dev/null & } \
+-smp $(nproc) \
+-uuid 366f0d14-0de1-11e4-b0fa-82c9dd2b1400 < /dev/null & } \
+&& sleep 60 \
+&& ssh-keygen -R '[127.0.0.1]:10023' \
+&& { ssh nixuser@127.0.0.1 -p 10023 -o StrictHostKeyChecking=no <<EOF
+echo '123' | sudo -S kubeadm certs renew all
+
+echo '123' | sudo -S systemctl restart kube-apiserver
+echo '123' | sudo -S systemctl restart kube-controller-manager 
+echo '123' | sudo -S systemctl restart kube-scheduler
+echo '123' | sudo -S systemctl restart etcd
+
+mkdir -pv "\$HOME"/.kube
+echo '123' | sudo -S cp -fv /etc/kubernetes/cluster-admin.kubeconfig "\$HOME"/.kube/config
+#echo '123' | sudo -S cp -fv /etc/kubernetes/admin.conf "\$HOME"/.kube/config
+#echo '123' | sudo -S cp -fv /etc/kubernetes/kubelet.conf "\$HOME"/.kube/config
+echo '123' | sudo -S chmod -v 0644 "\$HOME"/.kube/config
+echo '123' | sudo -S chown -v \$(id -u):\$(id -g) "\$HOME"/.kube/config
+
+echo '123' | sudo -S chown kubernetes:kubernetes -Rv /var/lib/kubernetes
+# echo '123' | sudo -S stat /var/lib/kubernetes
+echo '123' | sudo -S chmod -Rv 0775 /var/lib/kubernetes
+EOF
+} && echo 'End.'
+)
+
+#time ( 
+#kill -9 $(pidof qemu-system-x86_64); \
+#cp -f nixos.img nixos-mrb-part-3.img.backup
+#)
+
+kill -9 $(pidof qemu-system-x86_64); \
+{ qemu-kvm \
+-boot a \
+-cpu host \
+-device "rtl8139,netdev=net0" \
+-drive format=raw,file=nixos.img \
+-enable-kvm \
+-m 12G \
+-netdev "user,id=net0,hostfwd=tcp:127.0.0.1:10023-:29980" \
+-nographic \
+-smp $(nproc) \
+-uuid 366f0d14-0de1-11e4-b0fa-82c9dd2b1400 < /dev/null & } \
 && sleep 60 \
 && ssh-keygen -R '[127.0.0.1]:10023' \
 && ssh nixuser@127.0.0.1 -p 10023 -o StrictHostKeyChecking=no
@@ -1430,23 +1473,6 @@ kill -9 $(pidof qemu-system-x86_64); \
 #
 # openssl x509 -in /etc/kubernetes/pki/apiserver.crt -noout -text | grep ' Not '
 # sudo kubeadm certs check-expiration
-sudo kubeadm certs renew all
-
-sudo systemctl restart kube-apiserver
-sudo systemctl restart kube-controller-manager 
-sudo systemctl restart kube-scheduler
-sudo systemctl restart etcd
-
-mkdir -pv "$HOME"/.kube
-sudo cp -fv /etc/kubernetes/cluster-admin.kubeconfig "$HOME"/.kube/config
-#sudo cp -fv /etc/kubernetes/admin.conf "$HOME"/.kube/config
-#sudo cp -fv /etc/kubernetes/kubelet.conf "$HOME"/.kube/config
-sudo chmod -v 0644 "$HOME"/.kube/config
-sudo chown -v $(id -u):$(id -g) "$HOME"/.kube/config
-
-sudo chown kubernetes:kubernetes -Rv /var/lib/kubernetes
-# sudo stat /var/lib/kubernetes
-sudo chmod -Rv 0775 /var/lib/kubernetes
 
 kubectl get pods -A
 #kubectl --server=https://localhost:6443 --insecure-skip-tls-verify get pods -A
@@ -1454,6 +1480,25 @@ kubectl get pods -A
 Refs.:
 - https://stackoverflow.com/a/49886394
 - https://serverfault.com/a/1037412
+
+```bash
+# kubectl get serviceaccounts
+kubectl get serviceaccounts default -o yaml
+
+kubectl get secret default-token-g59z6 -o yaml
+```
+
+```bash
+sudo kubeadm certs renew apiserver
+sudo kubeadm certs renew apiserver-etcd-client
+sudo kubeadm certs renew apiserver-kubelet-client
+sudo kubeadm certs renew front-proxy-client
+
+sudo kubeadm kubeconfig user --org system:masters --client-name kubernetes-admin  > admin.conf
+sudo kubeadm kubeconfig user --client-name system:kube-controller-manager > controller-manager.conf
+sudo kubeadm kubeconfig user --org system:nodes --client-name system:node:$(hostname) > kubelet.conf
+sudo kubeadm kubeconfig user --client-name system:kube-scheduler > scheduler.conf
+```
 
 
 ```bash
@@ -1652,3 +1697,31 @@ kubectl exec test-pod -i -t -- /bin/sh -c ' ls -al /'
 kubectl delete pod test-pod
 rm -fv example.yaml
 ```
+
+```bash
+sudo \
+docker \
+run \
+-it \
+--rm \
+--privileged \
+--net=host \
+-v /:/rootfs \
+-v "$HOME"/.kube/config:"$HOME"/.kube/config \
+k8s.gcr.io/node-test:0.2
+```
+
+
+```bash
+curl -L https://github.com/vmware-tanzu/sonobuoy/releases/download/v0.55.1/sonobuoy_0.55.1_linux_amd64.tar.gz -o sonobuoy_0.55.1_linux_amd64.tar.gz
+tar -xvf sonobuoy_0.55.1_linux_amd64.tar.gz
+
+sonobuoy run --wait
+```
+
+
+kubectl get all -n sonobuoy
+
+kubectl get pods -n sonobuoy -o wide
+sonobuoy status --json | jq .
+sonobuoy delete --wait
