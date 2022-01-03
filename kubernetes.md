@@ -1332,7 +1332,7 @@ nix build .#iso-kubernetes
 ```bash
 time ( 
 kill -9 $(pidof qemu-system-x86_64); \
-rm -fv nixos.img \
+rm -fv nixos.img nixos-21.11pre-git-x86_64-linux-kubernetes.iso \
 && nix build .#iso-kubernetes \
 && cp -fv result/iso/nixos-21.11pre-git-x86_64-linux.iso nixos-21.11pre-git-x86_64-linux-kubernetes.iso  \
 && chmod +x nixos-21.11pre-git-x86_64-linux-kubernetes.iso \
