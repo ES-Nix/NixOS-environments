@@ -1332,13 +1332,17 @@ nix build .#iso-kubernetes
 ```
 
 ```bash
+time ( 
 kill -9 $(pidof qemu-system-x86_64); \
 rm -fv nixos.img \
 && nix build .#iso-kubernetes \
 && cp -fv result/iso/nixos-21.11pre-git-x86_64-linux.iso nixos-21.11pre-git-x86_64-linux-kubernetes.iso  \
 && chmod +x nixos-21.11pre-git-x86_64-linux-kubernetes.iso \
-&& qemu-img create nixos.img 18G \
-&& echo 'Starting VM' \
+&& qemu-img create nixos.img 18G 
+)
+
+time ( 
+echo 'Starting VM' \
 && { qemu-kvm \
 -boot d \
 -drive format=raw,file=nixos.img \
@@ -1357,15 +1361,20 @@ sudo my-install-mrb
 sudo poweroff
 EOF
 } && echo 'End.'
-
+)
 # Maybe make a backup?
+# time ( 
 # kill -9 $(pidof qemu-system-x86_64); \
 # cp -f nixos.img nixos-mrb-part-1.img.backup
+# )
 
 # Maybe restore a backup?
+# time ( 
 # kill -9 $(pidof qemu-system-x86_64); \
 # cp -f nixos.img.backup nixos.img
+# )
 
+time ( 
 kill -9 $(pidof qemu-system-x86_64); \
 { qemu-kvm \
 -boot a \
@@ -1385,6 +1394,18 @@ echo '123' | sudo -S first-rebuild-switch
 echo '123' | sudo -S reboot
 EOF
 } && echo 'End.'
+)
+# Maybe make a backup?
+# time ( 
+# kill -9 $(pidof qemu-system-x86_64); \
+# cp -f nixos.img nixos-mrb-part-2.img.backup
+# )
+
+# Maybe restore a backup?
+# time ( 
+# kill -9 $(pidof qemu-system-x86_64); \
+# cp -f nixos-mrb-part-2.img.backup nixos.img
+# )
 
 kill -9 $(pidof qemu-system-x86_64); \
 { qemu-kvm \
@@ -1403,11 +1424,37 @@ kill -9 $(pidof qemu-system-x86_64); \
 ```
 
 ```bash
-sudo su
+# For debug
+# cat /etc/kubernetes/cluster-admin.kubeconfig | jq .
+# echo $KUBECONFIG
+#
+# openssl x509 -in /etc/kubernetes/pki/apiserver.crt -noout -text | grep ' Not '
+# sudo kubeadm certs check-expiration
+sudo kubeadm certs renew all
 
-sudo nixos-rebuild test --flake '/etc/nixos'#"$(hostname)" \
-&& sudo nixos-rebuild switch --flake '/etc/nixos'#"$(hostname)"
+sudo systemctl restart kube-apiserver
+sudo systemctl restart kube-controller-manager 
+sudo systemctl restart kube-scheduler
+sudo systemctl restart etcd
+
+mkdir -pv "$HOME"/.kube
+sudo cp -fv /etc/kubernetes/cluster-admin.kubeconfig "$HOME"/.kube/config
+#sudo cp -fv /etc/kubernetes/admin.conf "$HOME"/.kube/config
+#sudo cp -fv /etc/kubernetes/kubelet.conf "$HOME"/.kube/config
+sudo chmod -v 0644 "$HOME"/.kube/config
+sudo chown -v $(id -u):$(id -g) "$HOME"/.kube/config
+
+sudo chown kubernetes:kubernetes -Rv /var/lib/kubernetes
+# sudo stat /var/lib/kubernetes
+sudo chmod -Rv 0775 /var/lib/kubernetes
+
+kubectl get pods -A
+#kubectl --server=https://localhost:6443 --insecure-skip-tls-verify get pods -A
 ```
+Refs.:
+- https://stackoverflow.com/a/49886394
+- https://serverfault.com/a/1037412
+
 
 ```bash
 nix profile install nixpkgs#lsof nixpkgs#ripgrep nixpkgs#jq
@@ -1424,7 +1471,9 @@ sudo kubeadm reset --force
 sudo rm -frv /etc/cni/net.d "$HOME"/.kube /etc/kubernetes/manifests/ /var/lib/etcd
 sudo mkdir -pv /var/lib/etcd
 
-sudo kubeadm init --pod-network-cidr=10.244.0.0/16 --ignore-preflight-errors=true -v5
+#sudo kubeadm config images pull
+#sudo kubeadm config images list
+sudo kubeadm init --pod-network-cidr=10.244.0.0/16 --ignore-preflight-errors=true -v9
 # sudo kubeadm init --token-ttl=0 --apiserver-advertise-address=https://localhost:6443 --v=9
 
 # --apiserver-advertise-address=https://localhost:6443 \
@@ -1464,7 +1513,17 @@ systemctl status kubernetes.target | rg $QUIET -e 'Active: active' || echo 'Erro
 ```
 
 ```bash
-systemctl is-active --quiet kubelet || systemctl restart kubelet
+sudo systemctl is-active --quiet certmgr || sudo systemctl restart certmgr
+sudo systemctl is-active --quiet cfssl || sudo systemctl restart cfssl
+sudo systemctl is-active --quiet containerd || sudo systemctl restart containerd
+sudo systemctl is-active --quiet flannel || sudo systemctl restart flannel
+sudo systemctl is-active --quiet kube-addon-manager || sudo systemctl restart kube-addon-manager
+sudo systemctl is-active --quiet kube-apiserver || sudo systemctl restart kube-apiserver
+sudo systemctl is-active --quiet kube-controller-manager || sudo systemctl restart kube-controller-manager
+sudo systemctl is-active --quiet kube-proxy || sudo systemctl restart kube-proxy
+sudo systemctl is-active --quiet kube-scheduler || sudo systemctl restart kube-scheduler
+sudo systemctl is-active --quiet kubelet || sudo systemctl restart kubelet
+sudo systemctl is-active --quiet kubernetes || sudo systemctl restart kubernetes
 ```
 
 ```bash
@@ -1527,6 +1586,69 @@ sudo netstat -lnpt | grep kube
 kubectl config view
 sudo kubectl config view
 
+kubectl -n kube-system get cm kubeadm-config -o yaml
+
+kubectl config current-context
+sudo kubeadm certs check-expiration
+
 sudo kubeadm config print init-defaults --component-configs KubeletConfiguration
 sudo kubeadm config print join-defaults --component-configs KubeletConfiguration
+```
+
+
+```bash
+sudo systemctl stop certmgr.service
+sudo systemctl stop cfssl.service
+sudo systemctl stop containerd.service
+sudo systemctl stop flannel.service
+sudo systemctl stop kube-addon-manager.service
+sudo systemctl stop kube-apiserver.service
+sudo systemctl stop kube-controller-manager.service
+sudo systemctl stop kube-proxy.service
+sudo systemctl stop kube-scheduler.service
+sudo systemctl stop kubelet.service
+sudo systemctl stop kubernetes.target
+
+sudo systemctl restart certmgr.service
+sudo systemctl restart cfssl.service
+sudo systemctl restart containerd.service
+sudo systemctl restart flannel.service
+sudo systemctl restart kube-addon-manager.service
+sudo systemctl restart kube-apiserver.service
+sudo systemctl restart kube-controller-manager.service
+sudo systemctl restart kube-proxy.service
+sudo systemctl restart kube-scheduler.service
+sudo systemctl restart kubelet.service
+sudo systemctl restart kubernetes.target
+```
+
+
+#### Testing run time, k8s
+
+```bash
+cat << EOF > example.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-pod
+spec:
+  containers:
+  - name: test-pod
+    image: busybox
+    command: ['sh', '-c', 'echo The Bench Container 1 is Running ; sleep 100000']
+EOF
+```
+
+
+```bash
+kubectl create -f example.yaml
+kubectl get pods
+
+kubectl logs test-pod
+
+kubectl get pods
+kubectl exec test-pod -i -t -- /bin/sh -c ' ls -al /'
+
+kubectl delete pod test-pod
+rm -fv example.yaml
 ```

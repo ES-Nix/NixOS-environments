@@ -152,7 +152,8 @@ in
     # https://nixos.wiki/wiki/Libvirt
     extraGroups = [
       # "audio"
-      # "docker"
+      "docker" # TODO: hardening
+      "kubernetes" # TODO: hardening
       "kvm"
       "libvirtd"
       "nixgroup"
@@ -409,6 +410,7 @@ in
     lsof
     ripgrep
     jq
+    openssl
   ];
 
   environment.variables.KUBECONFIG = "/etc/kubernetes/cluster-admin.kubeconfig";
