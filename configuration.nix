@@ -91,20 +91,20 @@ in
         terminal_output serial console; terminal_input serial console
       '';
 
-      #
-      boot.kernelParams = [
-        # About the console=ttyS0
-        # https://fadeevab.com/how-to-setup-qemu-output-to-console-and-automate-using-shell-script/
-        # https://www.linode.com/docs/guides/install-nixos-on-linode/
-        "console=tty0"
-        "console=ttyS0::respawn:/sbin/getty -L ttyS0 115200 vt100"
-        # Set sensible kernel parameters
-        # https://nixos.wiki/wiki/Bootloader
-        # https://git.redbrick.dcu.ie/m1cr0man/nix-configs-rb/commit/ddb4d96dacc52357e5eaec5870d9733a1ea63a5a?lang=pt-PT
-        "boot.shell_on_fail"
-        "panic=30"
-        "boot.panic_on_fail" # reboot the machine upon fatal boot issues
-      ];
+      #      #
+      #      boot.kernelParams = [
+      #        # About the console=ttyS0
+      #        # https://fadeevab.com/how-to-setup-qemu-output-to-console-and-automate-using-shell-script/
+      #        # https://www.linode.com/docs/guides/install-nixos-on-linode/
+      #        "console=tty0"
+      #        "console=ttyS0::respawn:/sbin/getty -L ttyS0 115200 vt100"
+      #        # Set sensible kernel parameters
+      #        # https://nixos.wiki/wiki/Bootloader
+      #        # https://git.redbrick.dcu.ie/m1cr0man/nix-configs-rb/commit/ddb4d96dacc52357e5eaec5870d9733a1ea63a5a?lang=pt-PT
+      #        "boot.shell_on_fail"
+      #        "panic=30"
+      #        "boot.panic_on_fail" # reboot the machine upon fatal boot issues
+      #      ];
 
       # TODO: test it!
       # boot.kernelPackages = pkgs.linuxPackages_latest;
@@ -171,13 +171,13 @@ in
         #dockerCompat = true;
       };
 
-      environment.etc."containers/registries.conf" = {
-        mode = "0644";
-        text = ''
-          [registries.search]
-          registries = ['docker.io', 'localhost']
-        '';
-      };
+      #      environment.etc."containers/registries.conf" = {
+      #        mode = "0644";
+      #        text = ''
+      #          [registries.search]
+      #          registries = ['docker.io', 'localhost']
+      #        '';
+      #      };
 
       # TODO: do a NixOS test about this!
       # cat /etc/sudoers.d/nixuser | rg -w 'nixuser ALL=(ALL) NOPASSWD: ALL' || echo $?

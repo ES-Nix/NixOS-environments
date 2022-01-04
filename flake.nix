@@ -177,7 +177,10 @@
             --prefix PATH : ${pkgsAllowUnfree.lib.makeBinPath my-script-deps}
           '';
 
-        wrapp-iso-kubernetes-qemu-kvm-mrb-deps = with pkgsAllowUnfree; [ stdenv qemu ];
+        wrapp-iso-kubernetes-qemu-kvm-mrb-deps = with pkgsAllowUnfree; [
+          stdenv
+          qemu
+        ];
         wrapp-iso-kubernetes-qemu-kvm-mrb = pkgsAllowUnfree.runCommandLocal "wrapp-iso-kubernetes-qemu-kvm-mrb"
           { nativeBuildInputs = [ pkgsAllowUnfree.makeWrapper ]; }
           ''
@@ -189,46 +192,60 @@
 
       in
       {
-        packages.image = import ./default.nix {
-          pkgs = nixpkgs.legacyPackages.${system};
-          nixos = nixos;
-        };
+        # If ( ... ).image is not used most things like
+        # nix flake check and others fail
+        #        packages.image = (import ./default.nix {
+        ##          pkgs = nixpkgs.legacyPackages."(if pkgs.stdenv.isDarwin then "" else ${system})";
+        #          pkgs = nixpkgs.legacyPackages.x86_64-linux;
+        #          nixos = nixos;
+        #        }).image;
 
-        packages.empty-qcow2 = import ./empty-qcow2/nixos-image.nix {
-          pkgs = nixpkgs.legacyPackages.${system};
-        };
+        #        packages.empty-qcow2 = import ./empty-qcow2/nixos-image.nix {
+        #          pkgs = nixpkgs.legacyPackages.${system};
+        #        };
 
-        packages.iso = import ./iso.nix {
-          nixpkgs = nixpkgs;
-          system = system;
-        };
+        #        packages.iso = import ./iso.nix {
+        #          nixpkgs = nixpkgs;
+        #          system = system;
+        #        };
 
-        packages.iso-kubernetes = import ./src/base/iso-kubernetes.nix {
-          nixpkgs = nixpkgs;
-          system = system;
-          nixos = nixos;
-        };
+        #        packages.iso-kubernetes = import ./src/base/iso-kubernetes.nix {
+        #          nixpkgs = nixpkgs;
+        #          system = system;
+        #          nixos = nixos;
+        #        };
 
-        packages.iso-kubernetes-qemu-kvm-mrb = wrapp-iso-kubernetes-qemu-kvm-mrb;
+        #        packages.iso-kubernetes-qemu-kvm-mrb = wrapp-iso-kubernetes-qemu-kvm-mrb;
 
-        packages.iso-base = import ./src/base/iso.nix {
-          nixpkgs = nixpkgs;
-          system = system;
-          nixos = nixos;
-        };
+        #        packages.iso-base = import ./src/base/iso.nix {
+        #          nixpkgs = nixpkgs;
+        #          system = system;
+        #          nixos = nixos;
+        #        };
+        #
+        #        packages.qcow2-base = (import ./src/base/qcow2-compressed.nix {
+        #          pkgs = nixpkgs.legacyPackages.${system};
+        #          nixos = nixos;
+        #        }).image;
 
-        packages.qcow2-base = (import ./src/base/qcow2-compressed.nix {
-          pkgs = nixpkgs.legacyPackages.${system};
-          nixos = nixos;
-        }).image;
+        #        packages.iso-minimal = import ./src/base/iso-minimal.nix {
+        #          nixpkgs = nixpkgs;
+        #        };
 
-        packages.iso-minimal = import ./src/base/iso-minimal.nix {
-          nixpkgs = nixpkgs;
-        };
+        packages.checkNixFormat = pkgsAllowUnfree.runCommand "check-nix-format" { } ''
+          ${pkgsAllowUnfree.nixpkgs-fmt}/bin/nixpkgs-fmt --check ${./.}
+          mkdir $out #sucess
+        '';
 
         # TODO
         # https://github.com/NixOS/nix/issues/2854
-        defaultPackage = self.packages.${system}.image.image;
+        #        defaultPackage = self.packages.${system}.iso-minimal;
+
+        checks = {
+          nixpkgs-fmt = self.packages.${system}.checkNixFormat;
+
+          #          build = self.defaultPackage.${system}.image;
+        };
 
         devShell = pkgsAllowUnfree.mkShell {
           buildInputs = with pkgsAllowUnfree; [
@@ -238,7 +255,7 @@
             file
             inetutils
             # libguestfs  # https://serverfault.com/a/432342
-            #            libguestfs-with-appliance  # https://github.com/NixOS/nixpkgs/issues/112920#issuecomment-912494811
+            # libguestfs-with-appliance  # https://github.com/NixOS/nixpkgs/issues/112920#issuecomment-912494811
             lsof
             neovim
             netcat

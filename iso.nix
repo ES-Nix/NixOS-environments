@@ -32,7 +32,7 @@ let
         # https://nixos.wiki/wiki/Libvirt
         extraGroups = [
           "audio"
-          #                        "docker"
+          # "docker"
           "kvm"
           "libvirtd"
           "networkmanager"
@@ -61,13 +61,13 @@ let
         #dockerCompat = true;
       };
 
-      environment.etc."containers/registries.conf" = {
-        mode = "0644";
-        text = ''
-          [registries.search]
-          registries = ['docker.io', 'localhost']
-        '';
-      };
+      #      environment.etc."containers/registries.conf" = {
+      #        mode = "0644";
+      #        text = ''
+      #          [registries.search]
+      #          registries = ['docker.io', 'localhost']
+      #        '';
+      #      };
 
       # Disable sudo for the tests and play/hack up stuff
       # Do NOT use it in PRODUCTION as false!

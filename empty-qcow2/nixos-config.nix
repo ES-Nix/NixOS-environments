@@ -9,7 +9,7 @@
   boot.isContainer = true;
   boot.loader.initScript.enable = true;
   ## login with empty password
-  users.extraUsers.usersroot.initialHashedPassword = "";
+  users.extraUsers.root.initialHashedPassword = "";
 
   networking.firewall.enable = false;
 
