@@ -454,45 +454,47 @@ in
     '';
   };
 
-  services.kubernetes = {
+  services.kubernetes.roles = [ "master" "node" ];
+  services.kubernetes.masterAddress = "${kubeMasterHostname}";
+#  services.kubernetes = {
+#
+#    # addonManager.enable = true;
+#
+#    addons = {
+#      # dashboard.enable = true;
+#      # dashboard.rbac.enable = true;
+#      dns.enable = true;
+#    };
+#
+#    apiserverAddress = "https://${kubeMasterHostname}:${toString kubeMasterAPIServerPort}";
+#
+#    apiserver = {
+#      advertiseAddress = kubeMasterIP;
+#      enable = true;
+#      securePort = kubeMasterAPIServerPort;
+#    };
+#
+#    controllerManager.enable = true;
+#    # flannel.enable = true;
+#    masterAddress = "${toString kubeMasterHostname}";
+#    # proxy.enable = true;
+#    roles = [ "master" ];
+#    # roles = [ "master" "node" ];
+#    # scheduler.enable = true;
+#    easyCerts = true;
+#
+#    kubelet.enable = true;
+#
+#    # needed if you use swap
+#    kubelet.extraOpts = "--fail-swap-on=false";
+#  };
 
-    # addonManager.enable = true;
-
-    addons = {
-      # dashboard.enable = true;
-      # dashboard.rbac.enable = true;
-      dns.enable = true;
-    };
-
-    apiserverAddress = "https://${kubeMasterHostname}:${toString kubeMasterAPIServerPort}";
-
-    apiserver = {
-      advertiseAddress = kubeMasterIP;
-      enable = true;
-      securePort = kubeMasterAPIServerPort;
-    };
-
-    controllerManager.enable = true;
-    # flannel.enable = true;
-    masterAddress = "${toString kubeMasterHostname}";
-    # proxy.enable = true;
-    roles = [ "master" ];
-    # roles = [ "master" "node" ];
-    # scheduler.enable = true;
-    easyCerts = true;
-
-    kubelet.enable = true;
-
-    # needed if you use swap
-    kubelet.extraOpts = "--fail-swap-on=false";
-  };
-
-  services = {
-    flannel = {
-      enable = true;
-      etcd.endpoints = [ "http://127.0.0.1:2379" ];
-    };
-  };
+#  services = {
+#    flannel = {
+#      enable = true;
+#      etcd.endpoints = [ "http://127.0.0.1:2379" ];
+#    };
+#  };
 
   # Broken now, it needs the config somehow
   # https://www.reddit.com/r/NixOS/comments/fsummx/how_to_list_all_installed_packages_on_nixos/

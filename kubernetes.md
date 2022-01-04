@@ -112,7 +112,7 @@ test -f /var/lib/kubernetes/secrets/kube-apiserver.pem || echo 'Erro! ''The file
 
 ```bash
 # ss -tunlp
-sudo ss -tunlp | rg 'kube-*|certmgr'
+sudo ss -tunlp | rg 'kube-*|certmgr|etcd'
 ```
 
 ```bash
@@ -1440,6 +1440,9 @@ echo '123' | sudo -S chown -v \$(id -u):\$(id -g) "\$HOME"/.kube/config
 echo '123' | sudo -S chown kubernetes:kubernetes -Rv /var/lib/kubernetes
 # echo '123' | sudo -S stat /var/lib/kubernetes
 echo '123' | sudo -S chmod -Rv 0775 /var/lib/kubernetes
+
+# ?
+# kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
 EOF
 } && echo 'End.'
 )
@@ -1448,6 +1451,11 @@ EOF
 #kill -9 $(pidof qemu-system-x86_64); \
 #cp -f nixos.img nixos-mrb-part-3.img.backup
 #)
+# Maybe restore a backup?
+# time ( 
+# kill -9 $(pidof qemu-system-x86_64); \
+# cp -f nixos-mrb-part-3.img.backup nixos.img
+# )
 
 kill -9 $(pidof qemu-system-x86_64); \
 { qemu-kvm \
@@ -1488,6 +1496,24 @@ kubectl get serviceaccounts default -o yaml
 kubectl get secret default-token-g59z6 -o yaml
 ```
 
+
+figma
+
+
+kubectl get events --namespace=kube-system
+kubectl get nodes -o json | jq '.items[].spec.taints'
+kubectl taint nodes $(hostname) node-role.kubernetes.io/master:NoSchedule-
+
+kubectl -n kube-system rollout restart deploy
+
+
+ETCDCTL_API=3 etcdctl --debug endpoint status 
+
+kubectl create -f https://docs.projectcalico.org/manifests/tigera-operator.yaml
+kubectl create -f https://docs.projectcalico.org/manifests/custom-resources.yaml
+
+watch --interval=1 kubectl get pods -A
+
 ```bash
 sudo kubeadm certs renew apiserver
 sudo kubeadm certs renew apiserver-etcd-client
@@ -1513,7 +1539,14 @@ sudo kill $(sudo lsof -t -i:2379)
 sudo kill $(sudo lsof -t -i:2380)
 
 sudo kubeadm reset --force
-sudo rm -frv /etc/cni/net.d "$HOME"/.kube /etc/kubernetes/manifests/ /var/lib/etcd
+sudo rm -frv \
+"$HOME"/.kube/ \
+/etc/cni/net.d/  \
+/etc/kubernetes/ \
+/var/lib/etcd/ \
+/var/lib/cfssl/ \
+/var/lib/kubelet/
+
 sudo mkdir -pv /var/lib/etcd
 
 #sudo kubeadm config images pull
