@@ -176,6 +176,17 @@
             wrapProgram "$out/bin/my-script.sh" \
             --prefix PATH : ${pkgsAllowUnfree.lib.makeBinPath my-script-deps}
           '';
+
+        wrapp-iso-kubernetes-qemu-kvm-mrb-deps = with pkgsAllowUnfree; [ stdenv qemu ];
+        wrapp-iso-kubernetes-qemu-kvm-mrb = pkgsAllowUnfree.runCommandLocal "wrapp-iso-kubernetes-qemu-kvm-mrb"
+          { nativeBuildInputs = [ pkgsAllowUnfree.makeWrapper ]; }
+          ''
+            install -m755 ${./src/base/wrapp-iso-kubernetes-qemu-kvm-mrb.sh} -D $out/bin/wrapp-iso-kubernetes-qemu-kvm-mrb
+            patchShebangs $out/bin/wrapp-iso-kubernetes-qemu-kvm-mrb
+            wrapProgram "$out/bin/wrapp-iso-kubernetes-qemu-kvm-mrb" \
+            --prefix PATH : ${pkgsAllowUnfree.lib.makeBinPath wrapp-iso-kubernetes-qemu-kvm-mrb-deps}
+          '';
+
       in
       {
         packages.image = import ./default.nix {
@@ -197,6 +208,8 @@
           system = system;
           nixos = nixos;
         };
+
+        packages.iso-kubernetes-qemu-kvm-mrb = wrapp-iso-kubernetes-qemu-kvm-mrb;
 
         packages.iso-base = import ./src/base/iso.nix {
           nixpkgs = nixpkgs;
@@ -248,6 +261,7 @@
             OVMFFull
 
             my-script
+            wrapp-iso-kubernetes-qemu-kvm-mrb
             # It slows a lot the nix develop
             #            self.packages.${system}.image.image
           ];
