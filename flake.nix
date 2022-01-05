@@ -210,24 +210,56 @@
         #          system = system;
         #        };
 
-        #        packages.iso-kubernetes = import ./src/base/iso-kubernetes.nix {
-        #          nixpkgs = nixpkgs;
-        #          system = system;
-        #          nixos = nixos;
-        #        };
+        packages.iso-kubernetes = import ./src/base/iso-kubernetes.nix {
+          nixpkgs = nixpkgs;
+          system = system;
+          nixos = nixos;
+        };
 
         #        packages.iso-kubernetes-qemu-kvm-mrb = wrapp-iso-kubernetes-qemu-kvm-mrb;
 
-        #        packages.iso-base = import ./src/base/iso.nix {
-        #          nixpkgs = nixpkgs;
-        #          system = system;
-        #          nixos = nixos;
-        #        };
-        #
+        packages.iso-base = import ./src/base/iso.nix {
+          nixpkgs = nixpkgs;
+          system = system;
+          nixos = nixos;
+        };
+
         #        packages.qcow2-base = (import ./src/base/qcow2-compressed.nix {
         #          pkgs = nixpkgs.legacyPackages.${system};
         #          nixos = nixos;
         #        }).image;
+
+        packages.createImage = pkgsAllowUnfree.runCommand "create-image"
+          {
+            buildInputs = with pkgsAllowUnfree; [
+              coreutils # nproc comes from here
+              iputils
+              qemu
+              self.packages.${system}.iso-kubernetes
+            ];
+            ISO_KUBERNETES_PATH = "${self.packages.${system}.iso-kubernetes}/iso/nixos-21.11pre-git-x86_64-linux.iso";
+          } ''
+
+          # echo $ISO_KUBERNETES_PATH
+          # echo $(nproc)
+
+          mkdir $out
+
+          # ping -c 5 www.google.com
+          #qemu-img create $out/nixos.img 10G
+          #
+          #qemu-kvm \
+          #-boot d \
+          #-drive format=raw,file=$out/nixos.img \
+          #-cdrom "$ISO_KUBERNETES_PATH" \
+          #-m 12G \
+          #-enable-kvm \
+          #-cpu host \
+          #-smp $(nproc) \
+          #-nographic
+          #
+          #qemu-img info $out/nixos.img
+        '';
 
         packages.iso-minimal = import ./src/base/iso-minimal.nix {
           nixpkgs = nixpkgs;

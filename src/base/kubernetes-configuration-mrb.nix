@@ -496,6 +496,14 @@ in
   #    };
   #  };
 
+  # TODO:
+  #systemd.services.selfinstall = {
+  #  script = ''
+  #    shutdown --poweroff
+  #  '';
+  #  wantedBy = [ "multi-user.target" ];
+  #};
+
   # Broken now, it needs the config somehow
   # https://www.reddit.com/r/NixOS/comments/fsummx/how_to_list_all_installed_packages_on_nixos/
   # https://discourse.nixos.org/t/can-i-inspect-the-installed-versions-of-system-packages/2763/15
