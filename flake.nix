@@ -216,7 +216,7 @@
           nixos = nixos;
         };
 
-        #        packages.iso-kubernetes-qemu-kvm-mrb = wrapp-iso-kubernetes-qemu-kvm-mrb;
+        packages.iso-kubernetes-qemu-kvm-mrb = wrapp-iso-kubernetes-qemu-kvm-mrb;
 
         packages.iso-base = import ./src/base/iso.nix {
           nixpkgs = nixpkgs;
