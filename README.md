@@ -919,3 +919,12 @@ echo "$ISO_SHA256" result/bin/nixos-21.11pre-git-x86_64-linux.iso | sha256sum -c
 echo 'Build end!'
 COMMANDS
 ```
+
+```bash
+nix build github:ES-Nix/NixOS-environments/box#iso-minimal
+nix build github:ES-Nix/NixOS-environments/box#testCacheInFlakeCheck
+```
+
+```bash
+time nix build --rebuild --json github:ES-Nix/NixOS-environments/box#iso-minimal
+```

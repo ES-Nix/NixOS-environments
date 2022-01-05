@@ -195,14 +195,15 @@
         # If ( ... ).image is not used most things like
         # nix flake check and others fail
         #        packages.image = (import ./default.nix {
-        ##          pkgs = nixpkgs.legacyPackages."(if pkgs.stdenv.isDarwin then "" else ${system})";
+        #          # pkgs = nixpkgs.legacyPackages."(if pkgs.stdenv.isDarwin then "" else ${system})";
         #          pkgs = nixpkgs.legacyPackages.x86_64-linux;
         #          nixos = nixos;
         #        }).image;
 
-        #        packages.empty-qcow2 = import ./empty-qcow2/nixos-image.nix {
-        #          pkgs = nixpkgs.legacyPackages.${system};
-        #        };
+        packages.empty-qcow2 = import ./empty-qcow2/nixos-image.nix {
+          # TODO: why it only works on linux?
+          pkgs = nixpkgs.legacyPackages.x86_64-linux;
+        };
 
         #        packages.iso = import ./iso.nix {
         #          nixpkgs = nixpkgs;
@@ -228,9 +229,28 @@
         #          nixos = nixos;
         #        }).image;
 
-        #        packages.iso-minimal = import ./src/base/iso-minimal.nix {
-        #          nixpkgs = nixpkgs;
-        #        };
+        packages.iso-minimal = import ./src/base/iso-minimal.nix {
+          nixpkgs = nixpkgs;
+        };
+
+        packages.testCacheInFlakeCheck = pkgsAllowUnfree.runCommand "test-cache-in-flake-check"
+          {
+            buildInputs = with pkgsAllowUnfree; [
+              coreutils
+              self.packages.${system}.iso-minimal
+            ];
+            ISO_PATH = "${self.packages.${system}.iso-minimal}/iso/nixos-21.11pre-git-x86_64-linux.iso";
+            QCOW2_PATH = "${self.packages.${system}.empty-qcow2}/nixos.qcow2";
+          } ''
+
+          # sha256sum "$ISO_PATH"
+          echo '66d7c39ebf2f92549c5ca7a01dcee2ea4787d628ba6bdaa72822ada22afe8a09'  "$ISO_PATH" | sha256sum -c
+
+          # sha256sum "$QCOW2_PATH"
+          echo '4f9e5251960c098805723bd9d357e6d7934f1fd9a0681111b6488bbedc3c1277'  "$QCOW2_PATH" | sha256sum -c
+
+          mkdir $out #sucess
+        '';
 
         packages.checkNixFormat = pkgsAllowUnfree.runCommand "check-nix-format" { } ''
           ${pkgsAllowUnfree.nixpkgs-fmt}/bin/nixpkgs-fmt --check ${./.}
@@ -239,12 +259,17 @@
 
         # TODO
         # https://github.com/NixOS/nix/issues/2854
-        #        defaultPackage = self.packages.${system}.iso-minimal;
+        defaultPackage = self.packages.${system}.iso-minimal;
 
         checks = {
           nixpkgs-fmt = self.packages.${system}.checkNixFormat;
-
-          #          build = self.defaultPackage.${system}.image;
+          #          iso = self.packages.${system}.iso;
+          #          iso-base = self.packages.${system}.iso-base;
+          #          iso-kubernetes = self.packages.${system}.iso-kubernetes;
+          #          empty-qcow2 = self.packages.${system}.empty-qcow2;
+          #          qcow2-base = self.packages.${system}.qcow2-base;
+          testCacheInFlakeCheck = self.packages.${system}.testCacheInFlakeCheck;
+          #iso-minimal = self.defaultPackage.${system};
         };
 
         devShell = pkgsAllowUnfree.mkShell {
