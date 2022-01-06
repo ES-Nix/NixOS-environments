@@ -12,10 +12,13 @@ chown kubernetes:kubernetes -Rv /var/lib/kubernetes
 chmod -Rv 0775 /var/lib/kubernetes
 
 # TODO: Do we want it always after renew all certs? I think so.
-mkdir -pv "$HOME"/.kube
-cp -fv /etc/kubernetes/cluster-admin.kubeconfig "$HOME"/.kube/config
+# TODO: remove this hard code in the user name?
+# If running as root "$HOME" is the root home, but for kubernetes
+# we need nixuser's home.
+HARCODED_HOME='/home/nixuser'
+mkdir -pv "$HARCODED_HOME"/.kube
+cp -fv /etc/kubernetes/cluster-admin.kubeconfig "$HARCODED_HOME"/.kube/config
 #cp -fv /etc/kubernetes/admin.conf "$HOME"/.kube/config
 #cp -fv /etc/kubernetes/kubelet.conf "$HOME"/.kube/config
-chmod -v 0644 "$HOME"/.kube/config
-chown -v "$(id -u)":"$(id -g)" "$HOME"/.kube/config
-
+chmod -v 0644 "$HARCODED_HOME"/.kube/config
+chown -v "$(id -u)":"$(id -g)" "$HARCODED_HOME"/.kube/config

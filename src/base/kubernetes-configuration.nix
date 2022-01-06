@@ -127,9 +127,8 @@ let
     && ${copyCustomKubeadmCertsRenewAllScript}/bin/custom-kubeadm-certs-renew-all \
     && ${exampleFlake}/bin/example-flake \
     && ${exampleConfigurationUEFI}/bin/kubernetes-configuration-uefi \
-    && nixos-install --no-root-passwd
-
-    # poweroff
+    && nixos-install --no-root-passwd \
+    && shutdown --poweroff
   '';
 
   myInstallScriptMRB = pkgs.writeScriptBin "my-install-mrb" ''
@@ -140,9 +139,8 @@ let
     && ${copyCustomKubeadmCertsRenewAllScript}/bin/custom-kubeadm-certs-renew-all \
     && ${exampleFlake}/bin/example-flake \
     && ${exampleConfigurationMRB}/bin/kubernetes-configuration-mrb \
-    && nixos-install --no-root-passwd
-
-    # poweroff
+    && nixos-install --no-root-passwd \
+    && shutdown --poweroff
   '';
 
   startKubernetesScriptDeps = with pkgs; [
@@ -170,6 +168,10 @@ let
       wrapProgram "$out/bin/start-kubernetes" \
       --prefix PATH : ${pkgs.lib.makeBinPath startKubernetesScriptDeps}
     '';
+
+  nrt = pkgs.writeScriptBin "nixos-rebuild-test" ''
+    nixos-rebuild test --flake '/etc/nixos'#"$(hostname)"
+  '';
 
 in
 {
@@ -462,6 +464,8 @@ in
       vim = "nvim";
       # podman = "sudo podman";
       # kind = "sudo kind";
+      k = "kubectl";
+      ka = "kubectl get pods -A";
     };
 
     enableCompletion = true;
@@ -558,6 +562,8 @@ in
     myInstallScriptUEFI
 
     startKubernetesScript
+
+    nrt
 
     # Looks like kubernetes needs atleast all this
     kubectl

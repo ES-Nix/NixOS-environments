@@ -38,6 +38,21 @@ let
       --prefix PATH : ${pkgs.lib.makeBinPath firstRebuildSwitchScriptDeps}
     '';
 
+  nrt = pkgs.writeScriptBin "nixos-rebuild-test" ''
+    nixos-rebuild test --flake '/etc/nixos'#"$(hostname)"
+  '';
+
+  part2 = pkgs.writeScriptBin "part2" ''
+    nixos-rebuild test --flake '/etc/nixos'#"$(hostname)"
+    first-rebuild-switch
+    reboot
+  '';
+
+  part3 = pkgs.writeScriptBin "part3" ''
+    custom-kubeadm-certs-renew-all
+    reboot
+  '';
+
 in
 {
   imports =
@@ -331,6 +346,8 @@ in
       vim = "nvim";
       # podman = "sudo podman";
       # kind = "sudo kind";
+      k = "kubectl";
+      ka = "kubectl get pods -A";
     };
 
     enableCompletion = true;
@@ -422,6 +439,10 @@ in
     zsh-completions
 
     firstRebuildSwitchScript
+
+    nrt
+    part2
+    part3
 
     # Looks like kubernetes needs atleast all this
     kubectl
