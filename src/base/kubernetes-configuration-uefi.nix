@@ -22,197 +22,60 @@ let
   # kubeMasterHostname = "api.kube";
   kubeMasterAPIServerPort = 6443;
 
-  #  helperConfiguration = pkgs.fetchurl {
-  #      url = "https://raw.githubusercontent.com/ES-Nix/NixOS-environments/6f0eb51a328158067750b504de6c0aed713965dc/src/base/base-configuration.nix";
-  ##      url = "https://raw.githubusercontent.com/ES-Nix/NixOS-environments/box/src/base/base-configuration.nix";
-  #      sha256 = "ELI7UWfW0CtG4moCVrH1IHGXRj4eq6Zi5Z8vFrzV//k=";
-  #  };
-
-  copyFirstRebuildSwitchScript = pkgs.writeScriptBin "copy-first-rebuild-switch" ''
-    cp -v ${./first-rebuild-switch.sh} /mnt/etc/nixos/first-rebuild-switch.sh
-  '';
-
-  copyCustomKubeadmCertsRenewAllScript = pkgs.writeScriptBin "custom-kubeadm-certs-renew-all" ''
-    cp -v ${./custom-kubeadm-certs-renew-all.sh} /mnt/etc/nixos/custom-kubeadm-certs-renew-all.sh
-  '';
-
-  #
-  exampleConfigurationMRBScript = pkgs.writeScriptBin "kubernetes-configuration-mrb" ''
-    cp -v ${./kubernetes-configuration-mrb.nix} /mnt/etc/nixos/configuration.nix
-  '';
-
-  exampleConfigurationMRB = pkgs.stdenv.mkDerivation {
-    name = "example-configuration-mrb";
-    installPhase = ''
-      mkdir -p $out/bin
-      install -t $out/bin ${exampleConfigurationMRBScript}/bin/kubernetes-configuration-mrb
-    '';
-    phases = [ "buildPhase" "installPhase" "fixupPhase" ];
-  };
-
-  #
-  exampleConfigurationUEFIScript = pkgs.writeScriptBin "kubernetes-configuration-uefi" ''
-    cp -v ${./example-configuration-uefi.nix} /mnt/etc/nixos/configuration.nix
-  '';
-
-  # TODO: refactor this for an specific name that is clear that it brings kubernetes
-  exampleConfigurationUEFI = pkgs.stdenv.mkDerivation {
-    name = "example-configuration-uefi";
-    installPhase = ''
-      mkdir -p $out/bin
-      install -t $out/bin ${exampleConfigurationUEFIScript}/bin/kubernetes-configuration-uefi
-    '';
-    phases = [ "buildPhase" "installPhase" "fixupPhase" ];
-  };
-
-  partitionUEFIScriptDeps = with pkgs; [
-    figlet
-    hello
-
-    e2fsprogs
-    parted
-    mount
-    util-linux
+  firstRebuildSwitchScriptDeps = with pkgs; [
+    bash
+    coreutils
+    git
+    # nix  #
+    nixos-rebuild
   ];
-  partitionUEFIScript = pkgs.runCommandLocal "partition-uefi"
+  firstRebuildSwitchScript = pkgs.runCommandLocal "first-rebuild-switch"
     { nativeBuildInputs = [ pkgs.makeWrapper ]; }
     ''
-      install -m755 ${./parted-uefi.sh} -D $out/bin/partition-uefi
-      patchShebangs $out/bin/partition-uefi
-      wrapProgram "$out/bin/partition-uefi" \
-      --prefix PATH : ${pkgs.lib.makeBinPath partitionUEFIScriptDeps}
-    '';
-
-  partitionMRBScriptDeps = with pkgs; [
-    e2fsprogs
-    parted
-    mount
-    util-linux
-  ];
-  partitionMRBScript = pkgs.runCommandLocal "parted-mrb"
-    { nativeBuildInputs = [ pkgs.makeWrapper ]; }
-    ''
-      install -m755 ${./parted-mrb.sh} -D $out/bin/partition-mrb
-      patchShebangs $out/bin/partition-mrb
-      wrapProgram "$out/bin/partition-mrb" \
-      --prefix PATH : ${pkgs.lib.makeBinPath partitionMRBScriptDeps}
-    '';
-
-  exampleFlakeScript = pkgs.writeScriptBin "example-flake" ''
-    cp -v ${./base-flake.nix} /mnt/etc/nixos/flake.nix
-
-    cd /mnt/etc/nixos
-    echo 'result' > .gitignore
-    git init
-    git add .
-    git config --global user.email "you@example.com"
-    git config --global user.name "Your Name"
-    git commit -m 'First commit'
-  '';
-
-  exampleFlake = pkgs.stdenv.mkDerivation {
-    name = "example-flake";
-    installPhase = ''
-      mkdir -p $out/bin
-      install -t $out/bin ${exampleFlakeScript}/bin/example-flake
-    '';
-    phases = [ "buildPhase" "installPhase" "fixupPhase" ];
-  };
-
-  myInstallScriptUEFI = pkgs.writeScriptBin "my-install-uefi" ''
-
-    ${partitionUEFIScript}/bin/partition-uefi \
-    && nixos-generate-config --root /mnt \
-    && ${copyFirstRebuildSwitchScript}/bin/copy-first-rebuild-switch \
-    && ${copyCustomKubeadmCertsRenewAllScript}/bin/custom-kubeadm-certs-renew-all \
-    && ${exampleFlake}/bin/example-flake \
-    && ${exampleConfigurationUEFI}/bin/kubernetes-configuration-uefi \
-    && nixos-install --no-root-passwd
-
-    # poweroff
-  '';
-
-  myInstallScriptMRB = pkgs.writeScriptBin "my-install-mrb" ''
-
-    ${partitionMRBScript}/bin/partition-mrb \
-    && nixos-generate-config --root /mnt \
-    && ${copyFirstRebuildSwitchScript}/bin/copy-first-rebuild-switch \
-    && ${copyCustomKubeadmCertsRenewAllScript}/bin/custom-kubeadm-certs-renew-all \
-    && ${exampleFlake}/bin/example-flake \
-    && ${exampleConfigurationMRB}/bin/kubernetes-configuration-mrb \
-    && nixos-install --no-root-passwd
-
-    # poweroff
-  '';
-
-  startKubernetesScriptDeps = with pkgs; [
-    # Looks like kubernetes needs atleast all this
-    kubectl
-    kubernetes
-    #
-    cni
-    cni-plugins
-    conntrack-tools
-    cri-o
-    cri-tools
-    docker
-    ebtables
-    ethtool
-    flannel
-    iptables
-    socat
-  ];
-  startKubernetesScript = pkgs.runCommandLocal "start-kubernetes"
-    { nativeBuildInputs = [ pkgs.makeWrapper ]; }
-    ''
-      install -m755 ${./start-kubernetes.sh} -D $out/bin/start-kubernetes
-      patchShebangs $out/bin/start-kubernetes
-      wrapProgram "$out/bin/start-kubernetes" \
-      --prefix PATH : ${pkgs.lib.makeBinPath startKubernetesScriptDeps}
+      install -m755 ${./first-rebuild-switch.sh} -D $out/bin/first-rebuild-switch
+      patchShebangs $out/bin/first-rebuild-switch
+      wrapProgram "$out/bin/first-rebuild-switch" \
+      --prefix PATH : ${pkgs.lib.makeBinPath firstRebuildSwitchScriptDeps}
     '';
 
 in
 {
   imports =
     [
-      "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix"
+      # It errors with infinite recursion encoutered :/
+      # "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix"
 
       # Provide an initial copy of the NixOS channel so that the user
       # doesn't need to run "nix-channel --update" first.
-      "${nixpkgs}/nixos/modules/installer/cd-dvd/channel.nix"
+      # "${nixpkgs}/nixos/modules/installer/cd-dvd/channel.nix"
 
       # TODO: Is it good?
       # https://discourse.nixos.org/t/whats-the-rationale-behind-not-detected-nix/5403
       # "${nixpkgs}/nixos/modules/installer/scan/not-detected.nix"
-
-      # To be able to build the config.system.build.vm
-      #        "${nixpkgs}/nixos/modules/profiles/qemu-guest.nix"
-      #        "${nixpkgs}/nixos/modules/virtualisation/qemu-vm.nix"
     ];
 
   # Use the GRUB 2 boot loader.
-  # boot.loader.grub.enable = true;
-  # boot.loader.grub.version = 2;
+#  boot.loader.grub.enable = true;
+#  boot.loader.grub.version = 2;
 
-  #  boot.loader.grub.efiSupport = true;
-  #  boot.loader.grub.efiInstallAsRemovable = true;
+  # Do we need it?
+  # https://www.linode.com/docs/guides/install-nixos-on-linode/
+  # boot.loader.grub.forceInstall = true;
+
+  # boot.loader.grub.efiSupport = true;
+  # boot.loader.grub.efiInstallAsRemovable = true;
   # boot.loader.efi.efiSysMountPoint = "/boot/efi";
   # Define on which hard drive you want to install Grub.
-  #  boot.loader.grub.device = "/dev/sda"; # or "nodev" for efi only
+  # boot.loader.grub.device = "/dev/sda"; # or "nodev" for efi only
 
-  boot.loader.grub.efiSupport = true;
-  boot.loader.grub.efiInstallAsRemovable = true;
-  boot.loader.grub.device = "nodev";
+  boot.loader = {
+    systemd-boot.enable = true;
+    efi.canTouchEfiVariables = true;
+    efi.efiSysMountPoint = "/boot";
+    timeout = 1;
+  };
 
-  # DEBUG: it may be hard to debug it with zero time to access grub and hit some key.
-  # Set it to, for example, the default value 10
-  # boot.loader.timeout = 0;
-
-  # https://nixos.wiki/wiki/Libvirt
-  boot.extraModprobeConfig = "options kvm_intel nested=1";
-
-  # https://github.com/NixOS/nixpkgs/issues/27930#issuecomment-417943781
-  boot.kernelModules = [ "kvm-intel" ];
+  fileSystems."/".device = "/dev/disk/by-label/nixos";
 
   # Is this ok to kubernetes?
   # Why free -h still show swap stuff but with 0?
@@ -258,10 +121,20 @@ in
   #    # Set sensible kernel parameters
   #    # https://nixos.wiki/wiki/Bootloader
   #    # https://git.redbrick.dcu.ie/m1cr0man/nix-configs-rb/commit/ddb4d96dacc52357e5eaec5870d9733a1ea63a5a?lang=pt-PT
-  #     "boot.shell_on_fail"
-  #     "panic=30"
-  #     "boot.panic_on_fail" # reboot the machine upon fatal boot issues
+  #    "boot.shell_on_fail"
+  #    "panic=30"
+  #    "boot.panic_on_fail" # reboot the machine upon fatal boot issues
   #  ];
+
+  # DEBUG: it may be hard to debug it with zero time to access grub and hit some key.
+  # Set it to, for example, the default value 10
+  # boot.loader.timeout = 0;
+
+  # https://nixos.wiki/wiki/Libvirt
+  boot.extraModprobeConfig = "options kvm_intel nested=1";
+
+  # https://github.com/NixOS/nixpkgs/issues/27930#issuecomment-417943781
+  boot.kernelModules = [ "kvm-intel" ];
 
   # TODO: hardening
   # boot.blacklistedKernelModules = [ ];
@@ -338,10 +211,6 @@ in
     shell = pkgs.zsh;
   };
 
-  #  users.users.nixosvmtest.group = "nixosvmtest";
-  #  users.groups.nixosvmtest = {};
-  #  users.users.nixosvmtest.initialPassword = "test";
-  #  users.users.nixosvmtest.isSystemUser = true;
 
   # TODO: hardning
   # https://nixos.wiki/wiki/Kernel_Debugging_with_QEMU
@@ -543,8 +412,8 @@ in
     coreutils
     git
 
-    # If used pkgs.lib.mkForce
-    nix
+    # If used pkgs.lib.mkForce?
+    # nix
     neovim
 
     fzf
@@ -552,12 +421,7 @@ in
     zsh-autosuggestions
     zsh-completions
 
-    # hello
-
-    myInstallScriptMRB
-    myInstallScriptUEFI
-
-    startKubernetesScript
+    firstRebuildSwitchScript
 
     # Looks like kubernetes needs atleast all this
     kubectl
@@ -639,6 +503,14 @@ in
   #    };
   #  };
 
+  # TODO:
+  #systemd.services.selfinstall = {
+  #  script = ''
+  #    shutdown --poweroff
+  #  '';
+  #  wantedBy = [ "multi-user.target" ];
+  #};
+
   # Broken now, it needs the config somehow
   # https://www.reddit.com/r/NixOS/comments/fsummx/how_to_list_all_installed_packages_on_nixos/
   # https://discourse.nixos.org/t/can-i-inspect-the-installed-versions-of-system-packages/2763/15
@@ -669,7 +541,6 @@ in
   # Or disable the firewall altogether.
   # networking.firewall.enable = false;
 
-  # Broken?
   # From:
   # https://discourse.nixos.org/t/creating-directories-and-files-declararively/9349/2
   # https://discourse.nixos.org/t/adding-folders-and-scripts/5114/4

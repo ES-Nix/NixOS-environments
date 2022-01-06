@@ -47,7 +47,7 @@ EOF
 time (
 kill -9 $(pidof qemu-system-x86_64); \
 { qemu-kvm \
--boot a \
+-boot c \
 -cpu host \
 -device "rtl8139,netdev=net0" \
 -drive format=raw,file=nixos.img \
@@ -81,7 +81,7 @@ EOF
 time (
 kill -9 "$(pidof qemu-system-x86_64)"; \
 { qemu-kvm \
--boot a \
+-boot c \
 -cpu host \
 -device "rtl8139,netdev=net0" \
 -drive format=raw,file=nixos.img \
