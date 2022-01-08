@@ -342,16 +342,14 @@ Refs.:
 
 
 ```bash
-ifconfig -a |
-awk '/^[a-z]/ { iface=$1; mac=$NF; next }
-    /inet addr:/ { print iface, mac }'
+ifconfig -a | awk '/^[a-z]/ { iface=$1; mac=$NF; next }    /inet addr:/ { print iface, mac }'
 ```
 Refs.: 
 - https://stackoverflow.com/a/23828821
 
 
 ```bash
-lsmod | grep br_netfilter | wc -l | grep -q 2 || echo 'Error, kernel module br_netfilter not loaded'
+lsmod | rg -c br_netfilter | rg -q 2 || echo 'Error, kernel module br_netfilter not loaded'
 ```
 
 
@@ -1376,7 +1374,7 @@ EOF
 time ( 
 kill -9 $(pidof qemu-system-x86_64); \
 { qemu-kvm \
--boot a \
+-boot c \
 -cpu host \
 -device "rtl8139,netdev=net0" \
 -drive format=raw,file=nixos.img \
@@ -1410,7 +1408,7 @@ EOF
 time ( 
 kill -9 $(pidof qemu-system-x86_64); \
 { qemu-kvm \
--boot a \
+-boot c \
 -cpu host \
 -device "rtl8139,netdev=net0" \
 -drive format=raw,file=nixos.img \
@@ -1459,7 +1457,7 @@ EOF
 
 kill -9 $(pidof qemu-system-x86_64); \
 { qemu-kvm \
--boot a \
+-boot c \
 -cpu host \
 -device "rtl8139,netdev=net0" \
 -drive format=raw,file=nixos.img \
@@ -1587,6 +1585,7 @@ systemctl status kube-controller-manager.service | rg $QUIET -e 'Active: active'
 systemctl status kube-proxy.service | rg $QUIET -e 'Active: active' || echo 'Error!'
 systemctl status kube-scheduler.service | rg $QUIET -e 'Active: active' || echo 'Error!'
 systemctl status kubelet.service | rg $QUIET -e 'Active: active' || echo 'Error!'
+systemctl status etcd.service | rg $QUIET -e 'Active: active' || echo 'Error!'
 systemctl status kubernetes.target | rg $QUIET -e 'Active: active' || echo 'Error!'
 ```
 

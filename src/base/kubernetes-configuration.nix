@@ -1,4 +1,4 @@
-{ pkgs, nixpkgs, ... }:
+{ pkgs, nixpkgs, system, ... }:
 let
   JoaoKeys = pkgs.writeText "joao-keys.pub" ''
     ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCqWdfY6g9gtETLFji9Sb60bcR1fQvS2ADdY9Ba0GtKhzjHNTmTgHxRoqLwOauDgxke9CJt5r9kolBHxGaMMJwcAwJlPgh0bodRm6LHsBatQYMyqYo2LvIGhT5WorlUp8zZWkZBP5CUuInQ48gieD62PMnU4rVmJdK8ZB48S4COz1IJx9ILr2unvVFJs7KT7WdNvbgfjKsTZrf/T/VMeQLodtdAIuWRuSUY5lJ3XwJCff2kCx5oAkZiz+3+a5z3LDqnwCeK8TkHnugmJHT09srlKSAA+bel+hxJtplsbYryeFVuYY8fILeOfNwI7Ht5ZZThIoLcUJfqKMPSlsBhEtFzqBA2ZE/NpStHKriIzLZbN2aUB0CWFPSa5g88H83qPyRInqR71O8WImQcH971BL41D+SHWhJEAbGZIaZwuYGaeiNe862SWrOv37Heh424b+RsEwVm0hUs9ZgdV3QqhMJlIEWyqIF4ueAlymqbtITYyI5kYuMo0yFW6dPYMSOUaHU=
@@ -14,6 +14,15 @@ let
   RodrigoKeys = pkgs.writeText "rodrigo-keys.pub" ''
     ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC8wXcAjwVJZ71MZkhFIfc1gCCTuZ8PRTKlUbqKdW68u0VToS35OYfYTmTRzFDrulXPX/HOZMtQ83UfY5igTtn0FMw1V16FNFmycGLIciCqYBdfB8Ex0xxbf8ZDAxgZ5BG+/lg+PXpNxX1fU7ltW47krYoWueJrGB2ACP53uhI/KcBVvpIW0XqPpYaoXseap89sOXZ0AkKUsC/YtB1bXz5p8oqXJfTyrQx+tHQ+zNg8QX6J84HkKXKoNEVTFjYP8VvKZAa32FkHrAvjRjqakemRxL7hnmoIvjAmFS3CfluYZRun/3AkQ4DsukxVLJxT1yL+WQQgNXc5Zbo5hYiPWXtSuFNQ5xE54qlJzkazp2ky9DNnwgDsvPEoILQwihYERpHQzgU6B4T3anvBQLKHDXkGFaVcA2eTf59D8GxGPeq9ylUZ9qDwjCIbX5biNw4InhockKmzhNsIq1tiqzpx5jR5BlrRxwtJDUnx+C1aX/GRKYedCQk1+yXHJ7WQIS3jSxk=
   '';
+
+  nixpkgsAnsSystem = {
+    inherit system nixpkgs;
+  };
+
+  myImportGeneric = nixpkgsAnsSystem: fullFilePath:
+    import fullFilePath nixpkgsAnsSystem;
+
+  myImport = myImportGeneric nixpkgsAnsSystem;
 
   # https://github.com/NixOS/nixpkgs/issues/59364#issuecomment-723906760
   # https://discourse.nixos.org/t/use-nixos-as-single-node-kubernetes-cluster/8858/7
@@ -36,6 +45,26 @@ let
     cp -v ${./custom-kubeadm-certs-renew-all.sh} /mnt/etc/nixos/custom-kubeadm-certs-renew-all.sh
   '';
 
+  ## TODO: is this a good way?
+  customKubeadmCertsRenewAllScript = pkgs.writeScriptBin "custom-kubeadm-certs-renew-all" ''
+    ${./custom-kubeadm-certs-renew-all.sh}
+  '';
+  #customKubeadmCertsRenewAllScriptDeps = with pkgs; [
+  #  bash
+  #  coreutils
+  #  git
+  #  # nix  #
+  #  nixos-rebuild
+  #];
+  #customKubeadmCertsRenewAllScript = pkgs.runCommandLocal "custom-kubeadm-certs-renew-all"
+  #  { nativeBuildInputs = [ pkgs.makeWrapper ]; }
+  #  ''
+  #    install -m755 ${./first-rebuild-switch.sh} -D $out/bin/custom-kubeadm-certs-renew-all
+  #    patchShebangs $out/bin/custom-kubeadm-certs-renew-all
+  #    wrapProgram "$out/bin/custom-kubeadm-certs-renew-all" \
+  #    --prefix PATH : ${pkgs.lib.makeBinPath customKubeadmCertsRenewAllScriptDeps}
+  #  '';
+
   #
   exampleConfigurationMRBScript = pkgs.writeScriptBin "kubernetes-configuration-mrb" ''
     cp -v ${./kubernetes-configuration-mrb.nix} /mnt/etc/nixos/configuration.nix
@@ -52,7 +81,11 @@ let
 
   #
   exampleConfigurationUEFIScript = pkgs.writeScriptBin "kubernetes-configuration-uefi" ''
-    cp -v ${./example-configuration-uefi.nix} /mnt/etc/nixos/configuration.nix
+    cp -v ${./kubernetes-configuration-uefi.nix} /mnt/etc/nixos/configuration.nix
+  '';
+
+  copyTomntScript = pkgs.writeScriptBin "copy-to-mnt" ''
+    cp -rv ${../../src}* /mnt/etc/nixos/src/
   '';
 
   # TODO: refactor this for an specific name that is clear that it brings kubernetes
@@ -77,7 +110,7 @@ let
   partitionUEFIScript = pkgs.runCommandLocal "partition-uefi"
     { nativeBuildInputs = [ pkgs.makeWrapper ]; }
     ''
-      install -m755 ${./parted-uefi.sh} -D $out/bin/partition-uefi
+      install -m755 ${./install-nixos-with-parted-in-mbr.sh} -D $out/bin/partition-uefi
       patchShebangs $out/bin/partition-uefi
       wrapProgram "$out/bin/partition-uefi" \
       --prefix PATH : ${pkgs.lib.makeBinPath partitionUEFIScriptDeps}
@@ -92,7 +125,7 @@ let
   partitionMRBScript = pkgs.runCommandLocal "parted-mrb"
     { nativeBuildInputs = [ pkgs.makeWrapper ]; }
     ''
-      install -m755 ${./parted-mrb.sh} -D $out/bin/partition-mrb
+      install -m755 ${./install-nixos-with-parted-in-mbr.sh} -D $out/bin/partition-mrb
       patchShebangs $out/bin/partition-mrb
       wrapProgram "$out/bin/partition-mrb" \
       --prefix PATH : ${pkgs.lib.makeBinPath partitionMRBScriptDeps}
@@ -102,11 +135,13 @@ let
     cp -v ${./base-flake.nix} /mnt/etc/nixos/flake.nix
 
     cd /mnt/etc/nixos
+
     echo 'result' > .gitignore
-    git init
-    git add .
+
     git config --global user.email "you@example.com"
     git config --global user.name "Your Name"
+    git init
+    git add .
     git commit -m 'First commit'
   '';
 
@@ -119,6 +154,7 @@ let
     phases = [ "buildPhase" "installPhase" "fixupPhase" ];
   };
 
+  # && ${copyTomntScript}/bin/copy-to-mnt \
   myInstallScriptUEFI = pkgs.writeScriptBin "my-install-uefi" ''
 
     ${partitionUEFIScript}/bin/partition-uefi \
@@ -173,6 +209,35 @@ let
     nixos-rebuild test --flake '/etc/nixos'#"$(hostname)"
   '';
 
+  firstRebuildSwitchScriptDeps = with pkgs; [
+    bash
+    coreutils
+    git
+    # nix  #
+    nixos-rebuild
+  ];
+  firstRebuildSwitchScript = pkgs.runCommandLocal "first-rebuild-switch"
+    { nativeBuildInputs = [ pkgs.makeWrapper ]; }
+    ''
+      install -m755 ${./first-rebuild-switch.sh} -D $out/bin/first-rebuild-switch
+      patchShebangs $out/bin/first-rebuild-switch
+      wrapProgram "$out/bin/first-rebuild-switch" \
+      --prefix PATH : ${pkgs.lib.makeBinPath firstRebuildSwitchScriptDeps}
+    '';
+
+    test-hello-figlet-cowsay = myImport ../../src/base/nix/wrappers/test-hello-figlet-cowsay.nix;
+
+    utilsK8s-services-status-check = myImport ../../src/base/nix/wrappers/utilsK8s-services-status-check.nix;
+    utilsK8s-services-restart-if-not-active = myImport ../../src/base/nix/wrappers/utilsK8s-services-restart-if-not-active.nix;
+    utilsK8s-services-stop = myImport ../../src/base/nix/wrappers/utilsK8s-services-stop.nix;
+
+    test-kubernetes-required-environment-roles-master-and-node = myImport ../../src/base/nix/wrappers/test-kubernetes-required-environment-roles-master-and-node.nix;
+
+    install-nixos-with-parted-in-gpt = myImport ../../src/base/nix/wrappers/install-nixos-with-parted-in-gpt.nix;
+    install-nixos-with-parted-in-mbr = myImport ../../src/base/nix/wrappers/install-nixos-with-parted-in-mbr.nix;
+    crw = myImport ../../src/base/nix/wrappers/crw.nix;
+
+    my-install-nixos = myImport ../../src/base/nix/wrappers/my-install-nixos.nix;
 in
 {
   imports =
@@ -188,8 +253,8 @@ in
       # "${nixpkgs}/nixos/modules/installer/scan/not-detected.nix"
 
       # To be able to build the config.system.build.vm
-      #        "${nixpkgs}/nixos/modules/profiles/qemu-guest.nix"
-      #        "${nixpkgs}/nixos/modules/virtualisation/qemu-vm.nix"
+      # "${nixpkgs}/nixos/modules/profiles/qemu-guest.nix"
+      # "${nixpkgs}/nixos/modules/virtualisation/qemu-vm.nix"
     ];
 
   # Use the GRUB 2 boot loader.
@@ -303,7 +368,10 @@ in
 
   # Enable the X11 windowing system.
   # services.xserver.enable = true;
-  users.groups.nixgroup.members = [ "nixuser" ];
+  users.groups.nixgroup.members = [
+     "nixuser"
+     "kubernetes" # TODO: Hardening. Propably not a good idea, but i am debuging from where the pemission denied comes from
+  ];
   users.users.nixuser = {
 
     # TODO:
@@ -547,8 +615,9 @@ in
     coreutils
     git
 
-    # If used pkgs.lib.mkForce
-    nix
+    # If used pkgs.lib.mkForce.
+    # As of now, if nix is added here the flake support is broken, wasted a lot of time because this.
+    # nix
     neovim
 
     fzf
@@ -564,6 +633,21 @@ in
     startKubernetesScript
 
     nrt
+
+    firstRebuildSwitchScript
+    customKubeadmCertsRenewAllScript
+    copyTomntScript
+
+#    utilsK8s-services-status-check
+#    utilsK8s-services-restart-if-not-active
+#    utilsK8s-services-stop
+#    test-hello-figlet-cowsay
+#    test-kubernetes-required-environment-roles-master-and-node
+#    my-install-nixos
+#    install-nixos-with-parted-in-gpt
+#    install-nixos-with-parted-in-mbr
+#    crw
+
 
     # Looks like kubernetes needs atleast all this
     kubectl

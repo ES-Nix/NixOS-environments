@@ -59,7 +59,7 @@ let
   partitionUEFIScript = pkgs.runCommandLocal "partition-uefi"
     { nativeBuildInputs = [ pkgs.makeWrapper ]; }
     ''
-      install -m755 ${./parted-uefi.sh} -D $out/bin/partition-uefi
+      install -m755 ${./install-nixos-with-parted-in-gpt.sh} -D $out/bin/partition-uefi
       patchShebangs $out/bin/partition-uefi
       wrapProgram "$out/bin/partition-uefi" \
       --prefix PATH : ${pkgs.lib.makeBinPath partitionUEFIScriptDeps}
@@ -74,7 +74,7 @@ let
   partitionMRBScript = pkgs.runCommandLocal "parted-mrb"
     { nativeBuildInputs = [ pkgs.makeWrapper ]; }
     ''
-      install -m755 ${./parted-mrb.sh} -D $out/bin/partition-mrb
+      install -m755 ${./install-nixos-with-parted-in-mbr.sh} -D $out/bin/partition-mrb
       patchShebangs $out/bin/partition-mrb
       wrapProgram "$out/bin/partition-mrb" \
       --prefix PATH : ${pkgs.lib.makeBinPath partitionMRBScriptDeps}

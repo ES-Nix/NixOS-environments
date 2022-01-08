@@ -38,6 +38,22 @@ let
       --prefix PATH : ${pkgs.lib.makeBinPath firstRebuildSwitchScriptDeps}
     '';
 
+  customKubeadmCertsRenewAllScriptDeps = with pkgs; [
+    bash
+    coreutils
+    git
+    # nix  #
+    nixos-rebuild
+  ];
+  customKubeadmCertsRenewAllScript = pkgs.runCommandLocal "custom-kubeadm-certs-renew-all"
+    { nativeBuildInputs = [ pkgs.makeWrapper ]; }
+    ''
+      install -m755 ${./custom-kubeadm-certs-renew-all.sh} -D $out/bin/custom-kubeadm-certs-renew-all
+      patchShebangs $out/bin/custom-kubeadm-certs-renew-all
+      wrapProgram "$out/bin/custom-kubeadm-certs-renew-all" \
+      --prefix PATH : ${pkgs.lib.makeBinPath customKubeadmCertsRenewAllScriptDeps}
+    '';
+
     nrt = pkgs.writeScriptBin "nixos-rebuild-test" ''
       nixos-rebuild test --flake '/etc/nixos'#"$(hostname)"
     '';
@@ -53,6 +69,30 @@ let
       reboot
     '';
 
+      utilsK8s-services-status-check = import ./src/base/nix/wrappers/utilsK8s-services-status-check.nix {
+        nixpkgs = nixpkgs;
+        system = "x86_64-linux";
+      };
+
+      utilsK8s-services-restart-if-not-active = import ./src/base/nix/wrappers/utilsK8s-services-restart-if-not-active.nix {
+        nixpkgs = nixpkgs;
+        system = "x86_64-linux";
+      };
+
+      utilsK8s-services-stop = import ./src/base/nix/wrappers/utilsK8s-services-stop.nix {
+        nixpkgs = nixpkgs;
+        system = "x86_64-linux";
+      };
+
+      test-hello-figlet-cowsay = import ./src/base/nix/wrappers/test-hello-figlet-cowsay.nix {
+        nixpkgs = nixpkgs;
+        system = "x86_64-linux";
+      };
+
+      test-kubernetes-required-environment-roles-master-and-node = import ./src/base/nix/wrappers/test-kubernetes-required-environment-roles-master-and-node.nix {
+        nixpkgs = nixpkgs;
+        system = "x86_64-linux";
+      };
 in
 {
   imports =
@@ -432,6 +472,13 @@ in
     zsh-completions
 
     firstRebuildSwitchScript
+    customKubeadmCertsRenewAllScript
+
+    utilsK8s-services-status-check
+    utilsK8s-services-restart-if-not-active
+    utilsK8s-services-stop
+    test-hello-figlet-cowsay
+    test-kubernetes-required-environment-roles-master-and-node
 
     nrt
     part2

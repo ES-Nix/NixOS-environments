@@ -21,4 +21,4 @@ cp -fv /etc/kubernetes/cluster-admin.kubeconfig "$HARCODED_HOME"/.kube/config
 #cp -fv /etc/kubernetes/admin.conf "$HOME"/.kube/config
 #cp -fv /etc/kubernetes/kubelet.conf "$HOME"/.kube/config
 chmod -v 0644 "$HARCODED_HOME"/.kube/config
-chown -v "$(id -u)":"$(id -g)" "$HARCODED_HOME"/.kube/config
+chown -v nixuser: "$HARCODED_HOME"/.kube/config
