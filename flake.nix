@@ -234,9 +234,9 @@
 #          system = system;
 #        };
 
-        test-hello-figlet-cowsay = myImport ./src/mwe.nix;
+#        test-hello-figlet-cowsay = myImport ./src/test-hello-figlet-cowsay.nix;
 
-#        test-hello-figlet-cowsay = myImport ../../src/base/nix/wrappers/test-hello-figlet-cowsay.nix;
+        test-hello-figlet-cowsay = myImport ./src/base/nix/wrappers/test-hello-figlet-cowsay.nix;
 
 #        utilsK8s-services-status-check = myImport ../../src/base/nix/wrappers/utilsK8s-services-status-check.nix;
 #        utilsK8s-services-restart-if-not-active = myImport ../../src/base/nix/wrappers/utilsK8s-services-restart-if-not-active.nix;
