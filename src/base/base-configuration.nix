@@ -22,7 +22,7 @@ let
   #  };
 
   exampleConfigurationMRBScript = pkgs.writeScriptBin "example-configuration-mrb" ''
-    cp -v ${./example-configuration-mrb.nix} /mnt/etc/nixos/configuration.nix
+    cp -v ${./example-kubernetes-configuration-mbr.nix} /mnt/etc/nixos/configuration.nix
   '';
 
   exampleConfigurationMRB = pkgs.stdenv.mkDerivation {

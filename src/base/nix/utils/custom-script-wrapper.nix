@@ -1,8 +1,8 @@
 { nixpkgs ? <nixpkgs>,
 system ? "x86_64-linux",
-buildInputs ? with nixpkgs.legacyPackages.${system}; [ stdenv ],
-nativeBuildInputs ? with nixpkgs.legacyPackages.${system}; [ makeWrapper ],
-propagatedNativeBuildInputs ? with nixpkgs.legacyPackages.${system}; [ bash ],
+buildInputs ? [ ],
+nativeBuildInputs ? [ ],
+propagatedNativeBuildInputs ? [ ],
 scriptFullNixPath,
 scriptName
  }:
@@ -10,9 +10,9 @@ let
   pkgs = nixpkgs.legacyPackages.${system};
   customScriptWrapper = pkgs.stdenv.mkDerivation {
         name = scriptName;
-        inherit buildInputs;
-        inherit nativeBuildInputs;
-        inherit propagatedNativeBuildInputs;
+        buildInputs = with pkgs; [ stdenv ] ++ buildInputs;
+        nativeBuildInputs = with pkgs; [ makeWrapper ] ++ nativeBuildInputs;
+        propagatedNativeBuildInputs = with pkgs; [ bash ] ++ propagatedNativeBuildInputs;
 
         installPhase = ''
           mkdir -p $out/bin

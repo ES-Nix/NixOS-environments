@@ -388,7 +388,8 @@ in
       # podman = "sudo podman";
       # kind = "sudo kind";
       k = "kubectl";
-      ka = "kubectl get pods -A";
+      ka = "kubectl get pods --all-namespaces -o wide";
+      wka = "watch -n 1 kubectl get pods --all-namespaces -o wide";
     };
 
     enableCompletion = true;

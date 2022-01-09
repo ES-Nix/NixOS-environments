@@ -1757,3 +1757,6 @@ kubectl get all -n sonobuoy
 kubectl get pods -n sonobuoy -o wide
 sonobuoy status --json | jq .
 sonobuoy delete --wait
+
+
+sudo find /var/lib/kubernetes -group nogroup | sort

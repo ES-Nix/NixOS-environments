@@ -14,15 +14,6 @@
           config = { allowUnfree = true; };
         };
 
-        nixpkgsAnsSystem = {
-          inherit system nixpkgs;
-        };
-
-        myImportGeneric = nixpkgsAnsSystem: fullFilePath:
-          import fullFilePath nixpkgsAnsSystem;
-
-        myImport = myImportGeneric nixpkgsAnsSystem;
-
         user_name = "nixuser";
 
         sshVM = pkgsAllowUnfree.writeShellScriptBin "ssh-vm" ''
@@ -215,25 +206,60 @@
           "${./src/base/prepare-clean-old-stuff-and-create-iso-and-disk.sh}"
         '';
 
-        utilsK8s-services-status-check = myImport ./src/base/nix/wrappers/utilsK8s-services-status-check.nix;
+        nixpkgsAndSystem = {
+          inherit nixpkgs system ;
+        };
 
-        utilsK8s-services-restart-if-not-active = myImport ./src/base/nix/wrappers/utilsK8s-services-restart-if-not-active.nix;
-        utilsK8s-services-stop = myImport ./src/base/nix/wrappers/utilsK8s-services-stop.nix;
+        myImportGeneric = nixpkgsAndSystem: fullFilePath:
+          import fullFilePath nixpkgsAndSystem;
 
-        test-hello-figlet-cowsay = myImport ./src/base/nix/wrappers/test-hello-figlet-cowsay.nix;
+        myImport = myImportGeneric nixpkgsAndSystem;
 
-        test-kubernetes-required-environment-roles-master-and-node = myImport ./src/base/nix/wrappers/test-kubernetes-required-environment-roles-master-and-node.nix;
-        crw = myImport ./src/base/nix/wrappers/crw.nix;
+#        customScriptWrapper = import ./custom-script-wrapper.nix;
+#
+#        test-hello-figlet-cowsay = customScriptWrapper {
+#          nixpkgs = nixpkgs;
+#          system = system;
+#          propagatedNativeBuildInputs = with pkgsAllowUnfree; [
+#            figlet
+#            hello
+#            cowsay
+#          ];
+#          scriptFullNixPath = "${ ./src/base/test-hello-figlet-cowsay.sh}";
+#          scriptName = "test-hello-figlet-cowsay";
+#        };
+
+#        test-hello-figlet-cowsay = import ./test-hello-figlet-cowsay.nix {
+#          nixpkgs = nixpkgs;
+#          system = system;
+#        };
+
+        test-hello-figlet-cowsay = myImport ./test-hello-figlet-cowsay.nix;
+
+#        test-hello-figlet-cowsay = myImport ../../src/base/nix/wrappers/test-hello-figlet-cowsay.nix;
+
+#        utilsK8s-services-status-check = myImport ../../src/base/nix/wrappers/utilsK8s-services-status-check.nix;
+#        utilsK8s-services-restart-if-not-active = myImport ../../src/base/nix/wrappers/utilsK8s-services-restart-if-not-active.nix;
+#        utilsK8s-services-stop = myImport ../../src/base/nix/wrappers/utilsK8s-services-stop.nix;
+#
+#        test-kubernetes-required-environment-roles-master-and-node = myImport ../../src/base/nix/wrappers/test-kubernetes-required-environment-roles-master-and-node.nix;
+#
+#        install-nixos-with-parted-in-gpt = myImport ../../src/base/nix/wrappers/install-nixos-with-parted-in-gpt.nix;
+#        install-nixos-with-parted-in-mbr = myImport ../../src/base/nix/wrappers/install-nixos-with-parted-in-mbr.nix;
+#        my-install-nixos = myImport ../../src/base/nix/wrappers/my-install-nixos.nix;
+#
+#        crw = myImport ../../src/base/nix/wrappers/crw.nix;
+#        fix-permission-k8s = myImport ../../src/base/nix/wrappers/fix-permission-k8s.nix;
 
       in
       {
 
-        packages.utilsK8s-services-status-check = utilsK8s-services-status-check;
-        packages.utilsK8s-services-restart-if-not-active = utilsK8s-services-restart-if-not-active;
-        packages.utilsK8s-services-stop = utilsK8s-services-stop;
+#        packages.utilsK8s-services-status-check = utilsK8s-services-status-check;
+#        packages.utilsK8s-services-restart-if-not-active = utilsK8s-services-restart-if-not-active;
+#        packages.utilsK8s-services-stop = utilsK8s-services-stop;
         packages.test-hello-figlet-cowsay = test-hello-figlet-cowsay;
-        packages.test-kubernetes-required-environment-roles-master-and-node = test-kubernetes-required-environment-roles-master-and-node;
-        packages.crw = crw;
+#        packages.test-kubernetes-required-environment-roles-master-and-node = test-kubernetes-required-environment-roles-master-and-node;
+#        packages.crw = crw;
 
         # If ( ... ).image is not used most things like
         # nix flake check and others fail
@@ -381,12 +407,15 @@
             wrapp-iso-kubernetes-qemu-kvm-mrb
             prepare-clean-old-stuff-and-create-iso-and-disk
 
-            self.packages.${system}.utilsK8s-services-status-check
-            self.packages.${system}.utilsK8s-services-restart-if-not-active
-            self.packages.${system}.utilsK8s-services-stop
             self.packages.${system}.test-hello-figlet-cowsay
-            self.packages.${system}.test-kubernetes-required-environment-roles-master-and-node
-            self.packages.${system}.crw
+#            self.packages.${system}.crw
+#
+#            self.packages.${system}.utilsK8s-services-status-check
+#            self.packages.${system}.utilsK8s-services-restart-if-not-active
+#            self.packages.${system}.utilsK8s-services-stop
+#
+#            self.packages.${system}.test-kubernetes-required-environment-roles-master-and-node
+
 
             vssh
             svssh

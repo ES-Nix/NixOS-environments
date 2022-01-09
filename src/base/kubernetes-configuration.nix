@@ -15,15 +15,6 @@ let
     ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC8wXcAjwVJZ71MZkhFIfc1gCCTuZ8PRTKlUbqKdW68u0VToS35OYfYTmTRzFDrulXPX/HOZMtQ83UfY5igTtn0FMw1V16FNFmycGLIciCqYBdfB8Ex0xxbf8ZDAxgZ5BG+/lg+PXpNxX1fU7ltW47krYoWueJrGB2ACP53uhI/KcBVvpIW0XqPpYaoXseap89sOXZ0AkKUsC/YtB1bXz5p8oqXJfTyrQx+tHQ+zNg8QX6J84HkKXKoNEVTFjYP8VvKZAa32FkHrAvjRjqakemRxL7hnmoIvjAmFS3CfluYZRun/3AkQ4DsukxVLJxT1yL+WQQgNXc5Zbo5hYiPWXtSuFNQ5xE54qlJzkazp2ky9DNnwgDsvPEoILQwihYERpHQzgU6B4T3anvBQLKHDXkGFaVcA2eTf59D8GxGPeq9ylUZ9qDwjCIbX5biNw4InhockKmzhNsIq1tiqzpx5jR5BlrRxwtJDUnx+C1aX/GRKYedCQk1+yXHJ7WQIS3jSxk=
   '';
 
-  nixpkgsAnsSystem = {
-    inherit system nixpkgs;
-  };
-
-  myImportGeneric = nixpkgsAnsSystem: fullFilePath:
-    import fullFilePath nixpkgsAnsSystem;
-
-  myImport = myImportGeneric nixpkgsAnsSystem;
-
   # https://github.com/NixOS/nixpkgs/issues/59364#issuecomment-723906760
   # https://discourse.nixos.org/t/use-nixos-as-single-node-kubernetes-cluster/8858/7
   kubeMasterIP = "10.1.1.2";
@@ -67,7 +58,7 @@ let
 
   #
   exampleConfigurationMRBScript = pkgs.writeScriptBin "kubernetes-configuration-mrb" ''
-    cp -v ${./kubernetes-configuration-mrb.nix} /mnt/etc/nixos/configuration.nix
+    cp -v ${./kubernetes-configuration-mbr.nix} /mnt/etc/nixos/configuration.nix
   '';
 
   exampleConfigurationMRB = pkgs.stdenv.mkDerivation {
@@ -116,24 +107,24 @@ let
       --prefix PATH : ${pkgs.lib.makeBinPath partitionUEFIScriptDeps}
     '';
 
-  partitionMRBScriptDeps = with pkgs; [
+  partitionMBRScriptDeps = with pkgs; [
     e2fsprogs
     parted
     mount
     util-linux
   ];
-  partitionMRBScript = pkgs.runCommandLocal "parted-mrb"
+  partitionMBRScript = pkgs.runCommandLocal "install-nixos-with-parted-in-mbr"
     { nativeBuildInputs = [ pkgs.makeWrapper ]; }
     ''
-      install -m755 ${./install-nixos-with-parted-in-mbr.sh} -D $out/bin/partition-mrb
-      patchShebangs $out/bin/partition-mrb
-      wrapProgram "$out/bin/partition-mrb" \
-      --prefix PATH : ${pkgs.lib.makeBinPath partitionMRBScriptDeps}
+      install -m755 ${./install-nixos-with-parted-in-mbr.sh} -D $out/bin/install-nixos-with-parted-in-mbr
+      patchShebangs $out/bin/install-nixos-with-parted-in-mbr
+      wrapProgram "$out/bin/install-nixos-with-parted-in-mbr" \
+      --prefix PATH : ${pkgs.lib.makeBinPath partitionMBRScriptDeps}
     '';
 
-  exampleFlakeScript = pkgs.writeScriptBin "example-flake" ''
-    cp -v ${./base-flake.nix} /mnt/etc/nixos/flake.nix
+  prepare-git-stuff = pkgs.writeScriptBin "prepare-git-stuff" ''
 
+    # It is hardcoded, but is it that bad?
     cd /mnt/etc/nixos
 
     echo 'result' > .gitignore
@@ -145,36 +136,39 @@ let
     git commit -m 'First commit'
   '';
 
-  exampleFlake = pkgs.stdenv.mkDerivation {
-    name = "example-flake";
-    installPhase = ''
-      mkdir -p $out/bin
-      install -t $out/bin ${exampleFlakeScript}/bin/example-flake
-    '';
-    phases = [ "buildPhase" "installPhase" "fixupPhase" ];
-  };
+  prepare-configuration = pkgs.writeScriptBin "prepare-configuration" ''
+    rm -fv /mnt/etc/nixos/configuration.nix
+    cp -fv /mnt/etc/nixos/src/base/kubernetes-configuration-mbr.nix /mnt/etc/nixos/configuration.nix
 
-  # && ${copyTomntScript}/bin/copy-to-mnt \
+    cp -fv /mnt/etc/nixos/src/base/base-flake.nix /mnt/etc/nixos/flake.nix
+
+    #
+    cd /mnt/etc/nixos
+    git config --global user.email "you@example.com"
+    git config --global user.name "Your Name"
+
+    git add .
+    git commit -m 'Second commit'
+  '';
+
   myInstallScriptUEFI = pkgs.writeScriptBin "my-install-uefi" ''
 
     ${partitionUEFIScript}/bin/partition-uefi \
     && nixos-generate-config --root /mnt \
     && ${copyFirstRebuildSwitchScript}/bin/copy-first-rebuild-switch \
     && ${copyCustomKubeadmCertsRenewAllScript}/bin/custom-kubeadm-certs-renew-all \
-    && ${exampleFlake}/bin/example-flake \
     && ${exampleConfigurationUEFI}/bin/kubernetes-configuration-uefi \
     && nixos-install --no-root-passwd \
     && shutdown --poweroff
   '';
 
-  myInstallScriptMRB = pkgs.writeScriptBin "my-install-mrb" ''
+  myInstallScriptMBR = pkgs.writeScriptBin "install-nixos-mbr" ''
 
-    ${partitionMRBScript}/bin/partition-mrb \
+    ${partitionMBRScript}/bin/install-nixos-with-parted-in-mbr \
     && nixos-generate-config --root /mnt \
-    && ${copyFirstRebuildSwitchScript}/bin/copy-first-rebuild-switch \
-    && ${copyCustomKubeadmCertsRenewAllScript}/bin/custom-kubeadm-certs-renew-all \
-    && ${exampleFlake}/bin/example-flake \
-    && ${exampleConfigurationMRB}/bin/kubernetes-configuration-mrb \
+    && ${copyTomntScript}/bin/copy-to-mnt \
+    && ${prepare-git-stuff}/bin/prepare-git-stuff \
+    && ${prepare-configuration}/bin/prepare-configuration \
     && nixos-install --no-root-passwd \
     && shutdown --poweroff
   '';
@@ -205,7 +199,7 @@ let
       --prefix PATH : ${pkgs.lib.makeBinPath startKubernetesScriptDeps}
     '';
 
-  nrt = pkgs.writeScriptBin "nixos-rebuild-test" ''
+  nixos-rebuild-test = pkgs.writeScriptBin "nrt" ''
     nixos-rebuild test --flake '/etc/nixos'#"$(hostname)"
   '';
 
@@ -213,7 +207,7 @@ let
     bash
     coreutils
     git
-    # nix  #
+    nix #
     nixos-rebuild
   ];
   firstRebuildSwitchScript = pkgs.runCommandLocal "first-rebuild-switch"
@@ -225,19 +219,30 @@ let
       --prefix PATH : ${pkgs.lib.makeBinPath firstRebuildSwitchScriptDeps}
     '';
 
-    test-hello-figlet-cowsay = myImport ../../src/base/nix/wrappers/test-hello-figlet-cowsay.nix;
+  nixpkgsAndSystem = {
+    inherit system nixpkgs;
+  };
 
-    utilsK8s-services-status-check = myImport ../../src/base/nix/wrappers/utilsK8s-services-status-check.nix;
-    utilsK8s-services-restart-if-not-active = myImport ../../src/base/nix/wrappers/utilsK8s-services-restart-if-not-active.nix;
-    utilsK8s-services-stop = myImport ../../src/base/nix/wrappers/utilsK8s-services-stop.nix;
+  myImportGeneric = nixpkgsAndSystem: fullFilePath:
+    import fullFilePath nixpkgsAndSystem;
 
-    test-kubernetes-required-environment-roles-master-and-node = myImport ../../src/base/nix/wrappers/test-kubernetes-required-environment-roles-master-and-node.nix;
+  myImport = myImportGeneric nixpkgsAndSystem;
 
-    install-nixos-with-parted-in-gpt = myImport ../../src/base/nix/wrappers/install-nixos-with-parted-in-gpt.nix;
-    install-nixos-with-parted-in-mbr = myImport ../../src/base/nix/wrappers/install-nixos-with-parted-in-mbr.nix;
-    crw = myImport ../../src/base/nix/wrappers/crw.nix;
+  test-hello-figlet-cowsay = myImport ../../src/base/nix/wrappers/test-hello-figlet-cowsay.nix;
 
-    my-install-nixos = myImport ../../src/base/nix/wrappers/my-install-nixos.nix;
+  utilsK8s-services-status-check = myImport ../../src/base/nix/wrappers/utilsK8s-services-status-check.nix;
+  utilsK8s-services-restart-if-not-active = myImport ../../src/base/nix/wrappers/utilsK8s-services-restart-if-not-active.nix;
+  utilsK8s-services-stop = myImport ../../src/base/nix/wrappers/utilsK8s-services-stop.nix;
+
+  test-kubernetes-required-environment-roles-master-and-node = myImport ../../src/base/nix/wrappers/test-kubernetes-required-environment-roles-master-and-node.nix;
+
+  install-nixos-with-parted-in-gpt = myImport ../../src/base/nix/wrappers/install-nixos-with-parted-in-gpt.nix;
+  install-nixos-with-parted-in-mbr = myImport ../../src/base/nix/wrappers/install-nixos-with-parted-in-mbr.nix;
+  my-install-nixos = myImport ../../src/base/nix/wrappers/my-install-nixos.nix;
+
+  crw = myImport ../../src/base/nix/wrappers/crw.nix;
+  fix-permission-k8s = myImport ../../src/base/nix/wrappers/fix-permission-k8s.nix;
+
 in
 {
   imports =
@@ -273,7 +278,7 @@ in
 
   # DEBUG: it may be hard to debug it with zero time to access grub and hit some key.
   # Set it to, for example, the default value 10
-  # boot.loader.timeout = 0;
+  boot.loader.timeout = pkgs.lib.mkForce 2;
 
   # https://nixos.wiki/wiki/Libvirt
   boot.extraModprobeConfig = "options kvm_intel nested=1";
@@ -533,7 +538,9 @@ in
       # podman = "sudo podman";
       # kind = "sudo kind";
       k = "kubectl";
-      ka = "kubectl get pods -A";
+      ka = "kubectl get pods --all-namespaces -o wide";
+      wka = "watch -n 1 kubectl get pods --all-namespaces -o wide";
+      kdall = "kubectl delete all --all -n kube-system";
     };
 
     enableCompletion = true;
@@ -627,26 +634,28 @@ in
 
     # hello
 
-    myInstallScriptMRB
+    myInstallScriptMBR
     myInstallScriptUEFI
 
     startKubernetesScript
 
-    nrt
+    nixos-rebuild-test
 
     firstRebuildSwitchScript
     customKubeadmCertsRenewAllScript
     copyTomntScript
 
-#    utilsK8s-services-status-check
-#    utilsK8s-services-restart-if-not-active
-#    utilsK8s-services-stop
-#    test-hello-figlet-cowsay
-#    test-kubernetes-required-environment-roles-master-and-node
-#    my-install-nixos
-#    install-nixos-with-parted-in-gpt
-#    install-nixos-with-parted-in-mbr
-#    crw
+    utilsK8s-services-status-check
+    utilsK8s-services-restart-if-not-active
+    utilsK8s-services-stop
+    test-hello-figlet-cowsay
+    test-kubernetes-required-environment-roles-master-and-node
+
+    my-install-nixos
+    install-nixos-with-parted-in-gpt
+    install-nixos-with-parted-in-mbr
+    crw
+    fix-permission-k8s
 
 
     # Looks like kubernetes needs atleast all this
@@ -764,6 +773,8 @@ in
   # https://discourse.nixos.org/t/creating-directories-and-files-declararively/9349/2
   # https://discourse.nixos.org/t/adding-folders-and-scripts/5114/4
   # TODO: remove herdcoded user ang group names
+  # https://discourse.nixos.org/t/solved-add-var-run-directory/1701/2
+  # "d /var/lib/kubernetes 0755 kubernetes kubernetes -"
   systemd.tmpfiles.rules = [
     "f /home/nixuser/.zshrc 0755 nixuser nixgroup"
   ];

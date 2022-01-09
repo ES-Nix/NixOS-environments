@@ -1,4 +1,4 @@
-{ pkgs, nixpkgs, ... }:
+{ config, pkgs, ... }:
 let
   JoaoKeys = pkgs.writeText "joao-keys.pub" ''
     ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCqWdfY6g9gtETLFji9Sb60bcR1fQvS2ADdY9Ba0GtKhzjHNTmTgHxRoqLwOauDgxke9CJt5r9kolBHxGaMMJwcAwJlPgh0bodRm6LHsBatQYMyqYo2LvIGhT5WorlUp8zZWkZBP5CUuInQ48gieD62PMnU4rVmJdK8ZB48S4COz1IJx9ILr2unvVFJs7KT7WdNvbgfjKsTZrf/T/VMeQLodtdAIuWRuSUY5lJ3XwJCff2kCx5oAkZiz+3+a5z3LDqnwCeK8TkHnugmJHT09srlKSAA+bel+hxJtplsbYryeFVuYY8fILeOfNwI7Ht5ZZThIoLcUJfqKMPSlsBhEtFzqBA2ZE/NpStHKriIzLZbN2aUB0CWFPSa5g88H83qPyRInqR71O8WImQcH971BL41D+SHWhJEAbGZIaZwuYGaeiNe862SWrOv37Heh424b+RsEwVm0hUs9ZgdV3QqhMJlIEWyqIF4ueAlymqbtITYyI5kYuMo0yFW6dPYMSOUaHU=
@@ -32,7 +32,7 @@ let
   firstRebuildSwitchScript = pkgs.runCommandLocal "first-rebuild-switch"
     { nativeBuildInputs = [ pkgs.makeWrapper ]; }
     ''
-      install -m755 ${./first-rebuild-switch.sh} -D $out/bin/first-rebuild-switch
+      install -m755 ${./src/base/first-rebuild-switch.sh} -D $out/bin/first-rebuild-switch
       patchShebangs $out/bin/first-rebuild-switch
       wrapProgram "$out/bin/first-rebuild-switch" \
       --prefix PATH : ${pkgs.lib.makeBinPath firstRebuildSwitchScriptDeps}
@@ -48,7 +48,7 @@ let
   customKubeadmCertsRenewAllScript = pkgs.runCommandLocal "custom-kubeadm-certs-renew-all"
     { nativeBuildInputs = [ pkgs.makeWrapper ]; }
     ''
-      install -m755 ${./custom-kubeadm-certs-renew-all.sh} -D $out/bin/custom-kubeadm-certs-renew-all
+      install -m755 ${./src/base/custom-kubeadm-certs-renew-all.sh} -D $out/bin/custom-kubeadm-certs-renew-all
       patchShebangs $out/bin/custom-kubeadm-certs-renew-all
       wrapProgram "$out/bin/custom-kubeadm-certs-renew-all" \
       --prefix PATH : ${pkgs.lib.makeBinPath customKubeadmCertsRenewAllScriptDeps}
@@ -69,30 +69,27 @@ let
       reboot
     '';
 
-      utilsK8s-services-status-check = import ./src/base/nix/wrappers/utilsK8s-services-status-check.nix {
-        nixpkgs = nixpkgs;
-        system = "x86_64-linux";
-      };
 
-      utilsK8s-services-restart-if-not-active = import ./src/base/nix/wrappers/utilsK8s-services-restart-if-not-active.nix {
-        nixpkgs = nixpkgs;
-        system = "x86_64-linux";
-      };
+    nixpkgsAndSystem = {
+      system = config.system;
+      nixpkgs = config.nixpkgs;
+    };
 
-      utilsK8s-services-stop = import ./src/base/nix/wrappers/utilsK8s-services-stop.nix {
-        nixpkgs = nixpkgs;
-        system = "x86_64-linux";
-      };
+    myImportGeneric = nixpkgsAndSystem: fullFilePath:
+      import fullFilePath nixpkgsAndSystem;
 
-      test-hello-figlet-cowsay = import ./src/base/nix/wrappers/test-hello-figlet-cowsay.nix {
-        nixpkgs = nixpkgs;
-        system = "x86_64-linux";
-      };
+    myImport = myImportGeneric nixpkgsAndSystem;
 
-      test-kubernetes-required-environment-roles-master-and-node = import ./src/base/nix/wrappers/test-kubernetes-required-environment-roles-master-and-node.nix {
-        nixpkgs = nixpkgs;
-        system = "x86_64-linux";
-      };
+    utilsK8s-services-status-check = myImport ./src/base/nix/wrappers/utilsK8s-services-status-check.nix;
+
+    utilsK8s-services-restart-if-not-active = myImport ./src/base/nix/wrappers/utilsK8s-services-restart-if-not-active.nix;
+
+    utilsK8s-services-stop = myImport ./src/base/nix/wrappers/utilsK8s-services-stop.nix;
+
+    test-hello-figlet-cowsay = myImport ./src/base/nix/wrappers/test-hello-figlet-cowsay.nix;
+
+    test-kubernetes-required-environment-roles-master-and-node = myImport ./src/base/nix/wrappers/test-kubernetes-required-environment-roles-master-and-node.nix;
+
 in
 {
   imports =
@@ -380,7 +377,9 @@ in
       # podman = "sudo podman";
       # kind = "sudo kind";
       k = "kubectl";
-      ka = "kubectl get pods -A";
+      ka = "kubectl get pods --all-namespaces -o wide";
+      wka = "watch -n 1 kubectl get pods --all-namespaces -o wide";
+      kdall = "kubectl delete all --all -n kube-system";
     };
 
     enableCompletion = true;

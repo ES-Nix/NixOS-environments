@@ -2,10 +2,45 @@
 
 kubeadm certs renew all
 
+#systemctl restart kube-apiserver
+#systemctl restart kube-controller-manager
+#systemctl restart kube-scheduler
+#systemctl restart etcd
+
+LOG_START_DATE="$(date +'%Y-%m-%d %H:%M:%S')"
 systemctl restart kube-apiserver
+journalctl \
+--since "${LOG_START_DATE}" \
+--until "$(date +'%Y-%m-%d %T' --date="${LOG_START_DATE} 2 minutes")" \
+--no-pager \
+-u kube-apiserver
+
+LOG_START_DATE="$(date +'%Y-%m-%d %H:%M:%S')"
 systemctl restart kube-controller-manager
+journalctl \
+--since "${LOG_START_DATE}" \
+--until "$(date +'%Y-%m-%d %T' --date="${LOG_START_DATE} 2 minutes")" \
+--no-pager \
+-u kube-controller-manager
+
+
+LOG_START_DATE="$(date +'%Y-%m-%d %H:%M:%S')"
 systemctl restart kube-scheduler
+journalctl \
+--since "${LOG_START_DATE}" \
+--until "$(date +'%Y-%m-%d %T' --date="${LOG_START_DATE} 2 minutes")" \
+--no-pager \
+-u kube-scheduler
+
+
+LOG_START_DATE="$(date +'%Y-%m-%d %H:%M:%S')"
 systemctl restart etcd
+journalctl \
+--since "${LOG_START_DATE}" \
+--until "$(date +'%Y-%m-%d %T' --date="${LOG_START_DATE} 2 minutes")" \
+--no-pager \
+-u etcd
+
 
 # stat /var/lib/kubernetes
 chown kubernetes:kubernetes -Rv /var/lib/kubernetes
