@@ -234,7 +234,7 @@
 #          system = system;
 #        };
 
-        test-hello-figlet-cowsay = myImport ./test-hello-figlet-cowsay.nix;
+        test-hello-figlet-cowsay = myImport ./src/mwe.nix;
 
 #        test-hello-figlet-cowsay = myImport ../../src/base/nix/wrappers/test-hello-figlet-cowsay.nix;
 
