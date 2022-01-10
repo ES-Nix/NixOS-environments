@@ -79,15 +79,16 @@ let
 
     myImport = myImportGeneric pkgsAndSystem;
 
-#    utilsK8s-services-status-check = myImport ./src/base/nix/wrappers/utilsK8s-services-status-check.nix;
-#
-#    utilsK8s-services-restart-if-not-active = myImport ./src/base/nix/wrappers/utilsK8s-services-restart-if-not-active.nix;
-#
-#    utilsK8s-services-stop = myImport ./src/base/nix/wrappers/utilsK8s-services-stop.nix;
-
     test-hello-figlet-cowsay = myImport ./src/base/nix/wrappers/test-hello-figlet-cowsay.nix;
 
-#    test-kubernetes-required-environment-roles-master-and-node = myImport ./src/base/nix/wrappers/test-kubernetes-required-environment-roles-master-and-node.nix;
+    utilsK8s-services-status-check = myImport ./src/base/nix/wrappers/utilsK8s-services-status-check.nix;
+    utilsK8s-services-restart-if-not-active = myImport ./src/base/nix/wrappers/utilsK8s-services-restart-if-not-active.nix;
+    utilsK8s-services-stop = myImport ./src/base/nix/wrappers/utilsK8s-services-stop.nix;
+
+    test-kubernetes-required-environment-roles-master-and-node = myImport ./src/base/nix/wrappers/test-kubernetes-required-environment-roles-master-and-node.nix;
+
+    fix-permission-k8s = myImport ./src/base/nix/wrappers/fix-permission-k8s.nix;
+    crw = myImport ./src/base/nix/wrappers/crw.nix;
 
 in
 {
@@ -474,10 +475,15 @@ in
 
     test-hello-figlet-cowsay
 
-#    utilsK8s-services-status-check
-#    utilsK8s-services-restart-if-not-active
-#    utilsK8s-services-stop
-#    test-kubernetes-required-environment-roles-master-and-node
+    test-hello-figlet-cowsay
+
+    utilsK8s-services-status-check
+    utilsK8s-services-restart-if-not-active
+    utilsK8s-services-stop
+    test-kubernetes-required-environment-roles-master-and-node
+
+    crw
+    fix-permission-k8s
 
     nrt
     part2

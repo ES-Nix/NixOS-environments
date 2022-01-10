@@ -1,9 +1,11 @@
-{ nixpkgs ? <nixpkgs>, system ? "x86_64-linux" }:
+{ pkgs, system ? "x86_64-linux", name ? "test-kubernetes-required-environment-roles-master-and-node" }:
 let
-  pkgs = nixpkgs.legacyPackages.${system};
-  customScript = (import ../../../../src/base/nix/utils/custom-script-wrapper.nix) {
-        nixpkgs = nixpkgs;
-        system = system;
+  customScripts = rec {
+    inherit name;
+    scriptFullNixPath = "${ ../../../../src/base + "/${name}" + ".sh" }";
+    customScript = (import ../../../../src/base/nix/utils/custom-script-wrapper.nix) {
+      pkgs = pkgs;
+      system = system;
         propagatedNativeBuildInputs = with pkgs; [
           coreutils
           gawk
@@ -15,8 +17,9 @@ let
           telnet
           unixtools.netstat
         ];
-        scriptFullNixPath = "${ ../../../../src/base/test-kubernetes-required-environment-roles-master-and-node.sh}";
-        scriptName = "test-kubernetes-required-environment-rolemaster-and-node";
-      };
+      scriptFullNixPath = scriptFullNixPath;
+      scriptName = "${name}";
+    };
+  };
 in
-customScript
+customScripts.customScript

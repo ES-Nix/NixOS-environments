@@ -1,14 +1,17 @@
-{ nixpkgs ? <nixpkgs>, system ? "x86_64-linux" }:
+{ pkgs, system ? "x86_64-linux", name ? "utilsK8s-services-stop" }:
 let
-  pkgs = nixpkgs.legacyPackages.${system};
-  customScript = (import ../../../../src/base/nix/utils/custom-script-wrapper.nix) {
-        nixpkgs = nixpkgs;
-        system = system;
+  customScripts = rec {
+    inherit name;
+    scriptFullNixPath = "${ ../../../../src/base + "/${name}" + ".sh" }";
+    customScript = (import ../../../../src/base/nix/utils/custom-script-wrapper.nix) {
+      pkgs = pkgs;
+      system = system;
         propagatedNativeBuildInputs = with pkgs; [
           ripgrep
         ];
-        scriptFullNixPath = "${ ../../../../src/base/utilsK8s-services-stop.sh}";
-        scriptName = "utilsK8s-services-stop";
-      };
+      scriptFullNixPath = scriptFullNixPath;
+      scriptName = "${name}";
+    };
+  };
 in
-customScript
+customScripts.customScript

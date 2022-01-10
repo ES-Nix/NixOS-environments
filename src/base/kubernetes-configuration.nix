@@ -230,11 +230,11 @@ let
 
   test-hello-figlet-cowsay = myImport ../../src/base/nix/wrappers/test-hello-figlet-cowsay.nix;
 
-#  utilsK8s-services-status-check = myImport ../../src/base/nix/wrappers/utilsK8s-services-status-check.nix;
-#  utilsK8s-services-restart-if-not-active = myImport ../../src/base/nix/wrappers/utilsK8s-services-restart-if-not-active.nix;
-#  utilsK8s-services-stop = myImport ../../src/base/nix/wrappers/utilsK8s-services-stop.nix;
-#
-#  test-kubernetes-required-environment-roles-master-and-node = myImport ../../src/base/nix/wrappers/test-kubernetes-required-environment-roles-master-and-node.nix;
+  utilsK8s-services-status-check = myImport ../../src/base/nix/wrappers/utilsK8s-services-status-check.nix;
+  utilsK8s-services-restart-if-not-active = myImport ../../src/base/nix/wrappers/utilsK8s-services-restart-if-not-active.nix;
+  utilsK8s-services-stop = myImport ../../src/base/nix/wrappers/utilsK8s-services-stop.nix;
+
+  test-kubernetes-required-environment-roles-master-and-node = myImport ../../src/base/nix/wrappers/test-kubernetes-required-environment-roles-master-and-node.nix;
 
   install-nixos-with-parted-in-gpt = myImport ../../src/base/nix/wrappers/install-nixos-with-parted-in-gpt.nix;
   install-nixos-with-parted-in-mbr = myImport ../../src/base/nix/wrappers/install-nixos-with-parted-in-mbr.nix;
@@ -647,10 +647,10 @@ in
 
     test-hello-figlet-cowsay
 
-#    utilsK8s-services-status-check
-#    utilsK8s-services-restart-if-not-active
-#    utilsK8s-services-stop
-#    test-kubernetes-required-environment-roles-master-and-node
+    utilsK8s-services-status-check
+    utilsK8s-services-restart-if-not-active
+    utilsK8s-services-stop
+    test-kubernetes-required-environment-roles-master-and-node
 
     my-install-nixos
     install-nixos-with-parted-in-gpt

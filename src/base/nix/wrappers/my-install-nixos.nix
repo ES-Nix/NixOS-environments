@@ -1,13 +1,17 @@
-{ pkgs, system ? "x86_64-linux" }:
+{ pkgs, system ? "x86_64-linux", name ? "my-install-nixos" }:
 let
-  customScript = (import ../../../../src/base/nix/utils/custom-script-wrapper.nix) {
-        pkgs = pkgs;
-        system = system;
+  customScripts = rec {
+    inherit name;
+    scriptFullNixPath = "${ ../../../../src/base + "/${name}" + ".sh" }";
+    customScript = (import ../../../../src/base/nix/utils/custom-script-wrapper.nix) {
+      pkgs = pkgs;
+      system = system;
         propagatedNativeBuildInputs = with pkgs; [
           bash
         ];
-        scriptFullNixPath = "${ ../../../../src/base/my-install-nixos.sh}";
-        scriptName = "my-install-nixos";
-      };
+      scriptFullNixPath = scriptFullNixPath;
+      scriptName = "${name}";
+    };
+  };
 in
-customScript
+customScripts.customScript
