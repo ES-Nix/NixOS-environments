@@ -219,22 +219,22 @@ let
       --prefix PATH : ${pkgs.lib.makeBinPath firstRebuildSwitchScriptDeps}
     '';
 
-  nixpkgsAndSystem = {
-    inherit system nixpkgs;
+  pkgsAndSystem = {
+    inherit system pkgs;
   };
 
-  myImportGeneric = nixpkgsAndSystem: fullFilePath:
-    import fullFilePath nixpkgsAndSystem;
+  myImportGeneric = pkgsAndSystem: fullFilePath:
+    import fullFilePath pkgsAndSystem;
 
-  myImport = myImportGeneric nixpkgsAndSystem;
+  myImport = myImportGeneric pkgsAndSystem;
 
   test-hello-figlet-cowsay = myImport ../../src/base/nix/wrappers/test-hello-figlet-cowsay.nix;
 
-  utilsK8s-services-status-check = myImport ../../src/base/nix/wrappers/utilsK8s-services-status-check.nix;
-  utilsK8s-services-restart-if-not-active = myImport ../../src/base/nix/wrappers/utilsK8s-services-restart-if-not-active.nix;
-  utilsK8s-services-stop = myImport ../../src/base/nix/wrappers/utilsK8s-services-stop.nix;
-
-  test-kubernetes-required-environment-roles-master-and-node = myImport ../../src/base/nix/wrappers/test-kubernetes-required-environment-roles-master-and-node.nix;
+#  utilsK8s-services-status-check = myImport ../../src/base/nix/wrappers/utilsK8s-services-status-check.nix;
+#  utilsK8s-services-restart-if-not-active = myImport ../../src/base/nix/wrappers/utilsK8s-services-restart-if-not-active.nix;
+#  utilsK8s-services-stop = myImport ../../src/base/nix/wrappers/utilsK8s-services-stop.nix;
+#
+#  test-kubernetes-required-environment-roles-master-and-node = myImport ../../src/base/nix/wrappers/test-kubernetes-required-environment-roles-master-and-node.nix;
 
   install-nixos-with-parted-in-gpt = myImport ../../src/base/nix/wrappers/install-nixos-with-parted-in-gpt.nix;
   install-nixos-with-parted-in-mbr = myImport ../../src/base/nix/wrappers/install-nixos-with-parted-in-mbr.nix;
@@ -645,11 +645,12 @@ in
     customKubeadmCertsRenewAllScript
     copyTomntScript
 
-    utilsK8s-services-status-check
-    utilsK8s-services-restart-if-not-active
-    utilsK8s-services-stop
     test-hello-figlet-cowsay
-    test-kubernetes-required-environment-roles-master-and-node
+
+#    utilsK8s-services-status-check
+#    utilsK8s-services-restart-if-not-active
+#    utilsK8s-services-stop
+#    test-kubernetes-required-environment-roles-master-and-node
 
     my-install-nixos
     install-nixos-with-parted-in-gpt

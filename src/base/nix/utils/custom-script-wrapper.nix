@@ -1,4 +1,4 @@
-{ nixpkgs ? <nixpkgs>,
+{ pkgs,
 system ? "x86_64-linux",
 buildInputs ? [ ],
 nativeBuildInputs ? [ ],
@@ -7,7 +7,7 @@ scriptFullNixPath,
 scriptName
  }:
 let
-  pkgs = nixpkgs.legacyPackages.${system};
+  #pkgs = nixpkgs.legacyPackages.${system};
   customScriptWrapper = pkgs.stdenv.mkDerivation {
         name = scriptName;
         buildInputs = with pkgs; [ stdenv ] ++ buildInputs;

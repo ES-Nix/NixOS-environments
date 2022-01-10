@@ -1,11 +1,10 @@
-{ nixpkgs ? <nixpkgs>, system ? "x86_64-linux", name ? "fix-permission-k8s" }:
+{ pkgs, system ? "x86_64-linux", name ? "fix-permission-k8s" }:
 let
   customScripts = rec {
     inherit name;
     scriptFullNixPath = "${ ../../../../src/base + "/${name}" + ".sh" }";
-    pkgs = nixpkgs.legacyPackages.${system};
     customScript = (import ../../../../src/base/nix/utils/custom-script-wrapper.nix) {
-      nixpkgs = nixpkgs;
+      pkgs = pkgs;
       system = system;
       propagatedNativeBuildInputs = with pkgs; [
         bash

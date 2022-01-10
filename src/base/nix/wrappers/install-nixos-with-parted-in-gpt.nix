@@ -1,8 +1,7 @@
-{ nixpkgs ? <nixpkgs>, system ? "x86_64-linux" }:
+{ pkgs, system ? "x86_64-linux" }:
 let
-  pkgs = nixpkgs.legacyPackages.${system};
   customScript = (import ../../../../src/base/nix/utils/custom-script-wrapper.nix) {
-        nixpkgs = nixpkgs;
+        pkgs = pkgs;
         system = system;
         propagatedNativeBuildInputs = with pkgs; [
           e2fsprogs

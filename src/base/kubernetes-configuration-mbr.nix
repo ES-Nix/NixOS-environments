@@ -1,4 +1,4 @@
-{ config, pkgs, ... }:
+{ config, pkgs, nixpkgs ? <nixpkgs>, system ? "x86_64-linux", ... }:
 let
   JoaoKeys = pkgs.writeText "joao-keys.pub" ''
     ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCqWdfY6g9gtETLFji9Sb60bcR1fQvS2ADdY9Ba0GtKhzjHNTmTgHxRoqLwOauDgxke9CJt5r9kolBHxGaMMJwcAwJlPgh0bodRm6LHsBatQYMyqYo2LvIGhT5WorlUp8zZWkZBP5CUuInQ48gieD62PMnU4rVmJdK8ZB48S4COz1IJx9ILr2unvVFJs7KT7WdNvbgfjKsTZrf/T/VMeQLodtdAIuWRuSUY5lJ3XwJCff2kCx5oAkZiz+3+a5z3LDqnwCeK8TkHnugmJHT09srlKSAA+bel+hxJtplsbYryeFVuYY8fILeOfNwI7Ht5ZZThIoLcUJfqKMPSlsBhEtFzqBA2ZE/NpStHKriIzLZbN2aUB0CWFPSa5g88H83qPyRInqR71O8WImQcH971BL41D+SHWhJEAbGZIaZwuYGaeiNe862SWrOv37Heh424b+RsEwVm0hUs9ZgdV3QqhMJlIEWyqIF4ueAlymqbtITYyI5kYuMo0yFW6dPYMSOUaHU=
@@ -69,26 +69,25 @@ let
       reboot
     '';
 
-
-    nixpkgsAndSystem = {
-      system = config.system;
-      nixpkgs = config.nixpkgs;
+    pkgsAndSystem = {
+      system = system;
+      pkgs = pkgs;
     };
 
-    myImportGeneric = nixpkgsAndSystem: fullFilePath:
-      import fullFilePath nixpkgsAndSystem;
+    myImportGeneric = pkgsAndSystem: fullFilePath:
+      import fullFilePath pkgsAndSystem;
 
-    myImport = myImportGeneric nixpkgsAndSystem;
+    myImport = myImportGeneric pkgsAndSystem;
 
-    utilsK8s-services-status-check = myImport ./src/base/nix/wrappers/utilsK8s-services-status-check.nix;
-
-    utilsK8s-services-restart-if-not-active = myImport ./src/base/nix/wrappers/utilsK8s-services-restart-if-not-active.nix;
-
-    utilsK8s-services-stop = myImport ./src/base/nix/wrappers/utilsK8s-services-stop.nix;
+#    utilsK8s-services-status-check = myImport ./src/base/nix/wrappers/utilsK8s-services-status-check.nix;
+#
+#    utilsK8s-services-restart-if-not-active = myImport ./src/base/nix/wrappers/utilsK8s-services-restart-if-not-active.nix;
+#
+#    utilsK8s-services-stop = myImport ./src/base/nix/wrappers/utilsK8s-services-stop.nix;
 
     test-hello-figlet-cowsay = myImport ./src/base/nix/wrappers/test-hello-figlet-cowsay.nix;
 
-    test-kubernetes-required-environment-roles-master-and-node = myImport ./src/base/nix/wrappers/test-kubernetes-required-environment-roles-master-and-node.nix;
+#    test-kubernetes-required-environment-roles-master-and-node = myImport ./src/base/nix/wrappers/test-kubernetes-required-environment-roles-master-and-node.nix;
 
 in
 {
@@ -473,11 +472,12 @@ in
     firstRebuildSwitchScript
     customKubeadmCertsRenewAllScript
 
-    utilsK8s-services-status-check
-    utilsK8s-services-restart-if-not-active
-    utilsK8s-services-stop
     test-hello-figlet-cowsay
-    test-kubernetes-required-environment-roles-master-and-node
+
+#    utilsK8s-services-status-check
+#    utilsK8s-services-restart-if-not-active
+#    utilsK8s-services-stop
+#    test-kubernetes-required-environment-roles-master-and-node
 
     nrt
     part2

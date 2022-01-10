@@ -206,14 +206,15 @@
           "${./src/base/prepare-clean-old-stuff-and-create-iso-and-disk.sh}"
         '';
 
-        nixpkgsAndSystem = {
-          inherit nixpkgs system ;
+        pkgsAndSystem = {
+           pkgs = pkgsAllowUnfree;
+           inherit system;
         };
 
-        myImportGeneric = nixpkgsAndSystem: fullFilePath:
-          import fullFilePath nixpkgsAndSystem;
+        myImportGeneric = pkgsAndSystem: fullFilePath:
+          import fullFilePath pkgsAndSystem;
 
-        myImport = myImportGeneric nixpkgsAndSystem;
+        myImport = myImportGeneric pkgsAndSystem;
 
 #        customScriptWrapper = import ./custom-script-wrapper.nix;
 #
