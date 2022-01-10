@@ -796,19 +796,6 @@ watch --interval=1 kubectl get pods -A
 ```
 
 
-```bash
-sudo kubeadm reset --force \
-&& sudo systemctl stop docker \
-&& sudo systemctl stop kubelet \
-&& sudo rm -rf /etc/kubernetes/ \
-&& sudo rm -rf .kube/ \
-&& sudo rm -rf /var/lib/kubelet/ \
-&& sudo rm -rf /var/lib/cni/ \
-&& sudo rm -rf /etc/cni/ \
-&& sudo rm -rf /var/lib/etcd/
-```
-
-
 
 cat <<EOF | sudo tee /etc/cni/net.d/10-flannel.conflist
 {
@@ -1136,6 +1123,9 @@ export QEMU_NET_OPTS="hostfwd=tcp:127.0.0.1:10023-:29980"
 
 
 #### Using nix CLI + nix expression
+
+TODO: convert it
+https://github.com/NixOS/nixpkgs/issues/126141#issuecomment-861724383
 
 ```bash
 nix build --impure --expr "(import <nixpkgs> {}).nixos ./configuration.nix"
@@ -1760,3 +1750,6 @@ sonobuoy delete --wait
 
 
 sudo find /var/lib/kubernetes -group nogroup | sort
+
+nixConfig.bash-prompt = "\[nix-develop\]$ ";
+From: https://nixos.wiki/wiki/Flakes

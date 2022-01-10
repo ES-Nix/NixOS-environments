@@ -397,3 +397,9 @@ ls -al /sys/devices/pci*
 ```
 Refs.:
 - 
+
+
+
+-no-reboot
+https://unix.stackexchange.com/questions/530674/qemu-doesnt-respect-the-boot-order-when-booting-with-uefi-ovmf
+https://github.com/rhuefi/qemu-ovmf-secureboot

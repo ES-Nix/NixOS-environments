@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 
-# nix build '/etc/nixos'.#nixosConfigurations."$(hostname)".config.system.build.toplevel
+# nix build '/etc/nixos'#nixosConfigurations."$(hostname)".config.system.build.toplevel
 
 nixos-rebuild test --flake '/etc/nixos'#"$(hostname)" \
 && nixos-rebuild switch --flake '/etc/nixos'#"$(hostname)" \

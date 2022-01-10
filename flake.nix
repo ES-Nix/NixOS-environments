@@ -216,51 +216,13 @@
 
         myImport = myImportGeneric pkgsAndSystem;
 
-#        customScriptWrapper = import ./custom-script-wrapper.nix;
-#
-#        test-hello-figlet-cowsay = customScriptWrapper {
-#          nixpkgs = nixpkgs;
-#          system = system;
-#          propagatedNativeBuildInputs = with pkgsAllowUnfree; [
-#            figlet
-#            hello
-#            cowsay
-#          ];
-#          scriptFullNixPath = "${ ./src/base/test-hello-figlet-cowsay.sh}";
-#          scriptName = "test-hello-figlet-cowsay";
-#        };
-
-#        test-hello-figlet-cowsay = import ./test-hello-figlet-cowsay.nix {
-#          nixpkgs = nixpkgs;
-#          system = system;
-#        };
-
-#        test-hello-figlet-cowsay = myImport ./src/test-hello-figlet-cowsay.nix;
-
         test-hello-figlet-cowsay = myImport ./src/base/nix/wrappers/test-hello-figlet-cowsay.nix;
-
-#        utilsK8s-services-status-check = myImport ../../src/base/nix/wrappers/utilsK8s-services-status-check.nix;
-#        utilsK8s-services-restart-if-not-active = myImport ../../src/base/nix/wrappers/utilsK8s-services-restart-if-not-active.nix;
-#        utilsK8s-services-stop = myImport ../../src/base/nix/wrappers/utilsK8s-services-stop.nix;
-#
-#        test-kubernetes-required-environment-roles-master-and-node = myImport ../../src/base/nix/wrappers/test-kubernetes-required-environment-roles-master-and-node.nix;
-#
-#        install-nixos-with-parted-in-gpt = myImport ../../src/base/nix/wrappers/install-nixos-with-parted-in-gpt.nix;
-#        install-nixos-with-parted-in-mbr = myImport ../../src/base/nix/wrappers/install-nixos-with-parted-in-mbr.nix;
-#        my-install-nixos = myImport ../../src/base/nix/wrappers/my-install-nixos.nix;
-#
-#        crw = myImport ../../src/base/nix/wrappers/crw.nix;
-#        fix-permission-k8s = myImport ../../src/base/nix/wrappers/fix-permission-k8s.nix;
+        test-composed-script = myImport ./src/base/nix/wrappers/test-composed-script.nix;
 
       in
       {
-
-#        packages.utilsK8s-services-status-check = utilsK8s-services-status-check;
-#        packages.utilsK8s-services-restart-if-not-active = utilsK8s-services-restart-if-not-active;
-#        packages.utilsK8s-services-stop = utilsK8s-services-stop;
         packages.test-hello-figlet-cowsay = test-hello-figlet-cowsay;
-#        packages.test-kubernetes-required-environment-roles-master-and-node = test-kubernetes-required-environment-roles-master-and-node;
-#        packages.crw = crw;
+        packages.test-composed-script = test-composed-script;
 
         # If ( ... ).image is not used most things like
         # nix flake check and others fail
@@ -275,10 +237,10 @@
           pkgs = nixpkgs.legacyPackages.x86_64-linux;
         };
 
-        #        packages.iso = import ./iso.nix {
-        #          nixpkgs = nixpkgs;
-        #          system = system;
-        #        };
+        # packages.iso = import ./iso.nix {
+        #   nixpkgs = nixpkgs;
+        #   system = system;
+        # };
 
         packages.iso-kubernetes = import ./src/base/iso-kubernetes.nix {
           nixpkgs = nixpkgs;
@@ -294,10 +256,10 @@
           nixos = nixos;
         };
 
-        #        packages.qcow2-base = (import ./src/base/qcow2-compressed.nix {
-        #          pkgs = nixpkgs.legacyPackages.${system};
-        #          nixos = nixos;
-        #        }).image;
+        # packages.qcow2-base = (import ./src/base/qcow2-compressed.nix {
+        #   pkgs = nixpkgs.legacyPackages.${system};
+        #   nixos = nixos;
+        # }).image;
 
         packages.createImage = pkgsAllowUnfree.runCommand "create-image"
           {
@@ -365,11 +327,11 @@
 
         checks = {
           nixpkgs-fmt = self.packages.${system}.checkNixFormat;
-          #          iso = self.packages.${system}.iso;
-          #          iso-base = self.packages.${system}.iso-base;
-          #          iso-kubernetes = self.packages.${system}.iso-kubernetes;
-          #          empty-qcow2 = self.packages.${system}.empty-qcow2;
-          #          qcow2-base = self.packages.${system}.qcow2-base;
+          # iso = self.packages.${system}.iso;
+          # iso-base = self.packages.${system}.iso-base;
+          # iso-kubernetes = self.packages.${system}.iso-kubernetes;
+          # empty-qcow2 = self.packages.${system}.empty-qcow2;
+          # qcow2-base = self.packages.${system}.qcow2-base;
           testCacheInFlakeCheck = self.packages.${system}.testCacheInFlakeCheck;
           #iso-minimal = self.defaultPackage.${system};
         };
@@ -409,27 +371,17 @@
             prepare-clean-old-stuff-and-create-iso-and-disk
 
             self.packages.${system}.test-hello-figlet-cowsay
-#            self.packages.${system}.crw
-#
-#            self.packages.${system}.utilsK8s-services-status-check
-#            self.packages.${system}.utilsK8s-services-restart-if-not-active
-#            self.packages.${system}.utilsK8s-services-stop
-#
-#            self.packages.${system}.test-kubernetes-required-environment-roles-master-and-node
-
+            self.packages.${system}.test-composed-script
 
             vssh
             svssh
             svissh
             # It slows a lot the nix develop
-            #            self.packages.${system}.image.image
+            # self.packages.${system}.image.image
           ];
 
           shellHook = ''
             export TMPDIR=/tmp
-
-            # TODO
-            #nix run nixpkgs#nixpkgs-fmt **/*.nix *.nix
 
             alias nbv='nixos-box-volume'
             alias nb='nixos-box'

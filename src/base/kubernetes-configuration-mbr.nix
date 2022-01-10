@@ -27,7 +27,7 @@ let
     coreutils
     git
     # nix  #
-    nixos-rebuild
+    # nixos-rebuild?
   ];
   firstRebuildSwitchScript = pkgs.runCommandLocal "first-rebuild-switch"
     { nativeBuildInputs = [ pkgs.makeWrapper ]; }
@@ -84,8 +84,10 @@ let
     utilsK8s-services-status-check = myImport ./src/base/nix/wrappers/utilsK8s-services-status-check.nix;
     utilsK8s-services-restart-if-not-active = myImport ./src/base/nix/wrappers/utilsK8s-services-restart-if-not-active.nix;
     utilsK8s-services-stop = myImport ./src/base/nix/wrappers/utilsK8s-services-stop.nix;
+    utilsK8s-wipe-data = myImport ./src/base/nix/wrappers/utilsK8s-wipe-data.nix;
 
     test-kubernetes-required-environment-roles-master-and-node = myImport ./src/base/nix/wrappers/test-kubernetes-required-environment-roles-master-and-node.nix;
+
 
     fix-permission-k8s = myImport ./src/base/nix/wrappers/fix-permission-k8s.nix;
     crw = myImport ./src/base/nix/wrappers/crw.nix;
@@ -475,11 +477,10 @@ in
 
     test-hello-figlet-cowsay
 
-    test-hello-figlet-cowsay
-
     utilsK8s-services-status-check
     utilsK8s-services-restart-if-not-active
     utilsK8s-services-stop
+    utilsK8s-wipe-data
     test-kubernetes-required-environment-roles-master-and-node
 
     crw

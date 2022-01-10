@@ -19,14 +19,7 @@ let
   # https://discourse.nixos.org/t/use-nixos-as-single-node-kubernetes-cluster/8858/7
   kubeMasterIP = "10.1.1.2";
   kubeMasterHostname = "localhost";
-  # kubeMasterHostname = "api.kube";
   kubeMasterAPIServerPort = 6443;
-
-  #  helperConfiguration = pkgs.fetchurl {
-  #      url = "https://raw.githubusercontent.com/ES-Nix/NixOS-environments/6f0eb51a328158067750b504de6c0aed713965dc/src/base/base-configuration.nix";
-  ##      url = "https://raw.githubusercontent.com/ES-Nix/NixOS-environments/box/src/base/base-configuration.nix";
-  #      sha256 = "ELI7UWfW0CtG4moCVrH1IHGXRj4eq6Zi5Z8vFrzV//k=";
-  #  };
 
   copyFirstRebuildSwitchScript = pkgs.writeScriptBin "copy-first-rebuild-switch" ''
     cp -v ${./first-rebuild-switch.sh} /mnt/etc/nixos/first-rebuild-switch.sh
@@ -173,32 +166,6 @@ let
     && shutdown --poweroff
   '';
 
-  startKubernetesScriptDeps = with pkgs; [
-    # Looks like kubernetes needs atleast all this
-    kubectl
-    kubernetes
-    #
-    cni
-    cni-plugins
-    conntrack-tools
-    cri-o
-    cri-tools
-    docker
-    ebtables
-    ethtool
-    flannel
-    iptables
-    socat
-  ];
-  startKubernetesScript = pkgs.runCommandLocal "start-kubernetes"
-    { nativeBuildInputs = [ pkgs.makeWrapper ]; }
-    ''
-      install -m755 ${./start-kubernetes.sh} -D $out/bin/start-kubernetes
-      patchShebangs $out/bin/start-kubernetes
-      wrapProgram "$out/bin/start-kubernetes" \
-      --prefix PATH : ${pkgs.lib.makeBinPath startKubernetesScriptDeps}
-    '';
-
   nixos-rebuild-test = pkgs.writeScriptBin "nrt" ''
     nixos-rebuild test --flake '/etc/nixos'#"$(hostname)"
   '';
@@ -233,6 +200,7 @@ let
   utilsK8s-services-status-check = myImport ../../src/base/nix/wrappers/utilsK8s-services-status-check.nix;
   utilsK8s-services-restart-if-not-active = myImport ../../src/base/nix/wrappers/utilsK8s-services-restart-if-not-active.nix;
   utilsK8s-services-stop = myImport ../../src/base/nix/wrappers/utilsK8s-services-stop.nix;
+  utilsK8s-wipe-data = myImport ../../src/base/nix/wrappers/utilsK8s-wipe-data.nix;
 
   test-kubernetes-required-environment-roles-master-and-node = myImport ../../src/base/nix/wrappers/test-kubernetes-required-environment-roles-master-and-node.nix;
 
@@ -637,8 +605,6 @@ in
     myInstallScriptMBR
     myInstallScriptUEFI
 
-    startKubernetesScript
-
     nixos-rebuild-test
 
     firstRebuildSwitchScript
@@ -651,6 +617,7 @@ in
     utilsK8s-services-restart-if-not-active
     utilsK8s-services-stop
     test-kubernetes-required-environment-roles-master-and-node
+    utilsK8s-wipe-data
 
     my-install-nixos
     install-nixos-with-parted-in-gpt
