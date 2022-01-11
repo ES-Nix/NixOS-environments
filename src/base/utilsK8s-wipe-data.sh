@@ -18,4 +18,5 @@ kubeadm reset --force \
 && mkdir -pv -m 0700 /var/lib/etcd \
 && chown etcd:root /var/lib/etcd
 
+# kubeadm init phase kubeconfig admin --cert-dir /etc/kubernetes
 # kubeadm init phase kubeconfig admin --apiserver-advertise-address --cert-dir /etc/kubernetes

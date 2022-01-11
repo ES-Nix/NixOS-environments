@@ -32,7 +32,7 @@ let
   firstRebuildSwitchScript = pkgs.runCommandLocal "first-rebuild-switch"
     { nativeBuildInputs = [ pkgs.makeWrapper ]; }
     ''
-      install -m755 ${./first-rebuild-switch.sh} -D $out/bin/first-rebuild-switch
+      install -m755 ${./custom-rebuild-switch.sh} -D $out/bin/first-rebuild-switch
       patchShebangs $out/bin/first-rebuild-switch
       wrapProgram "$out/bin/first-rebuild-switch" \
       --prefix PATH : ${pkgs.lib.makeBinPath firstRebuildSwitchScriptDeps}

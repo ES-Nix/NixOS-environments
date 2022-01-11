@@ -22,7 +22,7 @@ let
   kubeMasterAPIServerPort = 6443;
 
   copyFirstRebuildSwitchScript = pkgs.writeScriptBin "copy-first-rebuild-switch" ''
-    cp -v ${./first-rebuild-switch.sh} /mnt/etc/nixos/first-rebuild-switch.sh
+    cp -v ${./custom-rebuild-switch.sh} /mnt/etc/nixos/custom-rebuild-switch.sh
   '';
 
   copyCustomKubeadmCertsRenewAllScript = pkgs.writeScriptBin "custom-kubeadm-certs-renew-all" ''
@@ -43,7 +43,7 @@ let
   #customKubeadmCertsRenewAllScript = pkgs.runCommandLocal "custom-kubeadm-certs-renew-all"
   #  { nativeBuildInputs = [ pkgs.makeWrapper ]; }
   #  ''
-  #    install -m755 ${./first-rebuild-switch.sh} -D $out/bin/custom-kubeadm-certs-renew-all
+  #    install -m755 ${./custom-rebuild-switch.sh} -D $out/bin/custom-kubeadm-certs-renew-all
   #    patchShebangs $out/bin/custom-kubeadm-certs-renew-all
   #    wrapProgram "$out/bin/custom-kubeadm-certs-renew-all" \
   #    --prefix PATH : ${pkgs.lib.makeBinPath customKubeadmCertsRenewAllScriptDeps}
@@ -180,7 +180,7 @@ let
   firstRebuildSwitchScript = pkgs.runCommandLocal "first-rebuild-switch"
     { nativeBuildInputs = [ pkgs.makeWrapper ]; }
     ''
-      install -m755 ${./first-rebuild-switch.sh} -D $out/bin/first-rebuild-switch
+      install -m755 ${./custom-rebuild-switch.sh} -D $out/bin/first-rebuild-switch
       patchShebangs $out/bin/first-rebuild-switch
       wrapProgram "$out/bin/first-rebuild-switch" \
       --prefix PATH : ${pkgs.lib.makeBinPath firstRebuildSwitchScriptDeps}

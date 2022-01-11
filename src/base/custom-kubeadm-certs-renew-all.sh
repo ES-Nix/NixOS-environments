@@ -1,50 +1,36 @@
 #!/usr/bin/env bash
 
+# https://www.youtube.com/watch?v=EFjOhVn2wQY
+# kubeadm init phase certs all --cert-dir /etc/kubernetes/pki
+# kubeadm init phase kubeconfig admin --cert-dir /etc/kubernetes/pki
 kubeadm certs renew all
 
-#systemctl restart kube-apiserver
-#systemctl restart kube-controller-manager
-#systemctl restart kube-scheduler
-#systemctl restart etcd
 
-LOG_START_DATE="$(date +'%Y-%m-%d %H:%M:%S')"
+echo 'Restarting kube-apiserver'
 systemctl restart kube-apiserver
-journalctl \
---since "${LOG_START_DATE}" \
---until "$(date +'%Y-%m-%d %T' --date="${LOG_START_DATE} 2 minutes")" \
---no-pager \
--u kube-apiserver
 
-LOG_START_DATE="$(date +'%Y-%m-%d %H:%M:%S')"
+echo 'Restarting kube-controller-manager'
 systemctl restart kube-controller-manager
-journalctl \
---since "${LOG_START_DATE}" \
---until "$(date +'%Y-%m-%d %T' --date="${LOG_START_DATE} 2 minutes")" \
---no-pager \
--u kube-controller-manager
 
-
-LOG_START_DATE="$(date +'%Y-%m-%d %H:%M:%S')"
+echo 'Restarting kube-scheduler'
 systemctl restart kube-scheduler
-journalctl \
---since "${LOG_START_DATE}" \
---until "$(date +'%Y-%m-%d %T' --date="${LOG_START_DATE} 2 minutes")" \
---no-pager \
--u kube-scheduler
 
-
-LOG_START_DATE="$(date +'%Y-%m-%d %H:%M:%S')"
+echo 'Restarting etcd'
 systemctl restart etcd
-journalctl \
---since "${LOG_START_DATE}" \
---until "$(date +'%Y-%m-%d %T' --date="${LOG_START_DATE} 2 minutes")" \
---no-pager \
--u etcd
+
+#LOG_START_DATE="$(date +'%Y-%m-%d %H:%M:%S')"
+#systemctl restart kube-apiserver
+#journalctl \
+#--since "${LOG_START_DATE}" \
+#--until "$(date +'%Y-%m-%d %T' --date="${LOG_START_DATE} 2 minutes")" \
+#--no-pager \
+#-u kube-apiserver
 
 
 # stat /var/lib/kubernetes
 chown kubernetes:kubernetes -Rv /var/lib/kubernetes
 chmod -Rv 0775 /var/lib/kubernetes
+
 
 # TODO: Do we want it always after renew all certs? I think so.
 # TODO: remove this hard code in the user name?

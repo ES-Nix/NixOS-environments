@@ -22,75 +22,32 @@ let
   # kubeMasterHostname = "api.kube";
   kubeMasterAPIServerPort = 6443;
 
-  firstRebuildSwitchScriptDeps = with pkgs; [
-    bash
-    coreutils
-    git
-    # nix  #
-    # nixos-rebuild?
-  ];
-  firstRebuildSwitchScript = pkgs.runCommandLocal "first-rebuild-switch"
-    { nativeBuildInputs = [ pkgs.makeWrapper ]; }
-    ''
-      install -m755 ${./src/base/first-rebuild-switch.sh} -D $out/bin/first-rebuild-switch
-      patchShebangs $out/bin/first-rebuild-switch
-      wrapProgram "$out/bin/first-rebuild-switch" \
-      --prefix PATH : ${pkgs.lib.makeBinPath firstRebuildSwitchScriptDeps}
-    '';
+  pkgsAndSystem = {
+    system = system;
+    pkgs = pkgs;
+  };
 
-  customKubeadmCertsRenewAllScriptDeps = with pkgs; [
-    bash
-    coreutils
-    git
-    # nix  #
-    nixos-rebuild
-  ];
-  customKubeadmCertsRenewAllScript = pkgs.runCommandLocal "custom-kubeadm-certs-renew-all"
-    { nativeBuildInputs = [ pkgs.makeWrapper ]; }
-    ''
-      install -m755 ${./src/base/custom-kubeadm-certs-renew-all.sh} -D $out/bin/custom-kubeadm-certs-renew-all
-      patchShebangs $out/bin/custom-kubeadm-certs-renew-all
-      wrapProgram "$out/bin/custom-kubeadm-certs-renew-all" \
-      --prefix PATH : ${pkgs.lib.makeBinPath customKubeadmCertsRenewAllScriptDeps}
-    '';
+  myImportGeneric = pkgsAndSystem: fullFilePath:
+    import fullFilePath pkgsAndSystem;
 
-    nrt = pkgs.writeScriptBin "nixos-rebuild-test" ''
-      nixos-rebuild test --flake '/etc/nixos'#"$(hostname)"
-    '';
+  myImport = myImportGeneric pkgsAndSystem;
 
-    part2 = pkgs.writeScriptBin "part2" ''
-      nixos-rebuild test --flake '/etc/nixos'#"$(hostname)"
-      first-rebuild-switch
-      reboot
-    '';    
+  test-hello-figlet-cowsay = myImport ./src/base/nix/wrappers/test-hello-figlet-cowsay.nix;
 
-    part3 = pkgs.writeScriptBin "part3" ''
-      custom-kubeadm-certs-renew-all
-      reboot
-    '';
+  utilsK8s-services-status-check = myImport ./src/base/nix/wrappers/utilsK8s-services-status-check.nix;
+  utilsK8s-services-restart-if-not-active = myImport ./src/base/nix/wrappers/utilsK8s-services-restart-if-not-active.nix;
+  utilsK8s-services-stop = myImport ./src/base/nix/wrappers/utilsK8s-services-stop.nix;
+  utilsK8s-wipe-data = myImport ./src/base/nix/wrappers/utilsK8s-wipe-data.nix;
 
-    pkgsAndSystem = {
-      system = system;
-      pkgs = pkgs;
-    };
+  custom-kubeadm-certs-renew-all = myImport ./src/base/nix/wrappers/custom-kubeadm-certs-renew-all.nix;
+  custom-rebuild-switch = myImport ./src/base/nix/wrappers/custom-rebuild-switch.nix;
 
-    myImportGeneric = pkgsAndSystem: fullFilePath:
-      import fullFilePath pkgsAndSystem;
-
-    myImport = myImportGeneric pkgsAndSystem;
-
-    test-hello-figlet-cowsay = myImport ./src/base/nix/wrappers/test-hello-figlet-cowsay.nix;
-
-    utilsK8s-services-status-check = myImport ./src/base/nix/wrappers/utilsK8s-services-status-check.nix;
-    utilsK8s-services-restart-if-not-active = myImport ./src/base/nix/wrappers/utilsK8s-services-restart-if-not-active.nix;
-    utilsK8s-services-stop = myImport ./src/base/nix/wrappers/utilsK8s-services-stop.nix;
-    utilsK8s-wipe-data = myImport ./src/base/nix/wrappers/utilsK8s-wipe-data.nix;
-
-    test-kubernetes-required-environment-roles-master-and-node = myImport ./src/base/nix/wrappers/test-kubernetes-required-environment-roles-master-and-node.nix;
+  test-kubernetes-required-environment-roles-master-and-node = myImport ./src/base/nix/wrappers/test-kubernetes-required-environment-roles-master-and-node.nix;
 
 
-    fix-permission-k8s = myImport ./src/base/nix/wrappers/fix-permission-k8s.nix;
-    crw = myImport ./src/base/nix/wrappers/crw.nix;
+  fix-permission-k8s = myImport ./src/base/nix/wrappers/fix-permission-k8s.nix;
+  crw = myImport ./src/base/nix/wrappers/crw.nix;
+  nrt = myImport ./src/base/nix/wrappers/nrt.nix;
 
 in
 {
@@ -472,23 +429,22 @@ in
     zsh-autosuggestions
     zsh-completions
 
-    firstRebuildSwitchScript
-    customKubeadmCertsRenewAllScript
-
+    ##
     test-hello-figlet-cowsay
 
     utilsK8s-services-status-check
     utilsK8s-services-restart-if-not-active
     utilsK8s-services-stop
     utilsK8s-wipe-data
+    custom-kubeadm-certs-renew-all
+
     test-kubernetes-required-environment-roles-master-and-node
 
     crw
-    fix-permission-k8s
-
     nrt
-    part2
-    part3
+    custom-rebuild-switch
+    fix-permission-k8s
+    ##
 
     # Looks like kubernetes needs atleast all this
     kubectl
