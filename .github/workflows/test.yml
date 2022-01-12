@@ -13,4 +13,4 @@ jobs:
           access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
     - run: nix flake --version
     - run: nix flake metadata nixpkgs
-    - run: nix build .#iso-kubernetes
+    # - run: nix build .#iso-kubernetes
