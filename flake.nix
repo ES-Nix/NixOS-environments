@@ -378,6 +378,8 @@
             svissh
             # It slows a lot the nix develop
             # self.packages.${system}.image.image
+
+            kubectl
           ];
 
           shellHook = ''

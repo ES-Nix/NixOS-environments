@@ -1776,3 +1776,51 @@ chown -v nixuser: "$HARCODED_HOME"/.kube/config
 && kdall && wka
 
 kubectl -n kube-system get cm kubeadm-config -o yaml
+
+
+```bash
+mkdir -p ~/.kube
+
+scp -P 27020 nixuser@imobanco.ddns.net:/etc/kubernetes/cluster-admin.kubeconfig ~/.kube/config
+```
+Refs.:
+- https://www.youtube.com/watch?v=EFjOhVn2wQY
+
+
+```bash
+cat ~/.kube/config | jq .
+```
+
+
+```bash
+kubectl config view
+
+
+kubectl get pods --kubeconfig ~/.kube/config
+
+kubectl config set-cluster local --server=http://imobanco.ddns.net:27020
+# kubectl config set-cluster local --server=https://imobanco.ddns.net:27020
+kubectl config use-context local
+
+sudo mkdir -pv /var/lib/kubernetes/secrets
+
+scp -P 27020 nixuser@imobanco.ddns.net:/var/lib/kubernetes/secrets/ca.pem ca.pem
+scp -P 27020 nixuser@imobanco.ddns.net:/var/lib/kubernetes/secrets/cluster-admin.pem cluster-admin.pem
+scp -P 27020 nixuser@imobanco.ddns.net:/var/lib/kubernetes/secrets/cluster-admin-key.pem cluster-admin-key.pem
+
+sudo mv ca.pem cluster-admin-key.pem cluster-admin.pem /var/lib/kubernetes/secrets/
+```
+Refs.:
+- https://github.com/kubernetes/dashboard/issues/2895#issuecomment-582200218
+
+
+
+```bash
+ssh -fNL 6443:http://imobanco.ddns.net:27020 nixuser@??
+
+```
+
+
+```bash
+kubectl get pods
+```
