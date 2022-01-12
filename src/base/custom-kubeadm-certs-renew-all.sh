@@ -1,10 +1,25 @@
 #!/usr/bin/env bash
 
+
+# Excellent!
+# https://kubernetes.io/docs/reference/setup-tools/kubeadm/kubeadm-init/
+#
 # https://www.youtube.com/watch?v=EFjOhVn2wQY
-# kubeadm init phase certs all --cert-dir /etc/kubernetes/pki
-# kubeadm init phase kubeconfig admin --cert-dir /etc/kubernetes/pki
+#kubeadm init phase certs all --cert-dir=/etc/kubernetes/pki
+#kubeadm init phase kubeconfig admin --cert-dir=/etc/kubernetes/pki
+
+# At some point I think this is a needed
+# kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
+
+
+#kubeadm init phase kubeconfig admin --cert-dir /etc/kubernetes/pki
+#kubeadm init phase kubeconfig admin --apiserver-advertise-address --cert-dir /etc/kubernetes/pki
+# https://stackoverflow.com/a/46480447
+
 kubeadm certs renew all
 
+
+echo
 
 echo 'Restarting kube-apiserver'
 systemctl restart kube-apiserver

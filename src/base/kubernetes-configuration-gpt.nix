@@ -1,4 +1,4 @@
-{ pkgs, nixpkgs, ... }:
+{ config, pkgs, nixpkgs ? <nixpkgs>, system ? "x86_64-linux", ... }:
 let
   JoaoKeys = pkgs.writeText "joao-keys.pub" ''
     ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCqWdfY6g9gtETLFji9Sb60bcR1fQvS2ADdY9Ba0GtKhzjHNTmTgHxRoqLwOauDgxke9CJt5r9kolBHxGaMMJwcAwJlPgh0bodRm6LHsBatQYMyqYo2LvIGhT5WorlUp8zZWkZBP5CUuInQ48gieD62PMnU4rVmJdK8ZB48S4COz1IJx9ILr2unvVFJs7KT7WdNvbgfjKsTZrf/T/VMeQLodtdAIuWRuSUY5lJ3XwJCff2kCx5oAkZiz+3+a5z3LDqnwCeK8TkHnugmJHT09srlKSAA+bel+hxJtplsbYryeFVuYY8fILeOfNwI7Ht5ZZThIoLcUJfqKMPSlsBhEtFzqBA2ZE/NpStHKriIzLZbN2aUB0CWFPSa5g88H83qPyRInqR71O8WImQcH971BL41D+SHWhJEAbGZIaZwuYGaeiNe862SWrOv37Heh424b+RsEwVm0hUs9ZgdV3QqhMJlIEWyqIF4ueAlymqbtITYyI5kYuMo0yFW6dPYMSOUaHU=
@@ -22,77 +22,33 @@ let
   # kubeMasterHostname = "api.kube";
   kubeMasterAPIServerPort = 6443;
 
-  firstRebuildSwitchScriptDeps = with pkgs; [
-    bash
-    coreutils
-    git
-    # nix  #
-    nixos-rebuild
-  ];
-  firstRebuildSwitchScript = pkgs.runCommandLocal "first-rebuild-switch"
-    { nativeBuildInputs = [ pkgs.makeWrapper ]; }
-    ''
-      install -m755 ${./custom-rebuild-switch.sh} -D $out/bin/first-rebuild-switch
-      patchShebangs $out/bin/first-rebuild-switch
-      wrapProgram "$out/bin/first-rebuild-switch" \
-      --prefix PATH : ${pkgs.lib.makeBinPath firstRebuildSwitchScriptDeps}
-    '';
-
-  customKubeadmCertsRenewAllScriptDeps = with pkgs; [
-    bash
-    coreutils
-    git
-    # nix  #
-    nixos-rebuild
-  ];
-  customKubeadmCertsRenewAllScript = pkgs.runCommandLocal "custom-kubeadm-certs-renew-all"
-    { nativeBuildInputs = [ pkgs.makeWrapper ]; }
-    ''
-      install -m755 ${./custom-kubeadm-certs-renew-all.sh} -D $out/bin/custom-kubeadm-certs-renew-all
-      patchShebangs $out/bin/custom-kubeadm-certs-renew-all
-      wrapProgram "$out/bin/custom-kubeadm-certs-renew-all" \
-      --prefix PATH : ${pkgs.lib.makeBinPath customKubeadmCertsRenewAllScriptDeps}
-    '';
-
-  nrt = pkgs.writeScriptBin "nixos-rebuild-test" ''
-    nixos-rebuild test --flake '/etc/nixos'#"$(hostname)"
-  '';
-
-  part2 = pkgs.writeScriptBin "part2" ''
-    nixos-rebuild test --flake '/etc/nixos'#"$(hostname)"
-    first-rebuild-switch
-    reboot
-  '';
-
-  part3 = pkgs.writeScriptBin "part3" ''
-    custom-kubeadm-certs-renew-all
-    reboot
-  '';
-
-  utilsK8s-services-status-check = import ./src/base/nix/wrappers/utilsK8s-services-status-check.nix {
-    nixpkgs = nixpkgs;
-    system = "x86_64-linux";
+  pkgsAndSystem = {
+    system = system;
+    pkgs = pkgs;
   };
 
-  utilsK8s-services-restart-if-not-active = import ./src/base/nix/wrappers/utilsK8s-services-restart-if-not-active.nix {
-    nixpkgs = nixpkgs;
-    system = "x86_64-linux";
-  };
+  myImportGeneric = pkgsAndSystem: fullFilePath:
+    import fullFilePath pkgsAndSystem;
 
-  utilsK8s-services-stop = import ./src/base/nix/wrappers/utilsK8s-services-stop.nix {
-    nixpkgs = nixpkgs;
-    system = "x86_64-linux";
-  };
+  myImport = myImportGeneric pkgsAndSystem;
 
-  test-hello-figlet-cowsay = import ./src/base/nix/wrappers/test-hello-figlet-cowsay.nix {
-    nixpkgs = nixpkgs;
-    system = "x86_64-linux";
-  };
+  test-hello-figlet-cowsay = myImport ./src/base/nix/wrappers/test-hello-figlet-cowsay.nix;
 
-  test-kubernetes-required-environment-roles-master-and-node = import ./src/base/nix/wrappers/test-kubernetes-required-environment-roles-master-and-node.nix {
-    nixpkgs = nixpkgs;
-    system = "x86_64-linux";
-  };
+  utilsK8s-services-status-check = myImport ./src/base/nix/wrappers/utilsK8s-services-status-check.nix;
+  utilsK8s-services-restart-if-not-active = myImport ./src/base/nix/wrappers/utilsK8s-services-restart-if-not-active.nix;
+  utilsK8s-services-stop = myImport ./src/base/nix/wrappers/utilsK8s-services-stop.nix;
+  utilsK8s-wipe-data = myImport ./src/base/nix/wrappers/utilsK8s-wipe-data.nix;
+  k8s-rebuild-switch = myImport ./src/base/nix/wrappers/k8s-rebuild-switch.nix;
+
+  custom-kubeadm-certs-renew-all = myImport ./src/base/nix/wrappers/custom-kubeadm-certs-renew-all.nix;
+  custom-rebuild-switch = myImport ./src/base/nix/wrappers/custom-rebuild-switch.nix;
+
+  test-kubernetes-required-environment-roles-master-and-node = myImport ./src/base/nix/wrappers/test-kubernetes-required-environment-roles-master-and-node.nix;
+
+
+  fix-permission-k8s = myImport ./src/base/nix/wrappers/fix-permission-k8s.nix;
+  crw = myImport ./src/base/nix/wrappers/crw.nix;
+  nrt = myImport ./src/base/nix/wrappers/nrt.nix;
 
 in
 {
@@ -390,6 +346,7 @@ in
       k = "kubectl";
       ka = "kubectl get pods --all-namespaces -o wide";
       wka = "watch -n 1 kubectl get pods --all-namespaces -o wide";
+      kdall = "kubectl delete all --all -n kube-system";
     };
 
     enableCompletion = true;
@@ -480,18 +437,23 @@ in
     zsh-autosuggestions
     zsh-completions
 
-    firstRebuildSwitchScript
-    customKubeadmCertsRenewAllScript
+    ##
+    test-hello-figlet-cowsay
 
     utilsK8s-services-status-check
     utilsK8s-services-restart-if-not-active
     utilsK8s-services-stop
-    test-hello-figlet-cowsay
+    utilsK8s-wipe-data
+    k8s-rebuild-switch
+    custom-kubeadm-certs-renew-all
+
     test-kubernetes-required-environment-roles-master-and-node
 
+    crw
     nrt
-    part2
-    part3
+    custom-rebuild-switch
+    fix-permission-k8s
+    ##
 
     # Looks like kubernetes needs atleast all this
     kubectl
@@ -531,40 +493,41 @@ in
     '';
   };
 
-  services.kubernetes.roles = [ "master" "node" ];
-  services.kubernetes.masterAddress = "${kubeMasterHostname}";
-  #  services.kubernetes = {
-  #
-  #    # addonManager.enable = true;
-  #
-  #    addons = {
-  #      # dashboard.enable = true;
-  #      # dashboard.rbac.enable = true;
-  #      dns.enable = true;
-  #    };
-  #
-  #    apiserverAddress = "https://${kubeMasterHostname}:${toString kubeMasterAPIServerPort}";
-  #
-  #    apiserver = {
-  #      advertiseAddress = kubeMasterIP;
-  #      enable = true;
-  #      securePort = kubeMasterAPIServerPort;
-  #    };
-  #
-  #    controllerManager.enable = true;
-  #    # flannel.enable = true;
-  #    masterAddress = "${toString kubeMasterHostname}";
-  #    # proxy.enable = true;
-  #    roles = [ "master" ];
-  #    # roles = [ "master" "node" ];
-  #    # scheduler.enable = true;
-  #    easyCerts = true;
-  #
-  #    kubelet.enable = true;
-  #
-  #    # needed if you use swap
-  #    kubelet.extraOpts = "--fail-swap-on=false";
-  #  };
+  #services.kubernetes.roles = [ "master" "node" ];
+  #services.kubernetes.masterAddress = "${kubeMasterHostname}";
+
+  services.kubernetes = {
+
+    #  # addonManager.enable = true;
+    #
+    #  addons = {
+    #    # dashboard.enable = true;
+    #    # dashboard.rbac.enable = true;
+    #    dns.enable = true;
+    #  };
+    #
+    #  apiserverAddress = "https://${kubeMasterHostname}:${toString kubeMasterAPIServerPort}";
+    #
+    #  apiserver = {
+    #    advertiseAddress = kubeMasterIP;
+    #    enable = true;
+    #    securePort = kubeMasterAPIServerPort;
+    #  };
+    #
+    #  controllerManager.enable = true;
+    #  # flannel.enable = true;
+       masterAddress = "${toString kubeMasterHostname}";
+    #  # proxy.enable = true;
+    #  # roles = [ "master" ];
+       roles = [ "master" "node" ];
+    #  # scheduler.enable = true;
+    #  easyCerts = true;
+    #
+    #  kubelet.enable = true;
+
+      # needed if you use swap
+      kubelet.extraOpts = "--fail-swap-on=false";
+    };
 
   #  services = {
   #    flannel = {

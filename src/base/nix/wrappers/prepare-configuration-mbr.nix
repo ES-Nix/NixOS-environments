@@ -1,4 +1,4 @@
-{ pkgs, system ? "x86_64-linux", name ? "my-install-nixos" }:
+{ pkgs, system ? "x86_64-linux", name ? "prepare-configuration-mbr" }:
 let
   customScripts = rec {
     inherit name;
@@ -6,13 +6,11 @@ let
     customScript = (import ../../../../src/base/nix/utils/custom-script-wrapper.nix) {
       pkgs = pkgs;
       system = system;
-        propagatedNativeBuildInputs = with pkgs; [
-          bash
-
-          (import ./install-nixos-gpt.nix { inherit system pkgs;})
-          (import ./install-nixos-mbr.nix { inherit system pkgs;})
-
-        ];
+      propagatedNativeBuildInputs = with pkgs; [
+        bash
+        coreutils
+        git
+      ];
       scriptFullNixPath = scriptFullNixPath;
       scriptName = "${name}";
     };

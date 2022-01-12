@@ -21,170 +21,58 @@ let
   kubeMasterHostname = "localhost";
   kubeMasterAPIServerPort = 6443;
 
-  copyFirstRebuildSwitchScript = pkgs.writeScriptBin "copy-first-rebuild-switch" ''
-    cp -v ${./custom-rebuild-switch.sh} /mnt/etc/nixos/custom-rebuild-switch.sh
-  '';
-
-  copyCustomKubeadmCertsRenewAllScript = pkgs.writeScriptBin "custom-kubeadm-certs-renew-all" ''
-    cp -v ${./custom-kubeadm-certs-renew-all.sh} /mnt/etc/nixos/custom-kubeadm-certs-renew-all.sh
-  '';
-
-  ## TODO: is this a good way?
-  customKubeadmCertsRenewAllScript = pkgs.writeScriptBin "custom-kubeadm-certs-renew-all" ''
-    ${./custom-kubeadm-certs-renew-all.sh}
-  '';
-  #customKubeadmCertsRenewAllScriptDeps = with pkgs; [
+  #scriptName = pkgs.writeScriptBin "script-name" ''
+  #  ${./the-script.sh}
+  #'';
+  #someScriptDeps = with pkgs; [
   #  bash
   #  coreutils
   #  git
   #  # nix  #
   #  nixos-rebuild
   #];
-  #customKubeadmCertsRenewAllScript = pkgs.runCommandLocal "custom-kubeadm-certs-renew-all"
+  #someScript = pkgs.runCommandLocal "custom-kubeadm-certs-renew-all"
   #  { nativeBuildInputs = [ pkgs.makeWrapper ]; }
   #  ''
   #    install -m755 ${./custom-rebuild-switch.sh} -D $out/bin/custom-kubeadm-certs-renew-all
   #    patchShebangs $out/bin/custom-kubeadm-certs-renew-all
   #    wrapProgram "$out/bin/custom-kubeadm-certs-renew-all" \
-  #    --prefix PATH : ${pkgs.lib.makeBinPath customKubeadmCertsRenewAllScriptDeps}
+  #    --prefix PATH : ${pkgs.lib.makeBinPath someScriptDeps}
   #  '';
 
-  #
-  exampleConfigurationMRBScript = pkgs.writeScriptBin "kubernetes-configuration-mrb" ''
-    cp -v ${./kubernetes-configuration-mbr.nix} /mnt/etc/nixos/configuration.nix
-  '';
-
-  exampleConfigurationMRB = pkgs.stdenv.mkDerivation {
-    name = "example-configuration-mrb";
-    installPhase = ''
-      mkdir -p $out/bin
-      install -t $out/bin ${exampleConfigurationMRBScript}/bin/kubernetes-configuration-mrb
-    '';
-    phases = [ "buildPhase" "installPhase" "fixupPhase" ];
-  };
-
-  #
-  exampleConfigurationUEFIScript = pkgs.writeScriptBin "kubernetes-configuration-uefi" ''
-    cp -v ${./kubernetes-configuration-uefi.nix} /mnt/etc/nixos/configuration.nix
-  '';
-
+  # The only exception
   copyTomntScript = pkgs.writeScriptBin "copy-to-mnt" ''
     cp -rv ${../../src}* /mnt/etc/nixos/src/
   '';
 
-  # TODO: refactor this for an specific name that is clear that it brings kubernetes
-  exampleConfigurationUEFI = pkgs.stdenv.mkDerivation {
-    name = "example-configuration-uefi";
-    installPhase = ''
-      mkdir -p $out/bin
-      install -t $out/bin ${exampleConfigurationUEFIScript}/bin/kubernetes-configuration-uefi
-    '';
-    phases = [ "buildPhase" "installPhase" "fixupPhase" ];
-  };
-
-  partitionUEFIScriptDeps = with pkgs; [
-    figlet
-    hello
-
-    e2fsprogs
-    parted
-    mount
-    util-linux
-  ];
-  partitionUEFIScript = pkgs.runCommandLocal "partition-uefi"
-    { nativeBuildInputs = [ pkgs.makeWrapper ]; }
-    ''
-      install -m755 ${./install-nixos-with-parted-in-mbr.sh} -D $out/bin/partition-uefi
-      patchShebangs $out/bin/partition-uefi
-      wrapProgram "$out/bin/partition-uefi" \
-      --prefix PATH : ${pkgs.lib.makeBinPath partitionUEFIScriptDeps}
-    '';
-
-  partitionMBRScriptDeps = with pkgs; [
-    e2fsprogs
-    parted
-    mount
-    util-linux
-  ];
-  partitionMBRScript = pkgs.runCommandLocal "install-nixos-with-parted-in-mbr"
-    { nativeBuildInputs = [ pkgs.makeWrapper ]; }
-    ''
-      install -m755 ${./install-nixos-with-parted-in-mbr.sh} -D $out/bin/install-nixos-with-parted-in-mbr
-      patchShebangs $out/bin/install-nixos-with-parted-in-mbr
-      wrapProgram "$out/bin/install-nixos-with-parted-in-mbr" \
-      --prefix PATH : ${pkgs.lib.makeBinPath partitionMBRScriptDeps}
-    '';
-
-  prepare-git-stuff = pkgs.writeScriptBin "prepare-git-stuff" ''
-
-    # It is hardcoded, but is it that bad?
-    cd /mnt/etc/nixos
-
-    echo 'result' > .gitignore
-
-    git config --global user.email "you@example.com"
-    git config --global user.name "Your Name"
-    git init
-    git add .
-    git commit -m 'First commit'
-  '';
-
-  prepare-configuration = pkgs.writeScriptBin "prepare-configuration" ''
-    rm -fv /mnt/etc/nixos/configuration.nix
-    cp -fv /mnt/etc/nixos/src/base/kubernetes-configuration-mbr.nix /mnt/etc/nixos/configuration.nix
-
-    cp -fv /mnt/etc/nixos/src/base/base-flake.nix /mnt/etc/nixos/flake.nix
-
-    #
-    cd /mnt/etc/nixos
-    git config --global user.email "you@example.com"
-    git config --global user.name "Your Name"
-
-    git add .
-    git commit -m 'Second commit'
-  '';
-
-  myInstallScriptUEFI = pkgs.writeScriptBin "my-install-uefi" ''
-
-    ${partitionUEFIScript}/bin/partition-uefi \
-    && nixos-generate-config --root /mnt \
-    && ${copyFirstRebuildSwitchScript}/bin/copy-first-rebuild-switch \
-    && ${copyCustomKubeadmCertsRenewAllScript}/bin/custom-kubeadm-certs-renew-all \
-    && ${exampleConfigurationUEFI}/bin/kubernetes-configuration-uefi \
-    && nixos-install --no-root-passwd \
-    && shutdown --poweroff
-  '';
-
-  myInstallScriptMBR = pkgs.writeScriptBin "install-nixos-mbr" ''
-
-    ${partitionMBRScript}/bin/install-nixos-with-parted-in-mbr \
-    && nixos-generate-config --root /mnt \
-    && ${copyTomntScript}/bin/copy-to-mnt \
-    && ${prepare-git-stuff}/bin/prepare-git-stuff \
-    && ${prepare-configuration}/bin/prepare-configuration \
-    && nixos-install --no-root-passwd \
-    && shutdown --poweroff
-  '';
-
-  nixos-rebuild-test = pkgs.writeScriptBin "nrt" ''
-    nixos-rebuild test --flake '/etc/nixos'#"$(hostname)"
-  '';
-
-  firstRebuildSwitchScriptDeps = with pkgs; [
-    bash
-    coreutils
-    git
-    nix #
-    nixos-rebuild
-  ];
-  firstRebuildSwitchScript = pkgs.runCommandLocal "first-rebuild-switch"
-    { nativeBuildInputs = [ pkgs.makeWrapper ]; }
-    ''
-      install -m755 ${./custom-rebuild-switch.sh} -D $out/bin/first-rebuild-switch
-      patchShebangs $out/bin/first-rebuild-switch
-      wrapProgram "$out/bin/first-rebuild-switch" \
-      --prefix PATH : ${pkgs.lib.makeBinPath firstRebuildSwitchScriptDeps}
-    '';
+#  partitionUEFIScriptDeps = with pkgs; [
+#    figlet
+#    hello
+#
+#    e2fsprogs
+#    parted
+#    mount
+#    util-linux
+#  ];
+#  partitionUEFIScript = pkgs.runCommandLocal "partition-uefi"
+#    { nativeBuildInputs = [ pkgs.makeWrapper ]; }
+#    ''
+#      install -m755 ${./install-nixos-with-parted-in-mbr.sh} -D $out/bin/partition-uefi
+#      patchShebangs $out/bin/partition-uefi
+#      wrapProgram "$out/bin/partition-uefi" \
+#      --prefix PATH : ${pkgs.lib.makeBinPath partitionUEFIScriptDeps}
+#    '';
+#
+#  myInstallScriptUEFI = pkgs.writeScriptBin "my-install-uefi" ''
+#
+#    ${partitionUEFIScript}/bin/partition-uefi \
+#    && nixos-generate-config --root /mnt \
+#    && ${copyFirstRebuildSwitchScript}/bin/copy-first-rebuild-switch \
+#    && ${copyCustomKubeadmCertsRenewAllScript}/bin/custom-kubeadm-certs-renew-all \
+#    && ${exampleConfigurationUEFI}/bin/kubernetes-configuration-uefi \
+#    && nixos-install --no-root-passwd \
+#    && shutdown --poweroff
+#  '';
 
   pkgsAndSystem = {
     inherit system pkgs;
@@ -196,16 +84,28 @@ let
   myImport = myImportGeneric pkgsAndSystem;
 
   test-hello-figlet-cowsay = myImport ../../src/base/nix/wrappers/test-hello-figlet-cowsay.nix;
+  test-composed-script = myImport ../../src/base/nix/wrappers/test-composed-script.nix;
 
   utilsK8s-services-status-check = myImport ../../src/base/nix/wrappers/utilsK8s-services-status-check.nix;
   utilsK8s-services-restart-if-not-active = myImport ../../src/base/nix/wrappers/utilsK8s-services-restart-if-not-active.nix;
   utilsK8s-services-stop = myImport ../../src/base/nix/wrappers/utilsK8s-services-stop.nix;
   utilsK8s-wipe-data = myImport ../../src/base/nix/wrappers/utilsK8s-wipe-data.nix;
+  k8s-rebuild-switch = myImport ../../src/base/nix/wrappers/k8s-rebuild-switch.nix;
 
   test-kubernetes-required-environment-roles-master-and-node = myImport ../../src/base/nix/wrappers/test-kubernetes-required-environment-roles-master-and-node.nix;
 
+
+  # Install stuff
+  prepare-git-stuff = myImport ../../src/base/nix/wrappers/prepare-git-stuff.nix;
+  prepare-configuration-mbr = myImport ../../src/base/nix/wrappers/prepare-configuration-mbr.nix;
+  prepare-configuration-gpt = myImport ../../src/base/nix/wrappers/prepare-configuration-gpt.nix;
+
+  install-nixos-mbr = myImport ../../src/base/nix/wrappers/install-nixos-mbr.nix;
+  install-nixos-gpt = myImport ../../src/base/nix/wrappers/install-nixos-gpt.nix;
+
   install-nixos-with-parted-in-gpt = myImport ../../src/base/nix/wrappers/install-nixos-with-parted-in-gpt.nix;
   install-nixos-with-parted-in-mbr = myImport ../../src/base/nix/wrappers/install-nixos-with-parted-in-mbr.nix;
+
   my-install-nixos = myImport ../../src/base/nix/wrappers/my-install-nixos.nix;
 
   crw = myImport ../../src/base/nix/wrappers/crw.nix;
@@ -600,31 +500,38 @@ in
     zsh-autosuggestions
     zsh-completions
 
-    # hello
-
-    myInstallScriptMBR
-    myInstallScriptUEFI
-
-    nixos-rebuild-test
-
-    firstRebuildSwitchScript
-    customKubeadmCertsRenewAllScript
-    copyTomntScript
-
+    ##
     test-hello-figlet-cowsay
+    test-composed-script
 
     utilsK8s-services-status-check
     utilsK8s-services-restart-if-not-active
     utilsK8s-services-stop
     test-kubernetes-required-environment-roles-master-and-node
     utilsK8s-wipe-data
+    k8s-rebuild-switch
+
+    # It is not a must to include these. TODO: Test it :p
+    prepare-git-stuff
+
+    install-nixos-with-parted-in-mbr
+    install-nixos-with-parted-in-gpt
+
+    prepare-configuration-mbr
+    prepare-configuration-gpt
+
+    install-nixos-mbr
+    install-nixos-gpt
+    #
 
     my-install-nixos
-    install-nixos-with-parted-in-gpt
-    install-nixos-with-parted-in-mbr
+
+    # The exception
+    copyTomntScript
+
     crw
     fix-permission-k8s
-
+    ##
 
     # Looks like kubernetes needs atleast all this
     kubectl
@@ -664,40 +571,41 @@ in
     '';
   };
 
-  services.kubernetes.roles = [ "master" "node" ];
-  services.kubernetes.masterAddress = "${kubeMasterHostname}";
-  #  services.kubernetes = {
-  #
-  #    # addonManager.enable = true;
-  #
-  #    addons = {
-  #      # dashboard.enable = true;
-  #      # dashboard.rbac.enable = true;
-  #      dns.enable = true;
-  #    };
-  #
-  #    apiserverAddress = "https://${kubeMasterHostname}:${toString kubeMasterAPIServerPort}";
-  #
-  #    apiserver = {
-  #      advertiseAddress = kubeMasterIP;
-  #      enable = true;
-  #      securePort = kubeMasterAPIServerPort;
-  #    };
-  #
-  #    controllerManager.enable = true;
-  #    # flannel.enable = true;
-  #    masterAddress = "${toString kubeMasterHostname}";
-  #    # proxy.enable = true;
-  #    roles = [ "master" ];
-  #    # roles = [ "master" "node" ];
-  #    # scheduler.enable = true;
-  #    easyCerts = true;
-  #
-  #    kubelet.enable = true;
-  #
-  #    # needed if you use swap
-  #    kubelet.extraOpts = "--fail-swap-on=false";
-  #  };
+  #services.kubernetes.roles = [ "master" "node" ];
+  #services.kubernetes.masterAddress = "${kubeMasterHostname}";
+
+  services.kubernetes = {
+
+    #  # addonManager.enable = true;
+    #
+    #  addons = {
+    #    # dashboard.enable = true;
+    #    # dashboard.rbac.enable = true;
+    #    dns.enable = true;
+    #  };
+    #
+    #  apiserverAddress = "https://${kubeMasterHostname}:${toString kubeMasterAPIServerPort}";
+    #
+    #  apiserver = {
+    #    advertiseAddress = kubeMasterIP;
+    #    enable = true;
+    #    securePort = kubeMasterAPIServerPort;
+    #  };
+    #
+    #  controllerManager.enable = true;
+    #  # flannel.enable = true;
+       masterAddress = "${toString kubeMasterHostname}";
+    #  # proxy.enable = true;
+    #  # roles = [ "master" ];
+       roles = [ "master" "node" ];
+    #  # scheduler.enable = true;
+    #  easyCerts = true;
+    #
+    #  kubelet.enable = true;
+
+      # needed if you use swap
+      kubelet.extraOpts = "--fail-swap-on=false";
+    };
 
   #  services = {
   #    flannel = {

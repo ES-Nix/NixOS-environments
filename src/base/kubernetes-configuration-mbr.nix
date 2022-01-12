@@ -38,6 +38,7 @@ let
   utilsK8s-services-restart-if-not-active = myImport ./src/base/nix/wrappers/utilsK8s-services-restart-if-not-active.nix;
   utilsK8s-services-stop = myImport ./src/base/nix/wrappers/utilsK8s-services-stop.nix;
   utilsK8s-wipe-data = myImport ./src/base/nix/wrappers/utilsK8s-wipe-data.nix;
+  k8s-rebuild-switch = myImport ./src/base/nix/wrappers/k8s-rebuild-switch.nix;
 
   custom-kubeadm-certs-renew-all = myImport ./src/base/nix/wrappers/custom-kubeadm-certs-renew-all.nix;
   custom-rebuild-switch = myImport ./src/base/nix/wrappers/custom-rebuild-switch.nix;
@@ -436,6 +437,7 @@ in
     utilsK8s-services-restart-if-not-active
     utilsK8s-services-stop
     utilsK8s-wipe-data
+    k8s-rebuild-switch
     custom-kubeadm-certs-renew-all
 
     test-kubernetes-required-environment-roles-master-and-node
@@ -484,40 +486,41 @@ in
     '';
   };
 
-  services.kubernetes.roles = [ "master" "node" ];
-  services.kubernetes.masterAddress = "${kubeMasterHostname}";
-  #  services.kubernetes = {
-  #
-  #    # addonManager.enable = true;
-  #
-  #    addons = {
-  #      # dashboard.enable = true;
-  #      # dashboard.rbac.enable = true;
-  #      dns.enable = true;
-  #    };
-  #
-  #    apiserverAddress = "https://${kubeMasterHostname}:${toString kubeMasterAPIServerPort}";
-  #
-  #    apiserver = {
-  #      advertiseAddress = kubeMasterIP;
-  #      enable = true;
-  #      securePort = kubeMasterAPIServerPort;
-  #    };
-  #
-  #    controllerManager.enable = true;
-  #    # flannel.enable = true;
-  #    masterAddress = "${toString kubeMasterHostname}";
-  #    # proxy.enable = true;
-  #    roles = [ "master" ];
-  #    # roles = [ "master" "node" ];
-  #    # scheduler.enable = true;
-  #    easyCerts = true;
-  #
-  #    kubelet.enable = true;
-  #
-  #    # needed if you use swap
-  #    kubelet.extraOpts = "--fail-swap-on=false";
-  #  };
+  #services.kubernetes.roles = [ "master" "node" ];
+  #services.kubernetes.masterAddress = "${kubeMasterHostname}";
+
+  services.kubernetes = {
+
+    #  # addonManager.enable = true;
+    #
+    #  addons = {
+    #    # dashboard.enable = true;
+    #    # dashboard.rbac.enable = true;
+    #    dns.enable = true;
+    #  };
+    #
+    #  apiserverAddress = "https://${kubeMasterHostname}:${toString kubeMasterAPIServerPort}";
+    #
+    #  apiserver = {
+    #    advertiseAddress = kubeMasterIP;
+    #    enable = true;
+    #    securePort = kubeMasterAPIServerPort;
+    #  };
+    #
+    #  controllerManager.enable = true;
+    #  # flannel.enable = true;
+       masterAddress = "${toString kubeMasterHostname}";
+    #  # proxy.enable = true;
+    #  # roles = [ "master" ];
+       roles = [ "master" "node" ];
+    #  # scheduler.enable = true;
+    #  easyCerts = true;
+    #
+    #  kubelet.enable = true;
+
+      # needed if you use swap
+      kubelet.extraOpts = "--fail-swap-on=false";
+    };
 
   #  services = {
   #    flannel = {

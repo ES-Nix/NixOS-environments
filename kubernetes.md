@@ -1753,3 +1753,26 @@ sudo find /var/lib/kubernetes -group nogroup | sort
 
 nixConfig.bash-prompt = "\[nix-develop\]$ ";
 From: https://nixos.wiki/wiki/Flakes
+
+
+sudo custom-kubeadm-certs-renew-all \
+&& sudo utilsK8s-services-stop \
+&& sudo utilsK8s-wipe-data \
+&& sudo utilsK8s-services-restart-if-not-active \
+sudo kubeadm init phase certs all --cert-dir /etc/kubernetes/pki
+sudo kubeadm init phase kubeconfig admin --cert-dir /etc/kubernetes/pki
+
+sudo custom-kubeadm-certs-renew-all
+
+HARCODED_HOME='/home/nixuser'
+mkdir -pv "$HARCODED_HOME"/.kube
+cp -fv /etc/kubernetes/admin.conf "$HARCODED_HOME"/.kube/config
+#cp -fv /etc/kubernetes/admin.conf "$HOME"/.kube/config
+#cp -fv /etc/kubernetes/kubelet.conf "$HOME"/.kube/config
+chmod -v 0644 "$HARCODED_HOME"/.kube/config
+chown -v nixuser: "$HARCODED_HOME"/.kube/config
+
+
+&& kdall && wka
+
+kubectl -n kube-system get cm kubeadm-config -o yaml

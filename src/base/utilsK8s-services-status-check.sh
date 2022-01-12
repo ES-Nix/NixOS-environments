@@ -13,4 +13,8 @@ systemctl status kube-proxy.service | rg $QUIET -e 'Active: active' || echo 'Err
 systemctl status kube-scheduler.service | rg $QUIET -e 'Active: active' || echo 'Error! Service kube-scheduler.service'
 systemctl status kubelet.service | rg $QUIET -e 'Active: active' || echo 'Error! Service kubelet.service'
 systemctl status etcd.service | rg $QUIET -e 'Active: active' || echo 'Error! Service etcd.service'
-systemctl status kubernetes.target | rg $QUIET -e 'Active: active' || echo 'Error! Service kubernetes.service'
+systemctl status kubernetes.target | rg $QUIET -e 'Active: active' || echo 'Error! Service kubernetes.target'
+
+
+systemctl list-dependencies kubernetes.target
+systemctl list-dependencies --reverse kubernetes.target

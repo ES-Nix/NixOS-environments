@@ -12,7 +12,8 @@ systemctl is-active --quiet kube-proxy || systemctl restart kube-proxy
 systemctl is-active --quiet kube-scheduler || systemctl restart kube-scheduler
 systemctl is-active --quiet kubelet || systemctl restart kubelet
 systemctl is-active --quiet etcd || systemctl restart etcd
-systemctl is-active --quiet kubernetes || systemctl restart kubernetes
+
+systemctl is-active --quiet kubernetes || systemctl restart kubernetes.target
 
 #systemctl is-active --quiet containerd || systemctl restart containerd
 #systemctl is-active --quiet etcd || systemctl restart etcd
