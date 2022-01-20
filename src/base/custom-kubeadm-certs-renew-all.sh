@@ -16,8 +16,13 @@
 #kubeadm init phase kubeconfig admin --apiserver-advertise-address --cert-dir /etc/kubernetes/pki
 # https://stackoverflow.com/a/46480447
 
+
+kubeadm init phase certs all --cert-dir=/etc/kubernetes/pki
+kubeadm init phase kubeconfig admin --cert-dir=/etc/kubernetes/pki
 kubeadm certs renew all
 
+# For some reason this name is hardcoded, probably not only in the env variable KUBECONFIG
+mv admin.conf cluster-admin.kubeconfig
 
 echo
 
@@ -58,3 +63,12 @@ cp -fv /etc/kubernetes/cluster-admin.kubeconfig "$HARCODED_HOME"/.kube/config
 #cp -fv /etc/kubernetes/kubelet.conf "$HOME"/.kube/config
 chmod -v 0644 "$HARCODED_HOME"/.kube/config
 chown -v nixuser: "$HARCODED_HOME"/.kube/config
+
+
+kill -s SIGHUP "$(pidof kube-apiserver)"
+kill -s SIGHUP "$(pidof kube-controller-manager)"
+kill -s SIGHUP "$(pidof kube-scheduler)"
+
+utilsK8s-services-restart-if-not-active
+
+kubectl delete all --all -n kube-system

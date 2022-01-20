@@ -9,7 +9,7 @@ let
       propagatedNativeBuildInputs = with pkgs; [
         bash
         nettools # For hostname
-        nixos-rebuild
+        # nixos-rebuild
       ];
       scriptFullNixPath = scriptFullNixPath;
       scriptName = "${name}";

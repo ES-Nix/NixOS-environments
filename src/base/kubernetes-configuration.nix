@@ -91,6 +91,7 @@ let
   utilsK8s-services-stop = myImport ../../src/base/nix/wrappers/utilsK8s-services-stop.nix;
   utilsK8s-wipe-data = myImport ../../src/base/nix/wrappers/utilsK8s-wipe-data.nix;
   k8s-rebuild-switch = myImport ../../src/base/nix/wrappers/k8s-rebuild-switch.nix;
+  custom-kubeadm-certs-renew-all = myImport ../../src/base/nix/wrappers/custom-kubeadm-certs-renew-all.nix;
 
   test-kubernetes-required-environment-roles-master-and-node = myImport ../../src/base/nix/wrappers/test-kubernetes-required-environment-roles-master-and-node.nix;
 
@@ -510,6 +511,7 @@ in
     test-kubernetes-required-environment-roles-master-and-node
     utilsK8s-wipe-data
     k8s-rebuild-switch
+    custom-kubeadm-certs-renew-all
 
     # It is not a must to include these. TODO: Test it :p
     prepare-git-stuff

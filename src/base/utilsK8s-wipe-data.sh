@@ -4,16 +4,16 @@
 
 kubeadm reset --force
 
-rm -rf /etc/kubernetes/ \
-&& rm -rf /home/nixuser/.kube/ \
+#rm -rf /etc/kubernetes/
+
+rm -rf /home/nixuser/.kube/ \
 && rm -rf /var/lib/kubelet/ \
 && rm -rf /var/lib/cni/ \
-&& rm -rf /etc/cni/ \
-&& rm -rf /var/lib/etcd/ \
-&& rm -rf /etc/kubernetes/
+&& rm -rf /etc/cni/
 
-mkdir -pv -m 0700 /var/lib/etcd \
-&& chown etcd:root /var/lib/etcd
+#rm -rf /var/lib/etcd/
+#mkdir -pv -m 0700 /var/lib/etcd \
+#&& chown etcd:root /var/lib/etcd
 
 
 docker system prune -af \
