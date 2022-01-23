@@ -10,6 +10,7 @@ let
         bash
         (import ./nrt.nix { inherit system pkgs;})
         (import ./custom-rebuild-switch.nix { inherit system pkgs;})
+        (import ./fix-permission-k8s.nix { inherit system pkgs;})
       ];
       scriptFullNixPath = scriptFullNixPath;
       scriptName = "${name}";

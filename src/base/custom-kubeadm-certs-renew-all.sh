@@ -19,10 +19,16 @@
 
 kubeadm init phase certs all --cert-dir=/etc/kubernetes/pki
 kubeadm init phase kubeconfig admin --cert-dir=/etc/kubernetes/pki
-kubeadm certs renew all
+
+#kubeadm certs renew all
+
+kubeadm init phase certs all
+
+kubeadm init phase kubeconfig all
+
 
 # For some reason this name is hardcoded, probably not only in the env variable KUBECONFIG
-mv admin.conf cluster-admin.kubeconfig
+mv /etc/kubernetes/admin.conf /etc/kubernetes/cluster-admin.kubeconfig
 
 echo
 
@@ -61,8 +67,8 @@ mkdir -pv "$HARCODED_HOME"/.kube
 cp -fv /etc/kubernetes/cluster-admin.kubeconfig "$HARCODED_HOME"/.kube/config
 #cp -fv /etc/kubernetes/admin.conf "$HOME"/.kube/config
 #cp -fv /etc/kubernetes/kubelet.conf "$HOME"/.kube/config
-chmod -v 0644 "$HARCODED_HOME"/.kube/config
-chown -v nixuser: "$HARCODED_HOME"/.kube/config
+chmod -v 0600 "$HARCODED_HOME"/.kube/config
+chown -Rv nixuser: "$HARCODED_HOME"/.kube
 
 
 kill -s SIGHUP "$(pidof kube-apiserver)"

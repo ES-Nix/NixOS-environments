@@ -1818,9 +1818,131 @@ Refs.:
 ```bash
 ssh -fNL 6443:http://imobanco.ddns.net:27020 nixuser@??
 
+ssh -fNL 6443:http://imobanco.ddns.net:6443 nixuser@http://imobanco.ddns.net
+
+
+
+ssh -NL 6443:http://127.0.0.1:10023 nixuser@http://127.0.0.1
+
 ```
 
+```bash
+
+rm -frv ~/.kube
+
+mkdir -p ~/.kube
+
+scp -P 10023 nixuser@localhost:/etc/kubernetes/cluster-admin.kubeconfig ~/.kube/config
+
+kubectl config view
+#kubectl config set-cluster local --server=https://localhost:6443
+#kubectl config use-context local
+
+scp -P 10023 nixuser@localhost:/var/lib/kubernetes/secrets/ca.pem ca.pem
+scp -P 10023 nixuser@localhost:/var/lib/kubernetes/secrets/cluster-admin.pem cluster-admin.pem
+scp -P 10023 nixuser@localhost:/var/lib/kubernetes/secrets/cluster-admin-key.pem cluster-admin-key.pem
+
+
+sudo rm -frv /var/lib/kubernetes/secrets
+sudo mkdir -pv /var/lib/kubernetes/secrets
+sudo mv ca.pem cluster-admin-key.pem cluster-admin.pem /var/lib/kubernetes/secrets/
+
+sudo chmod 0755 -R /var/lib/kubernetes/secrets/
+
+ssh nixuser@localhost -p 10023 -fL 6443:localhost:6443 -N
+
+kubectl --kubeconfig ~/.kube/config get pods --all-namespaces -o wide
+```
+Refs.:
+- https://github.com/kubernetes/dashboard/issues/2895#issuecomment-582200218
+- https://serverfault.com/a/33292
+- 
 
 ```bash
 kubectl get pods
 ```
+
+
+sudo custom-kubeadm-certs-renew-all \
+&& sudo utilsK8s-services-stop \
+&& sudo utilsK8s-services-restart-if-not-active \
+&& kdall \
+&& wka
+
+sudo utilsK8s-wipe-data \
+&& sudo utilsK8s-services-stop \
+&& sudo utilsK8s-services-restart-if-not-active \
+&& kdall \
+&& wka
+
+mkdir -pv "$HOME"/.kube
+sudo mkdir -pv /etc/kubernetes
+
+cp "$HOME"/cluster-admin.kubeconfig.backup "$HOME"/.kube/config
+
+sudo cp "$HOME"/.kube/config /etc/kubernetes/cluster-admin.kubeconfig
+
+
+sudo su
+
+kubeadm reset -f
+systemctl stop kubelet
+systemctl stop docker
+
+iptables --flush
+iptables -tnat --flush
+
+rm -rf /home/nixuser/.kube
+rm -rf /etc/cni/
+# rm -rf /etc/kubernetes/
+rm -rf /var/lib/cni/
+# rm -rf /var/lib/etcd/
+rm -rf /var/lib/kubelet/*
+rm -rf /etc/containerd
+
+systemctl start kubelet
+systemctl start docker
+
+mkdir -p /etc/containerd \
+&& containerd config default > /etc/containerd/config.toml
+systemctl restart containerd
+
+custom-kubeadm-certs-renew-all
+
+
+kdall
+wka
+
+
+kubectl -n kube-system get cm kubeadm-config -o yaml
+
+
+sudo utilsK8s-wipe-data \
+&& sudo custom-kubeadm-certs-renew-all \
+&& sudo utilsK8s-services-restart-if-not-active \
+&& kdall \
+&& wka
+
+
+### 
+
+
+
+{ qemu-kvm \
+-boot c \
+-cpu host \
+-device "rtl8139,netdev=net0" \
+-drive format=raw,file=nixos2.img \
+-enable-kvm \
+-m 12G \
+-netdev "user,id=net0,hostfwd=tcp:127.0.0.1:10025-:29980" \
+-nographic \
+-smp $(nproc) \
+-uuid 366f0d14-0de1-11e4-b0fa-82c8dd2b1400 < /dev/null & } \
+&& sleep 60 \
+&& ssh-keygen -R '[127.0.0.1]:10025' \
+&& ssh nixuser@127.0.0.1 -p 10025 -o StrictHostKeyChecking=no
+
+
+TOKEN=df67b86f81e807b431aa42dc9dd27db5
+echo $TOKEN | nixos-kubernetes-node-join

@@ -4,4 +4,6 @@ nrt
 
 custom-rebuild-switch
 
-# shutdown --poweroff
+fix-permission-k8s
+
+shutdown --poweroff

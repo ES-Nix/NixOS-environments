@@ -11,7 +11,7 @@ let
         coreutils
         git
         nettools
-        nixos-rebuild
+        # nixos-rebuild
       ];
       scriptFullNixPath = scriptFullNixPath;
       scriptName = "${name}";
