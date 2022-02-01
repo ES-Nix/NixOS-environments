@@ -168,12 +168,12 @@
         '';
 
         my-script-deps = with pkgsAllowUnfree; [ figlet hello ];
-        my-script = pkgsAllowUnfree.runCommandLocal "my-script.sh"
+        test-hello-figlet = pkgsAllowUnfree.runCommandLocal "test-hello-figlet.sh"
           { nativeBuildInputs = [ pkgsAllowUnfree.makeWrapper ]; }
           ''
-            install -m755 ${./my-script.sh} -D $out/bin/my-script.sh
-            patchShebangs $out/bin/my-script.sh
-            wrapProgram "$out/bin/my-script.sh" \
+            install -m755 ${./test-hello-figlet.sh} -D $out/bin/test-hello-figlet.sh
+            patchShebangs $out/bin/test-hello-figlet.sh
+            wrapProgram "$out/bin/test-hello-figlet.sh" \
             --prefix PATH : ${pkgsAllowUnfree.lib.makeBinPath my-script-deps}
           '';
 
@@ -218,11 +218,21 @@
 
         test-hello-figlet-cowsay = myImport ./src/base/nix/wrappers/test-hello-figlet-cowsay.nix;
         test-composed-script = myImport ./src/base/nix/wrappers/test-composed-script.nix;
+        retry = myImport ./src/base/nix/wrappers/retry.nix;
+        myssh = myImport ./src/base/nix/wrappers/myssh.nix;
+        start-qemu-vm-in-backround = myImport ./src/base/nix/wrappers/start-qemu-vm-in-backround.nix;
+        my-script = myImport ./src/base/nix/wrappers/my-script.nix;
 
       in
       {
         packages.test-hello-figlet-cowsay = test-hello-figlet-cowsay;
         packages.test-composed-script = test-composed-script;
+
+        packages.retry = retry;
+        packages.myssh = myssh;
+        packages.start-qemu-vm-in-backround = start-qemu-vm-in-backround;
+        packages.test-hello-figlet = test-hello-figlet;
+        packages.my-script = my-script;
 
         # If ( ... ).image is not used most things like
         # nix flake check and others fail
@@ -372,6 +382,12 @@
 
             self.packages.${system}.test-hello-figlet-cowsay
             self.packages.${system}.test-composed-script
+
+            self.packages.${system}.myssh
+            self.packages.${system}.retry
+            self.packages.${system}.start-qemu-vm-in-backround
+            self.packages.${system}.test-hello-figlet
+            self.packages.${system}.my-script
 
             vssh
             svssh

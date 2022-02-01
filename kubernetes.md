@@ -1981,3 +1981,11 @@ localhost:6443 \
 
 https://github.com/NixOS/nixpkgs/blob/nixos-21.11/nixos/modules/services/networking/haproxy.nix
 
+###
+
+
+https://youtu.be/rTovNSGH_qo?t=1467
+
+
+Typo
+https://youtu.be/rTovNSGH_qo?t=2096
