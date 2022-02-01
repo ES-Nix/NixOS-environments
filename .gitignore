@@ -2,7 +2,7 @@ result
 *.qcow2
 .idea/*
 *.iso
-nixos.img
+*.img
 *.img.backup
-nixos-ssh.img
+
 
