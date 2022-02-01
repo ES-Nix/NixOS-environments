@@ -306,7 +306,7 @@ in
   # https://github.com/NixOS/nixpkgs/issues/19246#issuecomment-252206901
   services.openssh = {
     allowSFTP = true;
-    challengeResponseAuthentication = false;
+    # challengeResponseAuthentication = false;
     enable = true;
     forwardX11 = false;
 
@@ -561,7 +561,7 @@ in
     file
   ];
 
-  environment.variables.KUBECONFIG = "/etc/kubernetes/cluster-admin.kubeconfig";
+  environment.variables.KUBECONFIG = "~/.kube/config:/etc/kubernetes/cluster-admin.kubeconfig:/etc/kubernetes/admin.conf";
 
   virtualisation.docker.enable = true;
 

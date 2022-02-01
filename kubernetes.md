@@ -1607,7 +1607,7 @@ systemctl list-dependencies kubelet
 ```
 
 ```bash
-PID=$(systemctl show kube-controller-manager | grep ExecMainPID | cut -d= -f2)                                                            
+PID=$(systemctl show kube-controller-manager | grep ExecMainPID | cut -d= -f2)
 tr '\0' '\n' < /proc/${PID}/cmdline
 ```
 
@@ -1852,6 +1852,8 @@ sudo chmod 0755 -R /var/lib/kubernetes/secrets/
 ssh nixuser@localhost -p 10023 -fL 6443:localhost:6443 -N
 
 kubectl --kubeconfig ~/.kube/config get pods --all-namespaces -o wide
+
+# telnet localhost 6443
 ```
 Refs.:
 - https://github.com/kubernetes/dashboard/issues/2895#issuecomment-582200218
@@ -1946,3 +1948,36 @@ sudo utilsK8s-wipe-data \
 
 TOKEN=df67b86f81e807b431aa42dc9dd27db5
 echo $TOKEN | nixos-kubernetes-node-join
+
+```bash
+# Bug! Why this name is different?
+sudo cp /etc/kubernetes/cluster-admin.kubeconfig /etc/kubernetes/admin.conf
+
+kubeadm init phase upload-certs --upload-certs
+
+# It should output a token like this:
+# a3df0534148eeae4c7055443dfdcaa8c42f5399a2f47413d4eab6131b054de7a
+```
+
+
+```bash
+kubeadm token create \
+--certificate-key a3df0534148eeae4c7055443dfdcaa8c42f5399a2f47413d4eab6131b054de7a \
+--print-join-command | tr ' ' '\n'
+
+
+sudo systemctl stop kubelet
+
+kubeadm \
+join \
+localhost:6443 \
+--token 218ghx.xfwhj2we6m0uykt5 \
+--discovery-token-ca-cert-hash sha256:d3dea24aa9056a6f1bcd26be9e0f28faf111b1766b6308821ced82816c35fc4f \
+--control-plane \
+--certificate-key a3df0534148eeae4c7055443dfdcaa8c42f5399a2f47413d4eab6131b054de7a
+```
+
+
+
+https://github.com/NixOS/nixpkgs/blob/nixos-21.11/nixos/modules/services/networking/haproxy.nix
+
