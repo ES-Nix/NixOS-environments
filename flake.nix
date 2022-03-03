@@ -190,18 +190,18 @@
             --prefix PATH : ${pkgsAllowUnfree.lib.makeBinPath wrapp-iso-kubernetes-qemu-kvm-mrb-deps}
           '';
 
-        vssh = pkgsAllowUnfree.writeShellScriptBin "vssh" ''
-          "${./src/base/vssh.sh}"
-        '';
-
-        svssh = pkgsAllowUnfree.writeShellScriptBin "svssh" ''
-          "${./src/base/svssh.sh}"
-        '';
-
-        svissh = pkgsAllowUnfree.writeShellScriptBin "svissh" ''
-          "${./src/base/svissh.sh}"
-        '';
-
+#        vssh = pkgsAllowUnfree.writeShellScriptBin "vssh" ''
+#          "${./src/base/virtual-machine-ssh.sh}"
+#        '';
+#
+#        svssh = pkgsAllowUnfree.writeShellScriptBin "svssh" ''
+#          "${./src/base/svssh.sh}"
+#        '';
+#
+#        svissh = pkgsAllowUnfree.writeShellScriptBin "svissh" ''
+#          "${./src/base/svissh.sh}"
+#        '';
+#
         prepare-clean-old-stuff-and-create-iso-and-disk = pkgsAllowUnfree.writeShellScriptBin "piso" ''
           "${./src/base/prepare-clean-old-stuff-and-create-iso-and-disk.sh}"
         '';
@@ -222,9 +222,13 @@
         myssh = myImport ./src/base/nix/wrappers/myssh.nix;
         start-qemu-vm-in-backround = myImport ./src/base/nix/wrappers/start-qemu-vm-in-backround.nix;
         my-script = myImport ./src/base/nix/wrappers/my-script.nix;
+        virtual-machine-ssh = myImport ./src/base/nix/wrappers/virtual-machine-ssh.nix;
+        svssh = myImport ./src/base/nix/wrappers/svssh.nix;
+        svissh = myImport ./src/base/nix/wrappers/svissh.nix;
 
       in
       {
+
         packages.test-hello-figlet-cowsay = test-hello-figlet-cowsay;
         packages.test-composed-script = test-composed-script;
 
@@ -233,14 +237,17 @@
         packages.start-qemu-vm-in-backround = start-qemu-vm-in-backround;
         packages.test-hello-figlet = test-hello-figlet;
         packages.my-script = my-script;
+        packages.virtual-machine-ssh = virtual-machine-ssh;
+        packages.svssh = svssh;
+        packages.svissh = svissh;
 
         # If ( ... ).image is not used most things like
         # nix flake check and others fail
-        #        packages.image = (import ./default.nix {
-        #          # pkgs = nixpkgs.legacyPackages."(if pkgs.stdenv.isDarwin then "" else ${system})";
-        #          pkgs = nixpkgs.legacyPackages.x86_64-linux;
-        #          nixos = nixos;
-        #        }).image;
+        packages.image = (import ./default.nix {
+          # pkgs = nixpkgs.legacyPackages."(if pkgs.stdenv.isDarwin then "" else ${system})";
+          pkgs = nixpkgs.legacyPackages.x86_64-linux;
+          nixos = nixos;
+        }).image;
 
         packages.empty-qcow2 = import ./empty-qcow2/nixos-image.nix {
           # TODO: why it only works on linux?
@@ -342,8 +349,8 @@
           # iso-kubernetes = self.packages.${system}.iso-kubernetes;
           # empty-qcow2 = self.packages.${system}.empty-qcow2;
           # qcow2-base = self.packages.${system}.qcow2-base;
-          testCacheInFlakeCheck = self.packages.${system}.testCacheInFlakeCheck;
-          #iso-minimal = self.defaultPackage.${system};
+          # testCacheInFlakeCheck = self.packages.${system}.testCacheInFlakeCheck;
+          # iso-minimal = self.defaultPackage.${system};
         };
 
         devShell = pkgsAllowUnfree.mkShell {
@@ -388,10 +395,10 @@
             self.packages.${system}.start-qemu-vm-in-backround
             self.packages.${system}.test-hello-figlet
             self.packages.${system}.my-script
+            self.packages.${system}.virtual-machine-ssh
+            self.packages.${system}.svssh
+            self.packages.${system}.svissh
 
-            vssh
-            svssh
-            svissh
             # It slows a lot the nix develop
             # self.packages.${system}.image.image
 

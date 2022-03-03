@@ -9,9 +9,9 @@ IP="${5:-127.0.0.1}"
 USER="${6:-nixuser}"
 
 
+# echo 'AAAA'
+virtual-machine-ssh
 
-# myssh
+start-qemu-vm-in-backround -in "${IMAGE_NAME}" -is "${ISO_NAME}" -p "${PORT}" -u "${UUID}"
 
-start-qemu-vm-in-backround "${IMAGE_NAME}" "${ISO_NAME}" "${PORT}" "${UUID}"
-
-retry 100 myssh "${USER}" "${IP}" "${PORT}"
+retry 100 virtual-machine-ssh "${USER}" "${IP}" "${PORT}"

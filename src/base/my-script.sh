@@ -4,11 +4,20 @@
 
 while [ $# -gt 0 ]; do
   case "$1" in
-    -p|'=p'|-p_out|--p_out)
-      p_out="$2"
-      ;;
     -a|-arg_1|--arg_1)
       arg_1="$2"
+      ;;
+    -p|-p_out|--p_out)
+      p_out="$2"
+      ;;
+    -p0|-p_out0|--p_out0)
+      p_out_zxw_0="$2"
+      ;;
+    -p1|-p_out1|--p_out1)
+      p_out_zxw_1="$2"
+      ;;
+    -p2|-p_out2|--p_out2)
+      p_out_zxw_2="$2"
       ;;
     *)
       printf "***************************\n"
@@ -20,10 +29,14 @@ while [ $# -gt 0 ]; do
   shift
 done
 
-echo "Without default values:"
-echo "p_out: ${p_out}"
-echo "arg_1: ${arg_1}"
-echo
-echo "With default values:"
-echo "p_out: ${p_out:-\"27\"}"
-echo "arg_1: ${arg_1:-\"smarties cereal\"}"
+
+p_out=${p_out:-"p"}
+p_out_zxw_0=${p_out_zxw_0:-"0"}
+p_out_zxw_1=${p_out_zxw_1:-"1"}
+p_out_zxw_2=${p_out_zxw_2:-"2"}
+
+
+#echo "$p_out"
+#echo "$p_out_zxw_0"
+#echo "$p_out_zxw_1"
+#echo "$p_out_zxw_2"

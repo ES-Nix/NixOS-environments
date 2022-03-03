@@ -1,4 +1,4 @@
-{ pkgs, system ? "x86_64-linux", name ? "start-qemu-vm-in-backround" }:
+{ pkgs, system ? "x86_64-linux", name ? "svssh" }:
 let
   customScripts = rec {
     inherit name;
@@ -10,6 +10,9 @@ let
         bash
         coreutils
         util-linux # https://serverfault.com/a/103366
+        (import ./virtual-machine-ssh.nix { inherit system pkgs;})
+        (import ./retry.nix { inherit system pkgs;})
+        (import ./start-qemu-vm-in-backround.nix { inherit system pkgs;})
       ];
       scriptFullNixPath = scriptFullNixPath;
       scriptName = "${name}";

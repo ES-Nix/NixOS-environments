@@ -1854,6 +1854,7 @@ ssh nixuser@localhost -p 10023 -fL 6443:localhost:6443 -N
 kubectl --kubeconfig ~/.kube/config get pods --all-namespaces -o wide
 
 # telnet localhost 6443
+# timeout 5 telnet localhost 6443 || test $? -eq 124 || echo 'Error'
 ```
 Refs.:
 - https://github.com/kubernetes/dashboard/issues/2895#issuecomment-582200218
@@ -1863,6 +1864,53 @@ Refs.:
 ```bash
 kubectl get pods
 ```
+
+
+```bash
+rm -frv ~/.kube
+
+mkdir -p ~/.kube
+
+REMOTE_USER_NAME=nixuser
+PORT=27020
+DOMAIN_NAME_OR_IP=imobanco.ddns.net
+
+scp -P "${PORT}" "${REMOTE_USER_NAME}"@"${DOMAIN_NAME_OR_IP}":/etc/kubernetes/cluster-admin.kubeconfig ~/.kube/config
+
+chmod 0644 ~/.kube/config
+
+kubectl config view
+
+# kubectl config set-cluster local --server=https://127.0.0.1:6443
+# kubectl config use-context local
+# kubectl config view
+
+
+scp -P "${PORT}" "${REMOTE_USER_NAME}"@"${DOMAIN_NAME_OR_IP}":/var/lib/kubernetes/secrets/ca.pem ca.pem
+scp -P "${PORT}" "${REMOTE_USER_NAME}"@"${DOMAIN_NAME_OR_IP}":/var/lib/kubernetes/secrets/cluster-admin.pem cluster-admin.pem
+scp -P "${PORT}" "${REMOTE_USER_NAME}"@"${DOMAIN_NAME_OR_IP}":/var/lib/kubernetes/secrets/cluster-admin-key.pem cluster-admin-key.pem
+
+
+sudo rm -frv /var/lib/kubernetes/secrets
+sudo mkdir -pv /var/lib/kubernetes/secrets
+sudo mv ca.pem cluster-admin-key.pem cluster-admin.pem /var/lib/kubernetes/secrets/
+
+sudo chmod 0755 -R /var/lib/kubernetes/secrets/
+
+
+# ssh "${REMOTE_USER_NAME}"@"${DOMAIN_NAME_OR_IP}" -p "${PORT}" -L 6443:"${DOMAIN_NAME_OR_IP}":6443 -N
+# ssh "${REMOTE_USER_NAME}"@"${DOMAIN_NAME_OR_IP}" -p "${PORT}" -L 27020:"${DOMAIN_NAME_OR_IP}":6443 -N
+ssh "${REMOTE_USER_NAME}"@"${DOMAIN_NAME_OR_IP}" -p "${PORT}" -L 6443:"${DOMAIN_NAME_OR_IP}":27020 -N
+# ssh "${REMOTE_USER_NAME}"@"${DOMAIN_NAME_OR_IP}" -p "${PORT}" -fL 27020:"${DOMAIN_NAME_OR_IP}":6443 -N
+
+kubectl --kubeconfig ~/.kube/config get pods --all-namespaces -o wide
+
+# telnet localhost 6443
+# timeout 5 telnet localhost 6443 || test $? -eq 124 || echo 'Error'
+# timeout 5 telnet "${DOMAIN_NAME_OR_IP}" 6443 || test $? -eq 124 || echo 'Error'
+# ss -tunlp
+```
+
 
 
 sudo custom-kubeadm-certs-renew-all \
