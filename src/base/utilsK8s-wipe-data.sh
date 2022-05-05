@@ -2,6 +2,10 @@
 
 # What is an correct order to cleaning all k8s stuff?
 
+# TODO: when is it use full?
+# kubectl delete pod --all --force -n kube-system
+# https://stackoverflow.com/questions/35453792/pods-stuck-in-terminating-status#comment126248144_41752955
+
 kubeadm reset --force
 
 rm -rfv /home/nixuser/.kube/ \
@@ -23,5 +27,8 @@ systemctl stop docker
 systemctl stop docker.socket
 systemctl stop kubelet
 
+
+# TODO: in some k8s documentation there are these commands
+# or similar ones.
 iptables --flush
 iptables -tnat --flush

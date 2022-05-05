@@ -163,7 +163,7 @@ in
   # Take a look into:
   # https://github.com/NixOS/nixpkgs/blob/9559834db0df7bb274062121cf5696b46e31bc8c/nixos/modules/services/cluster/kubernetes/kubelet.nix#L255-L259
   boot.kernel.sysctl = {
-    # If it is enabled it conflict with what kubelet is doing
+    # If it is enabled it conflicts with what kubelet is doing
     # "net.bridge.bridge-nf-call-ip6tables" = 1;
     # "net.bridge.bridge-nf-call-iptables" = 1;
     "vm.swappiness" = 0;

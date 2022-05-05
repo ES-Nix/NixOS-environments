@@ -107,7 +107,7 @@
 
 
         build = pkgsAllowUnfree.writeShellScriptBin "build" ''
-          nix build --refresh github:ES-Nix/NixOS-environments/box#image.image
+          nix build --refresh github:ES-Nix/NixOS-environments/box#image
         '';
 
         buildDev = pkgsAllowUnfree.writeShellScriptBin "build-dev" ''
@@ -241,6 +241,11 @@
         packages.svssh = svssh;
         packages.svissh = svissh;
 
+
+        packages.create-img-size-1G  = import ./src/base/nix/utils/create-img-size-1G.nix { pkgs = pkgsAllowUnfree; };
+        packages.create-img-size-9G  = import ./src/base/nix/utils/create-img-size-9G.nix { pkgs = pkgsAllowUnfree; };
+        packages.create-img-size-18G  = import ./src/base/nix/utils/create-img-size-18G.nix { pkgs = pkgsAllowUnfree; };
+
         # If ( ... ).image is not used most things like
         # nix flake check and others fail
         packages.image = (import ./default.nix {
@@ -249,101 +254,98 @@
           nixos = nixos;
         }).image;
 
-        packages.empty-qcow2 = import ./empty-qcow2/nixos-image.nix {
-          # TODO: why it only works on linux?
-          pkgs = nixpkgs.legacyPackages.x86_64-linux;
-        };
-
-        # packages.iso = import ./iso.nix {
-        #   nixpkgs = nixpkgs;
-        #   system = system;
-        # };
-
+#        packages.empty-qcow2 = import ./empty-qcow2/nixos-image.nix {
+#          # TODO: why it only works on linux?
+#          pkgs = nixpkgs.legacyPackages.x86_64-linux;
+#        };
+#
+#       packages.iso = import ./iso.nix {
+#         nixpkgs = nixpkgs;
+#         system = system;
+#       };
+#
         packages.iso-kubernetes = import ./src/base/iso-kubernetes.nix {
           nixpkgs = nixpkgs;
-          system = system;
+          # Yeah, it is hardcoded
+          system = "x86_64-linux";
           nixos = nixos;
         };
-
-        packages.iso-kubernetes-qemu-kvm-mrb = wrapp-iso-kubernetes-qemu-kvm-mrb;
-
-        packages.iso-base = import ./src/base/iso.nix {
-          nixpkgs = nixpkgs;
-          system = system;
-          nixos = nixos;
-        };
+#
+#        packages.iso-kubernetes-qemu-kvm-mrb = wrapp-iso-kubernetes-qemu-kvm-mrb;
+#
+#        packages.iso-base = import ./src/base/iso.nix {
+#          nixpkgs = nixpkgs;
+#          system = system;
+#          nixos = nixos;
+#        };
 
         # packages.qcow2-base = (import ./src/base/qcow2-compressed.nix {
         #   pkgs = nixpkgs.legacyPackages.${system};
         #   nixos = nixos;
         # }).image;
 
-        packages.createImage = pkgsAllowUnfree.runCommand "create-image"
-          {
-            buildInputs = with pkgsAllowUnfree; [
-              coreutils # nproc comes from here
-              iputils
-              qemu
-              self.packages.${system}.iso-kubernetes
-            ];
-            ISO_KUBERNETES_PATH = "${self.packages.${system}.iso-kubernetes}/iso/nixos-21.11pre-git-x86_64-linux.iso";
-          } ''
-
-          # echo $ISO_KUBERNETES_PATH
-          # echo $(nproc)
-
-          mkdir $out
-
-          # ping -c 5 www.google.com
-          #qemu-img create $out/nixos.img 10G
-          #
-          #qemu-kvm \
-          #-boot d \
-          #-drive format=raw,file=$out/nixos.img \
-          #-cdrom "$ISO_KUBERNETES_PATH" \
-          #-m 12G \
-          #-enable-kvm \
-          #-cpu host \
-          #-smp $(nproc) \
-          #-nographic
-          #
-          #qemu-img info $out/nixos.img
-        '';
+        #packages.createImage = pkgsAllowUnfree.runCommand "create-image"
+        #  {
+        #    buildInputs = with pkgsAllowUnfree; [
+        #      coreutils # nproc comes from here
+        #      iputils
+        #      qemu
+        #      self.packages.${system}.iso-kubernetes
+        #    ];
+        #    ISO_KUBERNETES_PATH = "''${self.packages.${system}.iso-kubernetes}/iso/nixos-21.11pre-git-x86_64-linux.iso";
+        #  } ''
+        #
+        #  # echo $ISO_KUBERNETES_PATH
+        #  # echo $(nproc)
+        #
+        #  mkdir $out
+        #
+        #  # ping -c 5 www.google.com
+        #  #qemu-img create $out/nixos.img 10G
+        #  #
+        #  #qemu-kvm \
+        #  #-boot d \
+        #  #-drive format=raw,file=$out/nixos.img \
+        #  #-cdrom "$ISO_KUBERNETES_PATH" \
+        #  #-m 12G \
+        #  #-enable-kvm \
+        #  #-cpu host \
+        #  #-smp $(nproc) \
+        #  #-nographic
+        #  #
+        #  #qemu-img info $out/nixos.img
+        #'';
 
         packages.iso-minimal = import ./src/base/iso-minimal.nix {
           nixpkgs = nixpkgs;
         };
 
-        packages.testCacheInFlakeCheck = pkgsAllowUnfree.runCommand "test-cache-in-flake-check"
-          {
-            buildInputs = with pkgsAllowUnfree; [
-              coreutils
-              self.packages.${system}.iso-minimal
-            ];
-            ISO_PATH = "${self.packages.${system}.iso-minimal}/iso/nixos-21.11pre-git-x86_64-linux.iso";
-            QCOW2_PATH = "${self.packages.${system}.empty-qcow2}/nixos.qcow2";
-          } ''
+#        packages.testCacheInFlakeCheck = pkgsAllowUnfree.runCommand "test-cache-in-flake-check"
+#          {
+#            buildInputs = with pkgsAllowUnfree; [
+#              coreutils
+#              self.packages.${system}.iso-minimal
+#            ];
+#            ISO_PATH = "${self.packages.${system}.iso-minimal}/iso/nixos-21.11pre-git-x86_64-linux.iso";
+#            QCOW2_PATH = "${self.packages.${system}.empty-qcow2}/nixos.qcow2";
+#          } ''
+#
+#          # sha256sum "$ISO_PATH"
+#          echo '66d7c39ebf2f92549c5ca7a01dcee2ea4787d628ba6bdaa72822ada22afe8a09'  "$ISO_PATH" | sha256sum -c
+#
+#          # sha256sum "$QCOW2_PATH"
+#          echo '4f9e5251960c098805723bd9d357e6d7934f1fd9a0681111b6488bbedc3c1277'  "$QCOW2_PATH" | sha256sum -c
+#
+#          mkdir $out #sucess
+#        '';
 
-          # sha256sum "$ISO_PATH"
-          echo '66d7c39ebf2f92549c5ca7a01dcee2ea4787d628ba6bdaa72822ada22afe8a09'  "$ISO_PATH" | sha256sum -c
-
-          # sha256sum "$QCOW2_PATH"
-          echo '4f9e5251960c098805723bd9d357e6d7934f1fd9a0681111b6488bbedc3c1277'  "$QCOW2_PATH" | sha256sum -c
-
-          mkdir $out #sucess
-        '';
-
-        packages.checkNixFormat = pkgsAllowUnfree.runCommand "check-nix-format" { } ''
-          ${pkgsAllowUnfree.nixpkgs-fmt}/bin/nixpkgs-fmt --check ${./.}
-          mkdir $out #sucess
-        '';
 
         # TODO
         # https://github.com/NixOS/nix/issues/2854
         defaultPackage = self.packages.${system}.iso-minimal;
 
         checks = {
-          nixpkgs-fmt = self.packages.${system}.checkNixFormat;
+          # nixpkgs-fmt = self.packages.${system}.checkNixFormat;
           # iso = self.packages.${system}.iso;
           # iso-base = self.packages.${system}.iso-base;
           # iso-kubernetes = self.packages.${system}.iso-kubernetes;
@@ -356,7 +358,6 @@
         devShell = pkgsAllowUnfree.mkShell {
           buildInputs = with pkgsAllowUnfree; [
             bashInteractive
-            cloud-utils
             coreutils
             file
             inetutils
@@ -381,7 +382,7 @@
             sshVM
             VMKill
 
-            OVMFFull
+#            OVMFFull
 
             my-script
             wrapp-iso-kubernetes-qemu-kvm-mrb
@@ -403,7 +404,9 @@
             # self.packages.${system}.image.image
 
             kubectl
-          ];
+          ]++
+  (if stdenv.isDarwin then [ ]
+  else [ cloud-utils ]);
 
           shellHook = ''
             export TMPDIR=/tmp

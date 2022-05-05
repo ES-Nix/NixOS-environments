@@ -355,6 +355,7 @@ lsmod | rg -c br_netfilter | rg -q 2 || echo 'Error, kernel module br_netfilter 
 
 ```bash
 timeout 1 telnet 127.0.0.1 6443 || test $? -eq 124 || echo 'Error' 'telnet 127.0.0.1 6443 fails, firewall maybe?'
+nc -tz localhost 6443 || echo 'Error' 'nc -tz localhost 6443 fails, firewall maybe?'
 ```
 Refs.:
 - https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/#check-required-ports
@@ -524,10 +525,12 @@ lsblk
 
 
 ```bash
+sudo systemctl --type swap
 sudo systemctl list-units --type=swap --state=active
 ```
 Refs.:
 - https://stackoverflow.com/a/59577261
+- https://gist.github.com/kuznero/bffb7f9a0b9829bf036be09b058e4322
 
 ```bash
 sudo swapon --show
@@ -1203,6 +1206,44 @@ build \
 }'
 ```
 
+
+nix \
+build \
+--impure \
+--expr \
+'(
+  with builtins.getFlake "nixpkgs"; 
+  with legacyPackages.${builtins.currentSystem};
+  with lib;
+  nixosSystem {
+      system = "${builtins.currentSystem}";
+      modules = [ "${nixos}"/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix ];
+    };      
+)'
+
+
+nix \                   
+build \
+--impure \
+--expr \
+'with builtins.getFlake "nixpkgs";
+let
+  nixosMinimal = lib.nixosSystem {
+    system = "${builtins.currentSystem}";
+    modules = [
+      <nixpkgs>/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix
+    ];  
+  };  
+in  
+  nixosMinimal 
+'
+
+
+nix eval nixpkgs#nixos --apply builtins.functionArgs
+nix eval nixpkgs#nixos --apply lib.sources.trace
+github:NixOS/nixpkgs/b283b64580d1872333a99af2b4cef91bb84580cf
+
+
 ```bash
 .config.system.build.toplevel
 
@@ -1234,6 +1275,12 @@ build \
   };
 }'
 ```
+
+```bash
+nix repl '<nixpkgs/nixos>'
+:b config.system.build.toplevel
+```
+
 
 ```bash
 nix \
@@ -1462,6 +1509,65 @@ kill -9 $(pidof qemu-system-x86_64); \
 && ssh nixuser@127.0.0.1 -p 10023 -o StrictHostKeyChecking=no
 ```
 
+
+```bash
+sudo \
+--preserve-env \
+  AS_USER="$(id -un)" \
+  AS_GROUP="$(id -gn)" \
+su \
+root \
+--preserve-environment \
+$SHELL \
+-c \
+'
+utilsK8s-services-stop
+utilsK8s-wipe-data
+utilsK8s-services-restart-if-not-active
+
+kubeadm certs renew all
+
+kubeadm init phase certs all --cert-dir /etc/kubernetes/pki
+kubeadm init phase kubeconfig admin --cert-dir /etc/kubernetes/pki
+
+systemctl restart kube-apiserver
+systemctl restart kube-controller-manager 
+systemctl restart kube-scheduler
+systemctl restart etcd
+
+HOME_USER=/home/"${AS_USER}"
+mkdir -pv "${HOME_USER}"/.kube
+cp -fv /etc/kubernetes/cluster-admin.kubeconfig "${HOME_USER}"/.kube/config
+# cp -fv /etc/kubernetes/admin.conf /home/"${AS_USER}"/.kube/config
+# cp -fv /etc/kubernetes/kubelet.conf /home/"${AS_USER}"/.kube/config
+chmod -v 0644 "${HOME_USER}"/.kube/config
+chown -v "${AS_USER}":"${AS_GROUP}" "${HOME_USER}"/.kube/config
+
+chown kubernetes:kubernetes -Rv /var/lib/kubernetes
+# stat /var/lib/kubernetes
+chmod -Rv 0775 /var/lib/kubernetes
+
+mkdir -pv "${HOME_USER}"/.kube
+chown -v "${AS_USER}":"${AS_GROUP}" "${HOME_USER}"/.kube
+cp -fv /etc/kubernetes/admin.conf "${HOME_USER}"/.kube/config
+chown -v "${AS_USER}":"${AS_GROUP}" "${HOME_USER}"/.kube/config
+'
+
+kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
+```
+
+utilsK8s-services-stop
+swapoff -a
+kubeadm \
+init \
+--ignore-preflight-errors=false \
+--pod-network-cidr=10.244.0.0/16
+
+
+```bash
+kubectl delete all --all -n kube-system
+```
+
 ```bash
 # For debug
 # cat /etc/kubernetes/cluster-admin.kubeconfig | jq .
@@ -1480,6 +1586,7 @@ Refs.:
 ```bash
 # kubectl get serviceaccounts
 kubectl get serviceaccounts default -o yaml
+kubectl get sa default -o yaml
 
 kubectl get secret default-token-g59z6 -o yaml
 ```
@@ -1576,7 +1683,13 @@ systemctl status kube-proxy.service | rg $QUIET -e 'Active: active' || echo 'Err
 systemctl status kube-scheduler.service | rg $QUIET -e 'Active: active' || echo 'Error!'
 systemctl status kubelet.service | rg $QUIET -e 'Active: active' || echo 'Error!'
 systemctl status etcd.service | rg $QUIET -e 'Active: active' || echo 'Error!'
-systemctl status kubernetes.target | rg $QUIET -e 'Active: active' || echo 'Error!'
+```
+
+```bash
+# QUIET='-q'
+systemctl status kubernetes.target | rg $QUIET -e 'Reached target Kubernetes' || echo 'Error!'
+systemctl list-units --all --type target | rg $QUIET -e 'cfssl.target' || echo 'Error!'
+# systemctl list-units --all --type target | cat
 ```
 
 ```bash
@@ -1854,6 +1967,7 @@ ssh nixuser@localhost -p 10023 -fL 6443:localhost:6443 -N
 kubectl --kubeconfig ~/.kube/config get pods --all-namespaces -o wide
 
 # telnet localhost 6443
+# nc -tz localhost 6443 
 # timeout 5 telnet localhost 6443 || test $? -eq 124 || echo 'Error'
 ```
 Refs.:
@@ -1906,6 +2020,7 @@ ssh "${REMOTE_USER_NAME}"@"${DOMAIN_NAME_OR_IP}" -p "${PORT}" -L 6443:"${DOMAIN_
 kubectl --kubeconfig ~/.kube/config get pods --all-namespaces -o wide
 
 # telnet localhost 6443
+# nc -tz localhost 6443 
 # timeout 5 telnet localhost 6443 || test $? -eq 124 || echo 'Error'
 # timeout 5 telnet "${DOMAIN_NAME_OR_IP}" 6443 || test $? -eq 124 || echo 'Error'
 # ss -tunlp
@@ -2005,13 +2120,40 @@ kubeadm init phase upload-certs --upload-certs
 
 # It should output a token like this:
 # a3df0534148eeae4c7055443dfdcaa8c42f5399a2f47413d4eab6131b054de7a
+
+CERTIFICATE_KEY="$(sudo kubeadm init phase upload-certs --upload-certs | sed '3q;d')"
 ```
 
 
 ```bash
-kubeadm token create \
---certificate-key a3df0534148eeae4c7055443dfdcaa8c42f5399a2f47413d4eab6131b054de7a \
---print-join-command | tr ' ' '\n'
+kubeadm \
+token \
+create \
+--certificate-key "${CERTIFICATE_KEY}" \
+--print-join-command | sed 's/ / \\\n/g'
+
+
+# If the node to be joint is an "main node" 
+kubeadm \
+join \
+10.1.11.178:6443 \
+--token \
+y0r6tx.otqw15eg1zed3mn0 \
+--discovery-token-ca-cert-hash \
+sha256:6fd0cfc9abb714558b795002b722ab77a8122d95e3d8604f516fc32262b87cfd \
+--control-plane \
+--certificate-key \
+464e4087ae879d8c0cc0e18312fcae01f822bd9e6746e2c1d2eb813ebc9d68f4
+
+# If the node to be joint is an "worker node" the flags --control-plane and --certificate-key
+# are not needed. 
+kubeadm \
+join \
+10.1.11.178:6443 \
+--token \
+y0r6tx.otqw15eg1zed3mn0 \
+--discovery-token-ca-cert-hash \
+sha256:6fd0cfc9abb714558b795002b722ab77a8122d95e3d8604f516fc32262b87cfd
 
 
 sudo systemctl stop kubelet
@@ -2037,3 +2179,300 @@ https://youtu.be/rTovNSGH_qo?t=1467
 
 Typo
 https://youtu.be/rTovNSGH_qo?t=2096
+
+
+
+### Examples/tests
+
+
+Basic example:
+```bash
+cat << 'EOF' > example.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-pod
+spec:
+  containers:
+  - name: test-pod
+    image: busybox
+    command: ['sh', '-c', 'echo The Bench Container 1 is Running ; sleep 100000']
+EOF
+
+kubectl apply -f example.yaml
+```
+
+
+#### Kubernetes Volumes explained | Persistent Volume, Persistent Volume Claim & Storage Class
+
+
+https://www.youtube.com/watch?v=0swOh5C3OVM&t=900s
+
+https://gitlab.com/nanuchi/youtube-tutorial-series/-/tree/master/kubernetes-volumes
+
+```bash
+cat << 'EOF' > storage-class.yaml
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: local-storage
+provisioner: kubernetes.io/no-provisioner
+volumeBindingMode: WaitForFirstConsumer
+EOF
+
+kubectl apply -f storage-class.yaml
+
+cat << 'EOF' > task-pv.yaml
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: task-pv-volume
+  labels:
+    type: local
+spec:
+  storageClassName: local-storage
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteMany
+  hostPath:
+    path: "."
+EOF
+
+kubectl apply -f task-pv.yaml
+
+cat << 'EOF' > pv-claim.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: task-pv-claim
+spec:
+  storageClassName: local-storage
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 3Gi
+EOF
+
+kubectl apply -f pv-claim.yaml
+
+cat << 'EOF' > pv-pod.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: task-pv-pod
+spec:
+  volumes:
+    - name: task-pv-storage
+      persistentVolumeClaim:
+        claimName: task-pv-claim
+  containers:
+    - name: task-pv-container
+      image: nginx
+      ports:
+        - containerPort: 80
+          name: "http-server"
+      volumeMounts:
+        - mountPath: "/usr/share/nginx/html"
+          name: task-pv-storage
+EOF
+
+kubectl apply -f pv-pod.yaml
+```
+
+
+
+```bash
+cat << 'EOF' > storage-class.yaml
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: local-storage
+provisioner: kubernetes.io/no-provisioner
+volumeBindingMode: WaitForFirstConsumer
+EOF
+
+kubectl apply -f storage-class.yaml
+
+cat << 'EOF' > task-pv.yaml
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: task-pv-volume
+  labels:
+    type: local
+spec:
+  storageClassName: local-storage
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteMany
+  hostPath:
+    path: "."
+EOF
+
+kubectl apply -f task-pv.yaml
+
+cat << 'EOF' > pv-claim.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: task-pv-claim
+spec:
+  storageClassName: local-storage
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 3Gi
+EOF
+
+kubectl apply -f pv-claim.yaml
+```
+
+
+```bash
+kubectl delete pod task-pv-pod
+kubectl delete pvc task-pv-claim
+kubectl delete pv task-pv-volume
+kubectl delete sc local-storage
+```
+
+```bash
+kubectl get nodes -o json | jq ".items[]|{name:.metadata.name, taints:.spec.taints}"
+```
+From:
+- https://stackoverflow.com/a/53822911
+
+
+```bash
+watch -n 1 kubectl get sc --all-namespaces -o wide
+watch -n 1 kubectl get pvc --all-namespaces -o wide
+watch -n 1 kubectl get pv --all-namespaces -o wide
+watch -n 1 kubectl get pod --all-namespaces -o wide
+
+# 
+watch -n 1 kubectl get sc,pvc,pv,pod  --all-namespaces -o wide
+
+```
+
+
+
+#### [ Kube 13 ] Using Persistent Volumes and Claims in Kubernetes Cluster
+
+
+https://github.com/justmeandopensource/kubernetes/tree/master/yamls
+
+```bash
+mkdir /kube
+chmod 0777 /kube
+
+echo '98765' > /kube/a1b2c3.txt
+```
+
+```bash
+cat << 'EOF' > 4-pv-hostpath.yaml
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pv-hostpath
+  labels:
+    type: local
+spec:
+  storageClassName: default
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteMany
+  hostPath:
+    path: "/kube"
+EOF
+
+
+cat << 'EOF' > 4-pvc-hostpath.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pvc-hostpath
+spec:
+  storageClassName: default
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 100Mi
+EOF
+
+
+cat << 'EOF' > 4-busybox-pv-hostpath.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: busybox
+spec:
+  volumes:
+  - name: host-volume
+    persistentVolumeClaim:
+      claimName: pvc-hostpath
+  containers:
+  - image: busybox
+    name: busybox
+    command: ["/bin/sh"]
+    args: ["-c", "sleep 600"]
+    volumeMounts:
+    - name: host-volume
+      mountPath: /mydata
+EOF
+
+
+kubectl apply \
+-f 4-pv-hostpath.yaml \
+-f 4-pvc-hostpath.yaml \
+-f 4-busybox-pv-hostpath.yaml
+```
+
+
+```bash
+kubectl exec busybox -- /bin/sh -c 'stat /mydata'
+kubectl exec busybox -- /bin/sh -c 'cat /mydata/a1b2c3.txt'
+kubectl exec busybox -- /bin/sh -c 'watch -n 1 ls -al /mydata'
+```
+
+```bash
+kubectl delete pod busybox
+kubectl delete pvc pvc-hostpath
+kubectl delete pv pv-hostpath
+```
+
+```bash
+rm -frv /kube
+```
+
+
+### 
+
+
+```bash
+   echo ${pkgs.lib.makeBinPath propagatedNativeBuildInputs }
+
+   ${pkgs.symlinkJoin
+      {
+        inherit name;
+        paths = propagatedNativeBuildInputs;
+        postBuild = "echo 'Links added'";
+      }
+   }
+
+     wrapProgram "$out/bin/${name}" \
+    --prefix PATH : ${pkgs.lib.makeBinPath propagatedNativeBuildInputs }
+
+   ${pkgs.symlinkJoin
+      {
+        inherit name;
+        paths = (pkgs.lib.attrsets.nameValuePair propagatedNativeBuildInputs);
+        postBuild = "echo 'Links added'";
+      }
+   }
+```   
+

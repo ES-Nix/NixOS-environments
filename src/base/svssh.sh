@@ -14,4 +14,5 @@ virtual-machine-ssh
 
 start-qemu-vm-in-backround -in "${IMAGE_NAME}" -is "${ISO_NAME}" -p "${PORT}" -u "${UUID}"
 
-retry 100 virtual-machine-ssh "${USER}" "${IP}" "${PORT}"
+retry 100 myssh "${USER}" "${IP}" "${PORT}"
+# retry 100 virtual-machine-ssh "${USER}" "${IP}" "${PORT}"

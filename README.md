@@ -928,3 +928,431 @@ nix build github:ES-Nix/NixOS-environments/box#testCacheInFlakeCheck
 ```bash
 time nix build --rebuild --json github:ES-Nix/NixOS-environments/box#iso-minimal
 ```
+
+
+### NixOS modules 
+
+https://av.tib.eu/media/50717
+
+https://cfp.nixcon.org/media/nixcon-oct-2020.pdf
+
+```bash
+{
+  outputs = { self, nixpkgs }: {
+    system = "x86_64-linux";
+
+    modules.hello = {
+      doc = "A program that prints a friendly greeting.";
+      extends = [
+        nixpkgs.modules.package
+        nixpkgs.modules.stdenv
+      ];
+      options = {
+        who = {
+          default = "World";
+          doc = "Who to greet.";
+        };
+      };
+      config = { config }: {
+        pname = "hello";
+        version = "1.12";
+        buildCommand = ''
+          mkdir -p$out/bin
+          cat > $out/bin/hello <<EOF
+          #! /bin/sh
+            echo Hello ${config.who}
+          EOF
+          chmod +x $out/bin/hello
+        '';
+      };
+    };
+  };
+}
+```
+
+
+```bash
+cat <<'EOF' > flake.nix
+{
+  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+
+  outputs = inputs@{ self, nixpkgs }: {
+
+    nixosConfigurations.vm = nixpkgs.lib.nixosSystem {
+      system = "x86_64-linux";
+      specialArgs = { inherit inputs; };
+      modules = [
+        ({ pkgs, ... }: {
+          #disabledModules = [ "services/desktops/pipewire/pipewire.nix" ];
+          imports = [
+
+            # For virtualisation settings
+            "${inputs.nixpkgs}/nixos/modules/virtualisation/qemu-vm.nix"
+
+            # Provide an initial copy of the NixOS channel so that the user
+            # doesn't need to run "nix-channel --update" first.
+            "${nixpkgs}/nixos/modules/installer/cd-dvd/channel.nix"
+            
+            ({ lib, pkgs, config, ... }:
+                with lib;                      
+                let
+                  cfg = config.services.hello;
+                in {
+                  options.services.hello = {
+                    enable = mkEnableOption "hello service";
+                    greeter = mkOption {
+                      type = types.str;
+                      default = "world";
+                    };
+                  };
+                
+                  config = mkIf cfg.enable {
+                    systemd.services.hello = {
+                      wantedBy = [ "multi-user.target" ];
+                      serviceConfig.ExecStart = "${pkgs.hello}/bin/hello -g'Hello, ${escapeShellArg cfg.greeter}!'";
+                    };
+                  };
+                })
+          ];
+
+          services.hello = {
+            enable = true;
+            greeter = "Nix";
+          };
+
+          # https://nixos.wiki/wiki/Libvirt
+          #
+          boot.extraModprobeConfig = "options kvm_intel nested=1";
+          boot.kernelModules = [
+            "kvm-intel"
+          ];
+
+          # Documentation for these is in nixos/modules/virtualisation/qemu-vm.nix
+          virtualisation = {
+            memorySize = 1024 * 3;
+            diskSize = 1024 * 3;
+            cores = 4;
+            msize = 104857600;
+          };
+
+          nixpkgs.config.allowUnfree = true;
+
+          # List packages installed in system profile. To search, run:
+          # $ nix search wget
+          environment.systemPackages = with pkgs; [
+             # hello
+
+             oh-my-zsh
+             zsh
+             zsh-autosuggestions
+             zsh-completions
+          ];
+
+          users.mutableUsers = false;
+          users.users.root = {
+            password = "root";
+          };
+          
+          # TODO: should it be refactored in an NixOS module?
+          users.users.nixuser = {
+            password = "123";
+            isNormalUser = true;
+            # https://nixos.wiki/wiki/Libvirt
+            extraGroups = [ "wheel" "nixgroup" "kvm" ];
+          };
+          
+          users.extraUsers.nixuser = {
+            shell = pkgs.zsh;
+          };
+
+          # https://github.com/NixOS/nixpkgs/blob/3a44e0112836b777b176870bb44155a2c1dbc226/nixos/modules/programs/zsh/oh-my-zsh.nix#L119 
+          # https://discourse.nixos.org/t/nix-completions-for-zsh/5532
+          # https://github.com/NixOS/nixpkgs/blob/09aa1b23bb5f04dfc0ac306a379a464584fc8de7/nixos/modules/programs/zsh/zsh.nix#L230-L231
+          programs.zsh = {
+            enable = true;
+            shellAliases = {
+              vim = "nvim";
+              shebang = "echo '#!/usr/bin/env bash'"; # https://stackoverflow.com/questions/10376206/what-is-the-preferred-bash-shebang#comment72209991_10383546
+              nfmt = "nix run nixpkgs#nixpkgs-fmt **/*.nix *.nix";
+            };
+            enableCompletion = true;
+            autosuggestions.enable = true;
+            syntaxHighlighting.enable = true;
+            interactiveShellInit = ''
+              export ZSH=${pkgs.oh-my-zsh}/share/oh-my-zsh
+              export ZSH_THEME="agnoster"
+              export ZSH_CUSTOM=${pkgs.zsh-autosuggestions}/share/zsh-autosuggestions
+              plugins=( 
+                        colored-man-pages
+                        docker
+                        git
+                        #zsh-autosuggestions # Why this causes an warn?
+                        #zsh-syntax-highlighting
+                      )
+        
+              # git config --global user.email "example@gmail.com" 2> /dev/null
+              # git config --global user.name "Foo Bar" 2> /dev/null
+        
+              source $ZSH/oh-my-zsh.sh
+            '';
+            ohMyZsh.custom = "${pkgs.zsh-autosuggestions}/share/zsh-autosuggestions";
+            promptInit = "";
+          };
+
+          # Probably solve many warns about fonts
+          # https://gist.github.com/kendricktan/8c33019cf5786d666d0ad64c6a412526
+          fonts = {
+            fontDir.enable = true;
+            fonts = with pkgs; [
+              corefonts           # Microsoft free fonts
+              fira                # Monospace
+              inconsolata         # Monospace
+              powerline-fonts
+              ubuntu_font_family
+              unifont             # International languages
+            ];
+          };
+          
+        })
+      ];
+    };
+    # So that we can just run 'nix run' instead of
+    # 'nix build ".#nixosConfigurations.vm.config.system.build.vm" && ./result/bin/run-nixos-vm'
+    defaultPackage.x86_64-linux = self.nixosConfigurations.vm.config.system.build.vm;    
+    defaultApp.x86_64-linux = {
+      type = "app";
+      program = "${self.defaultPackage.x86_64-linux}/bin/run-nixos-vm";
+    };
+  };
+}
+EOF
+
+git init 
+git add .
+nix run
+```
+Refs.:
+- https://nixos.wiki/wiki/Nixpkgs/Reviewing_changes#Vm_example
+- https://nixos.wiki/wiki/Module
+
+
+```bash
+systemctl status hello
+```
+
+
+#### k8s in NixOS QEMU VM
+
+```nix 
+cat <<'EOF' > flake.nix
+{
+  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+
+  outputs = inputs@{ self, nixpkgs }: {
+
+    nixosConfigurations.vm = nixpkgs.lib.nixosSystem {
+      system = "x86_64-linux";
+      specialArgs = { inherit inputs; };
+      modules = [
+        ({ pkgs, ... }: {
+          #disabledModules = [ "services/desktops/pipewire/pipewire.nix" ];
+          imports = [
+
+            # For virtualisation settings
+            "${inputs.nixpkgs}/nixos/modules/virtualisation/qemu-vm.nix"
+
+            # Provide an initial copy of the NixOS channel so that the user
+            # doesn't need to run "nix-channel --update" first.
+            "${nixpkgs}/nixos/modules/installer/cd-dvd/channel.nix"
+            
+          ];
+
+          # https://nixos.wiki/wiki/Libvirt
+          #
+          boot.extraModprobeConfig = "options kvm_intel nested=1";
+          boot.kernelModules = [
+            "kvm-intel"
+          ];
+
+          # Documentation for these is in nixos/modules/virtualisation/qemu-vm.nix
+          virtualisation = {
+            memorySize = 1024 * 3;
+            diskSize = 1024 * 3;
+            cores = 4;
+            msize = 104857600;
+          };
+
+          nixpkgs.config.allowUnfree = true;
+
+          # List packages installed in system profile. To search, run:
+          # $ nix search wget
+          environment.systemPackages = with pkgs; [
+             # hello
+
+             oh-my-zsh
+             zsh
+             zsh-autosuggestions
+             zsh-completions
+          ];
+
+          users.mutableUsers = false;
+          users.users.root = {
+            password = "root";
+          };
+          
+          # TODO: should it be refactored in an NixOS module?
+          users.users.nixuser = {
+            password = "123";
+            isNormalUser = true;
+            # https://nixos.wiki/wiki/Libvirt
+            extraGroups = [ "wheel" "nixgroup" "kvm" ];
+          };
+          
+          users.extraUsers.nixuser = {
+            shell = pkgs.zsh;
+          };
+
+          # https://github.com/NixOS/nixpkgs/blob/3a44e0112836b777b176870bb44155a2c1dbc226/nixos/modules/programs/zsh/oh-my-zsh.nix#L119 
+          # https://discourse.nixos.org/t/nix-completions-for-zsh/5532
+          # https://github.com/NixOS/nixpkgs/blob/09aa1b23bb5f04dfc0ac306a379a464584fc8de7/nixos/modules/programs/zsh/zsh.nix#L230-L231
+          programs.zsh = {
+            enable = true;
+            shellAliases = {
+              vim = "nvim";
+              shebang = "echo '#!/usr/bin/env bash'"; # https://stackoverflow.com/questions/10376206/what-is-the-preferred-bash-shebang#comment72209991_10383546
+              nfmt = "nix run nixpkgs#nixpkgs-fmt **/*.nix *.nix";
+            };
+            enableCompletion = true;
+            autosuggestions.enable = true;
+            syntaxHighlighting.enable = true;
+            interactiveShellInit = ''
+              export ZSH=${pkgs.oh-my-zsh}/share/oh-my-zsh
+              export ZSH_THEME="agnoster"
+              export ZSH_CUSTOM=${pkgs.zsh-autosuggestions}/share/zsh-autosuggestions
+              plugins=( 
+                        colored-man-pages
+                        docker
+                        git
+                        #zsh-autosuggestions # Why this causes an warn?
+                        #zsh-syntax-highlighting
+                      )
+        
+              # git config --global user.email "example@gmail.com" 2> /dev/null
+              # git config --global user.name "Foo Bar" 2> /dev/null
+        
+              source $ZSH/oh-my-zsh.sh
+            '';
+            ohMyZsh.custom = "${pkgs.zsh-autosuggestions}/share/zsh-autosuggestions";
+            promptInit = "";
+          };
+
+          # Probably solve many warns about fonts
+          # https://gist.github.com/kendricktan/8c33019cf5786d666d0ad64c6a412526
+          fonts = {
+            fontDir.enable = true;
+            fonts = with pkgs; [
+              corefonts           # Microsoft free fonts
+              fira                # Monospace
+              inconsolata         # Monospace
+              powerline-fonts
+              ubuntu_font_family
+              unifont             # International languages
+            ];
+          };
+          
+        })
+      ];
+    };
+    # So that we can just run 'nix run' instead of
+    # 'nix build ".#nixosConfigurations.vm.config.system.build.vm" && ./result/bin/run-nixos-vm'
+    defaultPackage.x86_64-linux = self.nixosConfigurations.vm.config.system.build.vm;    
+    defaultApp.x86_64-linux = {
+      type = "app";
+      program = "${self.defaultPackage.x86_64-linux}/bin/run-nixos-vm";
+    };
+  };
+}
+EOF
+
+git init 
+git add .
+nix run
+```
+
+
+#### 
+
+
+```nix
+    packages.tests = (import nixpkgs {
+        system = "x86_64-linux";
+        config = { allowUnfree = true; };
+      }).nixosTest rec {
+                      name = "example-test";
+                      nodes = {
+                                machine = { pkgs, ... }: {
+                                  environment.systemPackages = with pkgs; [ hello ];
+                                };
+                              };
+                      testScript = ''
+                        # run hello on machine and check for output
+                        machine.succeed('hello | grep "Hello, world!"')
+                        # test is a simple python script 
+                      '';
+                    };
+```
+
+###
+
+
+
+### Nix overlays
+
+
+```bash
+cat <<'EOF' > overlay.nix
+self: super:
+{
+  my_prefix = {
+    vim = super.vim_configurable.customize {
+      name = "my-vim";
+      vimrcConfig.customRC = ''
+        set colorcolumn=80
+      '';
+    };
+    devShell = super.mkShell {
+      buildInputs = [ super.jq ];
+    };
+  };
+}
+EOF
+
+cat <<'EOF' > flake.nix
+{
+  description = "example flake";
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-21.11";
+    flake-utils.url = "github:numtide/flake-utils";
+  };
+  outputs = { self, nixpkgs, flake-utils, ... }: flake-utils.lib.eachDefaultSystem (system: 
+    let pkgs = import nixpkgs { inherit system; overlays = [ (import ./overlay.nix) ]; };
+    in {
+      defaultPackage = pkgs.my_prefix.vim;
+      packages.my-vim = pkgs.my_prefix.vim;
+    
+      devShell = pkgs.mkShell {
+           buildInputs = with pkgs; [
+             bashInteractive
+             "${self.packages.my-vim}"
+           ];
+        };
+     }
+  );
+}
+EOF
+
+git init 
+git add .
+nix develop --refresh 'path:.#my-vim'
+nix build --refresh 'path:.#my-vim'
+```

@@ -9,7 +9,7 @@
 # retry 5 ls -ltr foo
 
 
-set -x
+# set -x
 
 retry() {
     local -r -i max_attempts="$1"; shift
