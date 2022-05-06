@@ -1154,7 +1154,17 @@ cat <<'EOF' > flake.nix
       system = "x86_64-linux";
       specialArgs = { inherit inputs; };
       modules = [
-        ({ pkgs, ... }: {
+        (
+        
+        let 
+          # https://github.com/NixOS/nixpkgs/issues/59364#issuecomment-723906760
+          # https://discourse.nixos.org/t/use-nixos-as-single-node-kubernetes-cluster/8858/7
+          kubeMasterIP = "10.1.1.2";
+          kubeMasterHostname = "localhost";
+          # kubeMasterHostname = "api.kube";
+          kubeMasterAPIServerPort = 6443;
+        in
+        { pkgs, ... }: {
           #disabledModules = [ "services/desktops/pipewire/pipewire.nix" ];
           imports = [
 
@@ -1193,6 +1203,31 @@ cat <<'EOF' > flake.nix
              zsh
              zsh-autosuggestions
              zsh-completions
+             
+            # Looks like kubernetes needs atleast all this
+            kubectl
+            kubernetes
+            #
+            cni
+            cni-plugins
+            conntrack-tools
+            cri-o
+            cri-tools
+            docker
+            ebtables
+            ethtool
+            flannel
+            iptables
+            socat
+        
+            # Debug helpers
+            lsof
+            ripgrep
+            jq
+            openssl
+            dmidecode
+            inetutils # old named as telnet
+            file
           ];
 
           users.mutableUsers = false;
@@ -1211,6 +1246,14 @@ cat <<'EOF' > flake.nix
           users.extraUsers.nixuser = {
             shell = pkgs.zsh;
           };
+
+          # From:
+          # https://discourse.nixos.org/t/creating-directories-and-files-declararively/9349/2
+          # https://discourse.nixos.org/t/adding-folders-and-scripts/5114/4
+          # TODO: remove herdcoded user ang group names
+          systemd.tmpfiles.rules = [
+            "f /home/nixuser/.zshrc 0755 nixuser nixgroup"
+          ];
 
           # https://github.com/NixOS/nixpkgs/blob/3a44e0112836b777b176870bb44155a2c1dbc226/nixos/modules/programs/zsh/oh-my-zsh.nix#L119 
           # https://discourse.nixos.org/t/nix-completions-for-zsh/5532
@@ -1260,6 +1303,53 @@ cat <<'EOF' > flake.nix
             ];
           };
           
+          # k8s
+          environment.variables.KUBECONFIG = "/etc/kubernetes/cluster-admin.kubeconfig";
+        
+          virtualisation.docker.enable = true;
+        
+          environment.etc."containers/registries.conf" = {
+            mode = "0644";
+            text = ''
+              [registries.search]
+              registries = ['docker.io', 'localhost']
+            '';
+          };
+        
+          services.kubernetes.roles = [ "master" "node" ];
+          services.kubernetes.masterAddress = "${kubeMasterHostname}";
+          services.kubernetes = {
+      
+          # addonManager.enable = true;
+      
+          # addons = {
+          #  # dashboard.enable = true;
+          #  # dashboard.rbac.enable = true;
+          #  dns.enable = true;
+          # };
+      
+          # apiserverAddress = "https://${kubeMasterHostname}:${toString kubeMasterAPIServerPort}";
+          #
+          #    apiserver = {
+          #      advertiseAddress = kubeMasterIP;
+          #      enable = true;
+          #      securePort = kubeMasterAPIServerPort;
+          #    };
+          #
+          #    controllerManager.enable = true;
+          #    # flannel.enable = true;
+          #    masterAddress = "${toString kubeMasterHostname}";
+          #    # proxy.enable = true;
+          #    roles = [ "master" ];
+          #    # roles = [ "master" "node" ];
+          #    # scheduler.enable = true;
+          #    easyCerts = true;
+          #
+          #    kubelet.enable = true;
+          #
+          # # needed if you use swap
+            kubelet.extraOpts = "--fail-swap-on=false";
+          };          
         })
       ];
     };
@@ -1308,6 +1398,60 @@ nix run
 
 ### Nix overlays
 
+
+```bash
+mkdir foo
+cd foo
+
+
+cat <<'EOF' > overlay.nix
+self: super:
+{
+  my_prefix = {
+    abcdef = super.cowsay;
+  };
+}
+EOF
+
+cat <<'EOF' > flake.nix
+{
+  description = "example flake";
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-21.11";
+    flake-utils.url = "github:numtide/flake-utils";
+  };
+  outputs = { self, nixpkgs, flake-utils, ... }: flake-utils.lib.eachDefaultSystem (system: 
+    let pkgs = import nixpkgs { inherit system; overlays = [ (import ./overlay.nix) ]; };
+    in {
+      defaultPackage = pkgs.my_prefix.abcdef;
+      packages.cowsay-abcdef = pkgs.my_prefix.abcdef;
+
+      devShell = pkgs.mkShell {
+           buildInputs = with pkgs; [
+             bashInteractive
+             self.defaultPackage."${system}"
+           ];
+        };
+     }
+  );
+}
+EOF
+
+git init 
+git add .
+
+nix build --refresh 'path:.#cowsay-abcdef'
+
+nix develop --refresh 'path:.#' --command cowsay "Hi $USER"
+```
+
+
+```bash
+rm -fr foo
+```
+
+
+####
 
 ```bash
 cat <<'EOF' > overlay.nix
