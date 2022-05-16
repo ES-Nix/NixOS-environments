@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 
-hello | figlet
+hello "$@" | figlet

@@ -16,56 +16,8 @@
 
         user_name = "nixuser";
 
-        sshVM = pkgsAllowUnfree.writeShellScriptBin "ssh-vm" ''
-                      sshKey=$(mktemp)
-                      trap 'rm $sshKey' EXIT
-                      cp ${./vagrant} "$sshKey"
-                      chmod 0600 "$sshKey"
+        packages = (import ./src/pkgs { pkgs = pkgsAllowUnfree; });
 
-                      # TODO; decouple the kvm hardcoded dependency
-                      # https://stackoverflow.com/a/19295632
-                      qemu_process_id=$(pidof qemu-system-x86_64)
-                      if [[ -z $qemu_process_id ]]; then
-                          (run-vm-kvm < /dev/null &)
-                      fi
-
-          # https://unix.stackexchange.com/a/508856
-          #
-          # ssh -Q protocol-version localhost
-          # https://askubuntu.com/a/1112242
-          # https://serverfault.com/a/1040559
-          #
-          # Compression yes
-          # https://unix.stackexchange.com/a/626033
-          #
-          # https://unix.stackexchange.com/a/326046
-          # https://stackoverflow.com/a/49572001
-          # https://stackoverflow.com/a/39339317
-          #              -X11Forwarding yes \
-          #
-          # https://unix.stackexchange.com/a/191065
-          #              -o X11UseLocalhost no \
-          #
-          # https://github.com/bitnami/minideb/blob/master/qemu_build#L11
-          # https://askubuntu.com/questions/35512/what-is-the-difference-between-ssh-y-trusted-x11-forwarding-and-ssh-x-u/35518#35518
-
-                      until
-                         ${pkgsAllowUnfree.openssh}/bin/ssh \
-                          -X \
-                          -Y \
-                          -o GlobalKnownHostsFile=/dev/null \
-                          -o UserKnownHostsFile=/dev/null \
-                          -o StrictHostKeyChecking=no \
-                          -o LogLevel=ERROR \
-                          -i "$sshKey" ${user_name}@127.0.0.1 -p 10023 "$@"; do
-                        ((c++)) && ((c==60)) && break
-                        sleep 1
-                      done
-        '';
-
-        VMKill = pkgsAllowUnfree.writeShellScriptBin "vm-kill" ''
-          kill -9 $(pidof qemu-system-x86_64)
-        '';
 
         runVMKVM = pkgsAllowUnfree.writeShellScriptBin "run-vm-kvm" ''
                   #
@@ -128,38 +80,6 @@
           chmod -v 0755 nixos-vm-volume.qcow2
         '';
 
-        NixOSBoxVolumeTest = pkgsAllowUnfree.writeShellScriptBin "nixos-box-test" ''
-          build \
-          && refresh-vm \
-          && (run-vm-kvm < /dev/null &) \
-          && { ssh-vm << COMMANDS
-            volume-mount-hack
-          COMMANDS
-          } && { ssh-vm << COMMANDS
-            ls -al /home/nixuser/code | rg result
-          COMMANDS
-          } && { ssh-vm << COMMANDS
-            uname --all
-          COMMANDS
-          } && { ssh-vm << COMMANDS
-            timeout 100 nix run nixpkgs#xorg.xclock
-          COMMANDS
-          } && { ssh-vm << COMMANDS
-            timeout 100 pycharm-community
-          COMMANDS
-          } && ssh-vm
-        '';
-
-        NixOSBoxVolume = pkgsAllowUnfree.writeShellScriptBin "nixos-box-volume" ''
-          build \
-          && refresh-vm \
-          && (run-vm-kvm < /dev/null &) \
-          && { ssh-vm << COMMANDS
-            volume-mount-hack
-          COMMANDS
-          } && ssh-vm
-        '';
-
         NixOSBox = pkgsAllowUnfree.writeShellScriptBin "nixos-box" ''
           build \
           && refresh-vm \
@@ -216,31 +136,31 @@
       in
       {
 
-        packages.test-hello-figlet-cowsay = test-hello-figlet-cowsay;
-        packages.test-composed-script = test-composed-script;
-
-        packages.retry = retry;
-        packages.myssh = myssh;
-        packages.start-qemu-vm-in-backround = start-qemu-vm-in-backround;
-        packages.test-hello-figlet = test-hello-figlet;
-        packages.my-script = my-script;
-        packages.virtual-machine-ssh = virtual-machine-ssh;
-        packages.svssh = svssh;
-        packages.svissh = svissh;
-        packages.prepare-clean-old-stuff-and-create-iso-and-disk = prepare-clean-old-stuff-and-create-iso-and-disk;
-
-
-        packages.create-img-size-1G  = import ./src/base/nix/utils/create-img-size-1G.nix { pkgs = pkgsAllowUnfree; };
-        packages.create-img-size-9G  = import ./src/base/nix/utils/create-img-size-9G.nix { pkgs = pkgsAllowUnfree; };
-        packages.create-img-size-18G  = import ./src/base/nix/utils/create-img-size-18G.nix { pkgs = pkgsAllowUnfree; };
+#        packages.test-hello-figlet-cowsay = test-hello-figlet-cowsay;
+#        packages.test-composed-script = test-composed-script;
+#
+#        packages.retry = retry;
+#        packages.myssh = myssh;
+#        packages.start-qemu-vm-in-backround = start-qemu-vm-in-backround;
+#        packages.test-hello-figlet = test-hello-figlet;
+#        packages.my-script = my-script;
+#        packages.virtual-machine-ssh = virtual-machine-ssh;
+#        packages.svssh = svssh;
+#        packages.svissh = svissh;
+#        packages.prepare-clean-old-stuff-and-create-iso-and-disk = prepare-clean-old-stuff-and-create-iso-and-disk;
+#
+#
+#        packages.create-img-size-1G  = import ./src/base/nix/utils/create-img-size-1G.nix { pkgs = pkgsAllowUnfree; };
+#        packages.create-img-size-9G  = import ./src/base/nix/utils/create-img-size-9G.nix { pkgs = pkgsAllowUnfree; };
+#        packages.create-img-size-18G  = import ./src/base/nix/utils/create-img-size-18G.nix { pkgs = pkgsAllowUnfree; };
 
         # If ( ... ).image is not used most things like
         # nix flake check and others fail
-        packages.image = (import ./default.nix {
-          # pkgs = nixpkgs.legacyPackages."(if pkgs.stdenv.isDarwin then "" else ${system})";
-          pkgs = nixpkgs.legacyPackages.x86_64-linux;
-          nixos = nixos;
-        }).image;
+#        packages.image = (import ./default.nix {
+#          # pkgs = nixpkgs.legacyPackages."(if pkgs.stdenv.isDarwin then "" else ${system})";
+#          pkgs = nixpkgs.legacyPackages.x86_64-linux;
+#          nixos = nixos;
+#        }).image;
 
 #        packages.empty-qcow2 = import ./empty-qcow2/nixos-image.nix {
 #          # TODO: why it only works on linux?
@@ -252,12 +172,12 @@
 #         system = system;
 #       };
 #
-        packages.iso-kubernetes = import ./src/base/iso-kubernetes.nix {
-          nixpkgs = nixpkgs;
-          # Yeah, it is hardcoded
-          system = "x86_64-linux";
-          nixos = nixos;
-        };
+#        packages.iso-kubernetes = import ./src/base/iso-kubernetes.nix {
+#          nixpkgs = nixpkgs;
+#          # Yeah, it is hardcoded
+#          system = "x86_64-linux";
+#          nixos = nixos;
+#        };
 #
 #        packages.iso-kubernetes-qemu-kvm-mrb = wrapp-iso-kubernetes-qemu-kvm-mrb;
 #
@@ -304,9 +224,9 @@
         #  #qemu-img info $out/nixos.img
         #'';
 
-        packages.iso-minimal = import ./src/base/iso-minimal.nix {
-          nixpkgs = nixpkgs;
-        };
+#        packages.iso-minimal = import ./src/base/iso-minimal.nix {
+#          nixpkgs = nixpkgs;
+#        };
 
 #        packages.testCacheInFlakeCheck = pkgsAllowUnfree.runCommand "test-cache-in-flake-check"
 #          {
@@ -330,7 +250,7 @@
 
         # TODO
         # https://github.com/NixOS/nix/issues/2854
-        defaultPackage = self.packages.${system}.iso-minimal;
+        # defaultPackage = self.packages.${system}.iso-minimal;
 
         checks = {
           # nixpkgs-fmt = self.packages.${system}.checkNixFormat;
@@ -343,8 +263,20 @@
           # iso-minimal = self.defaultPackage.${system};
         };
 
+        # The outer `rec` makes this possible
+        inherit packages;
+
+        # nix run .#hello-figlet
+        # nix path-info -rsSh .#hello-figlet
+        # nix run .#hello-figlet -- --greeting 'Abcde'
+        apps.hello-figlet = flake-utils.lib.mkApp {
+          name = "hello-figlet";
+          drv = packages.hello-figlet;
+        };
+
         devShell = pkgsAllowUnfree.mkShell {
-          buildInputs = with pkgsAllowUnfree; [
+          buildInputs = with pkgsAllowUnfree;
+                        with packages; [
             bashInteractive
             coreutils
             file
@@ -359,38 +291,40 @@
             qemu
             which
 
-            NixOSBox
-            NixOSBoxVolumeTest
-            NixOSBoxVolume
-            build
-            buildDev
-            refreshVM
-            refreshVMDev
-            runVMKVM
-            sshVM
-            VMKill
+            #NixOSBox
+            #NixOSBoxVolumeTest
+            #NixOSBoxVolume
+            #build
+            #buildDev
+            #refreshVM
+            #refreshVMDev
+            #runVMKVM
+            #sshVM
+            #VMKill
 
 #            OVMFFull
 
-            my-script
-            wrapp-iso-kubernetes-qemu-kvm-mrb
-            # prepare-clean-old-stuff-and-create-iso-and-disk
+#            my-script
+#            wrapp-iso-kubernetes-qemu-kvm-mrb
+#            # prepare-clean-old-stuff-and-create-iso-and-disk
+#
+#            self.packages.${system}.test-hello-figlet-cowsay
+#            self.packages.${system}.test-composed-script
+#
+#            self.packages.${system}.myssh
+#            self.packages.${system}.retry
+#            self.packages.${system}.start-qemu-vm-in-backround
+#            self.packages.${system}.test-hello-figlet
+#            self.packages.${system}.my-script
+#            self.packages.${system}.virtual-machine-ssh
+#            self.packages.${system}.svssh
+#            self.packages.${system}.svissh
+#            self.packages.${system}.create-img-size-1G
+#            self.packages.${system}.create-img-size-9G
+#            self.packages.${system}.create-img-size-18G
+#            self.packages.${system}.prepare-clean-old-stuff-and-create-iso-and-disk
 
-            self.packages.${system}.test-hello-figlet-cowsay
-            self.packages.${system}.test-composed-script
-
-            self.packages.${system}.myssh
-            self.packages.${system}.retry
-            self.packages.${system}.start-qemu-vm-in-backround
-            self.packages.${system}.test-hello-figlet
-            self.packages.${system}.my-script
-            self.packages.${system}.virtual-machine-ssh
-            self.packages.${system}.svssh
-            self.packages.${system}.svissh
-            self.packages.${system}.create-img-size-1G
-            self.packages.${system}.create-img-size-9G
-            self.packages.${system}.create-img-size-18G
-            self.packages.${system}.prepare-clean-old-stuff-and-create-iso-and-disk
+              hello-figlet
 
             # It slows a lot the nix develop
             # self.packages.${system}.image.image
