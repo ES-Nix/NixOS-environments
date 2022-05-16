@@ -190,22 +190,6 @@
             --prefix PATH : ${pkgsAllowUnfree.lib.makeBinPath wrapp-iso-kubernetes-qemu-kvm-mrb-deps}
           '';
 
-#        vssh = pkgsAllowUnfree.writeShellScriptBin "vssh" ''
-#          "${./src/base/virtual-machine-ssh.sh}"
-#        '';
-#
-#        svssh = pkgsAllowUnfree.writeShellScriptBin "svssh" ''
-#          "${./src/base/svssh.sh}"
-#        '';
-#
-#        svissh = pkgsAllowUnfree.writeShellScriptBin "svissh" ''
-#          "${./src/base/svissh.sh}"
-#        '';
-#
-        prepare-clean-old-stuff-and-create-iso-and-disk = pkgsAllowUnfree.writeShellScriptBin "piso" ''
-          "${./src/base/prepare-clean-old-stuff-and-create-iso-and-disk.sh}"
-        '';
-
         pkgsAndSystem = {
            pkgs = pkgsAllowUnfree;
            inherit system;
@@ -213,6 +197,8 @@
 
         myImportGeneric = pkgsAndSystem: fullFilePath:
           import fullFilePath pkgsAndSystem;
+
+#
 
         myImport = myImportGeneric pkgsAndSystem;
 
@@ -225,6 +211,7 @@
         virtual-machine-ssh = myImport ./src/base/nix/wrappers/virtual-machine-ssh.nix;
         svssh = myImport ./src/base/nix/wrappers/svssh.nix;
         svissh = myImport ./src/base/nix/wrappers/svissh.nix;
+        prepare-clean-old-stuff-and-create-iso-and-disk = myImport ./src/base/nix/wrappers/prepare-clean-old-stuff-and-create-iso-and-disk.nix;
 
       in
       {
@@ -240,6 +227,7 @@
         packages.virtual-machine-ssh = virtual-machine-ssh;
         packages.svssh = svssh;
         packages.svissh = svissh;
+        packages.prepare-clean-old-stuff-and-create-iso-and-disk = prepare-clean-old-stuff-and-create-iso-and-disk;
 
 
         packages.create-img-size-1G  = import ./src/base/nix/utils/create-img-size-1G.nix { pkgs = pkgsAllowUnfree; };
@@ -386,7 +374,7 @@
 
             my-script
             wrapp-iso-kubernetes-qemu-kvm-mrb
-            prepare-clean-old-stuff-and-create-iso-and-disk
+            # prepare-clean-old-stuff-and-create-iso-and-disk
 
             self.packages.${system}.test-hello-figlet-cowsay
             self.packages.${system}.test-composed-script
@@ -399,6 +387,10 @@
             self.packages.${system}.virtual-machine-ssh
             self.packages.${system}.svssh
             self.packages.${system}.svissh
+            self.packages.${system}.create-img-size-1G
+            self.packages.${system}.create-img-size-9G
+            self.packages.${system}.create-img-size-18G
+            self.packages.${system}.prepare-clean-old-stuff-and-create-iso-and-disk
 
             # It slows a lot the nix develop
             # self.packages.${system}.image.image

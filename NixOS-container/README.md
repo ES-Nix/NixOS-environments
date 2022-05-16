@@ -77,3 +77,54 @@ nix-channel --list
 sudo nix-channel --list
 
 https://github.com/Mic92/nixos-shell/issues/36
+
+```bash
+cat << 'EOF' > flake.nix
+{
+  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-20.11";
+
+  outputs = { self, nixpkgs }: {
+
+    nixosConfigurations.vm = nixpkgs.lib.nixosSystem {
+      system = "x86_64-linux";
+      modules =
+        [ 
+          #({ pkgs, ... }: {
+          # boot.isContainer = false;
+          #
+          ## Let 'nixos-version --json' know about the Git revision
+          ## of this flake.
+          #system.configurationRevision = nixpkgs.lib.mkIf (self ? rev) self.rev;
+          #
+          ## Network configuration.
+          #networking.useDHCP = false;
+          #networking.firewall.allowedTCPPorts = [ 80 ];
+          #
+          ## Enable a web server.
+          #services.httpd = {
+          #  enable = true;
+          #  adminAddr = "morty@example.org";
+          #};
+          #})
+          "${toString (builtins.getFlake "github:NixOS/nixpkgs/b283b64580d1872333a99af2b4cef91bb84580cf")}/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix"
+           
+          "${toString (builtins.getFlake "github:NixOS/nixpkgs/b283b64580d1872333a99af2b4cef91bb84580cf")}/nixos/modules/virtualisation/build-vm.nix" 
+          
+          # "${toString (builtins.getFlake "github:NixOS/nixpkgs/b283b64580d1872333a99af2b4cef91bb84580cf")}/nixos/modules/installer/cd-dvd/channel.nix"
+        ];
+    };
+    # So that we can just run 'nix run' instead of
+    # 'nix build ".#nixosConfigurations.vm.config.system.build.vm" && ./result/bin/run-nixos-vm'
+    defaultPackage.x86_64-linux = self.nixosConfigurations.vm.config.system.build.toplevel;
+    defaultApp.x86_64-linux = {
+      type = "app";
+      program = "${self.defaultPackage.x86_64-linux}/bin/run-nixos-vm";
+    };
+  };
+}
+EOF
+```
+
+
+
+

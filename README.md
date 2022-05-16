@@ -970,6 +970,8 @@ https://cfp.nixcon.org/media/nixcon-oct-2020.pdf
 }
 ```
 
+#### NixOS build.vm 
+
 
 ```bash
 cat <<'EOF' > flake.nix
@@ -1046,6 +1048,7 @@ cat <<'EOF' > flake.nix
              zsh
              zsh-autosuggestions
              zsh-completions
+
           ];
 
           users.mutableUsers = false;
@@ -1104,8 +1107,8 @@ cat <<'EOF' > flake.nix
           fonts = {
             fontDir.enable = true;
             fonts = with pkgs; [
-              corefonts           # Microsoft free fonts
-              fira                # Monospace
+              # corefonts           # Microsoft free fonts
+              # fira                # Monospace
               inconsolata         # Monospace
               powerline-fonts
               ubuntu_font_family
@@ -1138,6 +1141,184 @@ Refs.:
 
 ```bash
 systemctl status hello
+```
+
+
+#### flutter
+
+
+```bash
+cat <<'EOF' > flake.nix
+{
+  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+
+  outputs = inputs@{ self, nixpkgs }: {
+
+    nixosConfigurations.vm = nixpkgs.lib.nixosSystem {
+      system = "x86_64-linux";
+      specialArgs = { inherit inputs; };
+      modules = [
+        ({ pkgs, ... }: {
+          # disabledModules = [ "services/desktops/pipewire/pipewire.nix" ];
+          imports = [
+
+            # For virtualisation settings
+            "${inputs.nixpkgs}/nixos/modules/virtualisation/qemu-vm.nix"
+
+            # Provide an initial copy of the NixOS channel so that the user
+            # doesn't need to run "nix-channel --update" first.
+            "${nixpkgs}/nixos/modules/installer/cd-dvd/channel.nix"
+          ];
+
+          # https://nixos.wiki/wiki/Libvirt
+          #
+          boot.extraModprobeConfig = "options kvm_intel nested=1";
+          boot.kernelModules = [
+            "kvm-intel"
+          ];
+
+          # Documentation for these is in nixos/modules/virtualisation/qemu-vm.nix
+          virtualisation = {
+            memorySize = 1024 * 3;
+            diskSize = 1024 * 3;
+            cores = 4;
+            msize = 104857600;
+          };
+
+          system.stateVersion = "22.05";
+
+          # Enable the X11 windowing system.
+          # services.xserver.enable = true;
+          # services.xserver.layout = "us";          
+          
+          # Enable the KDE Desktop Environment.
+          # services.xserver.displayManager.sddm.enable = true;
+          # services.xserver.desktopManager.plasma5.enable = true;
+
+          nixpkgs.config = {
+            allowUnfree = true;
+            android_sdk.accept_license = true;
+          };
+
+          # List packages installed in system profile. To search, run:
+          # $ nix search wget
+          environment.systemPackages = with pkgs; [
+             # hello
+
+             oh-my-zsh
+             zsh
+             zsh-autosuggestions
+             zsh-completions
+             
+             clang
+             cmake
+             flutter
+             ninja
+             pkg-config
+             gtk3
+             gtk3.dev
+             util-linux.dev
+             glib.dev
+             
+             # Helper script to print the IOMMU groups of PCI devices.
+             (
+               writeScriptBin "test-flutter" ''
+                 #! ${pkgs.runtimeShell} -e
+                 flutter config --enable-linux-desktop
+        
+                 flutter create my_app \
+                 && cd my_app \
+                 && flutter build linux         
+               ''
+             )
+          ];
+          
+          environment.sessionVariables = { 
+            PKG_CONFIG_PATH="${pkgs.gtk3.dev}/lib/pkgconfig";
+          };
+  
+          users.mutableUsers = false;
+          users.users.root = {
+            password = "root";
+          };
+          
+          # TODO: should it be refactored in an NixOS module?
+          users.users.nixuser = {
+            password = "123";
+            isNormalUser = true;
+            # https://nixos.wiki/wiki/Libvirt
+            extraGroups = [ "wheel" "nixgroup" "kvm" ];
+          };
+          
+          users.extraUsers.nixuser = {
+            shell = pkgs.zsh;
+          };
+
+          # https://github.com/NixOS/nixpkgs/blob/3a44e0112836b777b176870bb44155a2c1dbc226/nixos/modules/programs/zsh/oh-my-zsh.nix#L119 
+          # https://discourse.nixos.org/t/nix-completions-for-zsh/5532
+          # https://github.com/NixOS/nixpkgs/blob/09aa1b23bb5f04dfc0ac306a379a464584fc8de7/nixos/modules/programs/zsh/zsh.nix#L230-L231
+          programs.zsh = {
+            enable = true;
+            shellAliases = {
+              vim = "nvim";
+              shebang = "echo '#!/usr/bin/env bash'"; # https://stackoverflow.com/questions/10376206/what-is-the-preferred-bash-shebang#comment72209991_10383546
+              nfmt = "nix run nixpkgs#nixpkgs-fmt **/*.nix *.nix";
+            };
+            enableCompletion = true;
+            autosuggestions.enable = true;
+            syntaxHighlighting.enable = true;
+            interactiveShellInit = ''
+              export ZSH=${pkgs.oh-my-zsh}/share/oh-my-zsh
+              export ZSH_THEME="agnoster"
+              export ZSH_CUSTOM=${pkgs.zsh-autosuggestions}/share/zsh-autosuggestions
+              plugins=( 
+                        colored-man-pages
+                        docker
+                        git
+                        #zsh-autosuggestions # Why this causes an warn?
+                        #zsh-syntax-highlighting
+                      )
+        
+              # git config --global user.email "example@gmail.com" 2> /dev/null
+              # git config --global user.name "Foo Bar" 2> /dev/null
+        
+              source $ZSH/oh-my-zsh.sh
+            '';
+            ohMyZsh.custom = "${pkgs.zsh-autosuggestions}/share/zsh-autosuggestions";
+            promptInit = "";
+          };
+
+          # Probably solve many warns about fonts
+          # https://gist.github.com/kendricktan/8c33019cf5786d666d0ad64c6a412526
+          fonts = {
+            fontDir.enable = true;
+            fonts = with pkgs; [
+              # corefonts           # Microsoft free fonts
+              # fira                # Monospace
+              inconsolata         # Monospace
+              powerline-fonts
+              ubuntu_font_family
+              unifont             # International languages
+            ];
+          };
+          
+        })
+      ];
+    };
+    # So that we can just run 'nix run' instead of
+    # 'nix build ".#nixosConfigurations.vm.config.system.build.vm" && ./result/bin/run-nixos-vm'
+    defaultPackage.x86_64-linux = self.nixosConfigurations.vm.config.system.build.vm;    
+    defaultApp.x86_64-linux = {
+      type = "app";
+      program = "${self.defaultPackage.x86_64-linux}/bin/run-nixos-vm";
+    };
+  };
+}
+EOF
+
+git init 
+git add .
+nix run
 ```
 
 

@@ -1,13 +1,13 @@
 { pkgs ? import <nixpkgs> { } }:
 pkgs.stdenv.mkDerivation rec {
-  name = "create-img-size-1G";
-  buildInputs = with pkgs; [ stdenv ];
+  name = "create-img-size-9G";
+  buildInputs = with pkgs; [ stdenv qemu ];
   nativeBuildInputs = with pkgs; [ makeWrapper ];
   propagatedNativeBuildInputs = with pkgs; [
     bash
     coreutils
 
-    qemu
+    # qemu
   ];
 
   #src = builtins.path { path = ./.; name = "create-img-size-1G"; };
@@ -18,8 +18,8 @@ pkgs.stdenv.mkDerivation rec {
   installPhase = ''
     mkdir -p $out
 
-    qemu-img create nixos.img 9G
-    mv nixos.img $out/nixos.img
+    qemu-img create image.img 9G
+    mv image.img $out/image.img
   '';
 
 }

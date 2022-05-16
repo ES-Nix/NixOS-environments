@@ -4,5 +4,5 @@ result
 *.iso
 *.img
 *.img.backup
-
+.direnv
 

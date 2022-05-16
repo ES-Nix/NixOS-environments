@@ -1,15 +1,13 @@
 { pkgs ? import <nixpkgs> { } }:
 pkgs.stdenv.mkDerivation rec {
-  name = "create-img-size-1G";
-  buildInputs = with pkgs; [ stdenv ];
-  nativeBuildInputs = with pkgs; [ makeWrapper ];
+  name = "create-img-size-18G";
+  buildInputs = with pkgs; [ stdenv qemu ];
+  nativeBuildInputs = with pkgs; [ makeWrapper cloud-utils ];
   propagatedNativeBuildInputs = with pkgs; [
     bash
     coreutils
-  ]
-  ++
-  (if stdenv.isDarwin then [ ]
-  else [ cloud-utils ]);
+    cloud-utils
+  ];
 
   #src = builtins.path { path = ./.; name = "create-img-size-1G"; };
   phases = [ "installPhase" ];
@@ -19,8 +17,11 @@ pkgs.stdenv.mkDerivation rec {
   installPhase = ''
     mkdir -p $out
 
-    qemu-img create nixos.img 9G
-    mv nixos.img $out/nixos.img
+    qemu-img create image.img 18G
+    mv image.img $out/image.img
+
+    # substituteInPlace $out/run-vm-kvm.sh \
+    #   --replace "image.img" "$out/image.img"
   '';
 
 }

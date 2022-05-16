@@ -799,7 +799,6 @@ watch --interval=1 kubectl get pods -A
 ```
 
 
-
 cat <<EOF | sudo tee /etc/cni/net.d/10-flannel.conflist
 {
   "name": "cbr0",
@@ -2340,6 +2339,10 @@ kubectl delete sc local-storage
 ```
 
 ```bash
+kubectl delete all --all --all-namespaces
+```
+
+```bash
 kubectl get nodes -o json | jq ".items[]|{name:.metadata.name, taints:.spec.taints}"
 ```
 From:
@@ -2353,7 +2356,7 @@ watch -n 1 kubectl get pv --all-namespaces -o wide
 watch -n 1 kubectl get pod --all-namespaces -o wide
 
 # 
-watch -n 1 kubectl get sc,pvc,pv,pod  --all-namespaces -o wide
+watch -n 1 kubectl get sc,pvc,pv,pod --all-namespaces -o wide
 
 ```
 
@@ -2364,14 +2367,29 @@ watch -n 1 kubectl get sc,pvc,pv,pod  --all-namespaces -o wide
 
 https://github.com/justmeandopensource/kubernetes/tree/master/yamls
 
+
 ```bash
+sudo \
+su \
+root \
+$SHELL \
+-c \
+'
 mkdir /kube
 chmod 0777 /kube
 
 echo '98765' > /kube/a1b2c3.txt
-```
+'
 
-```bash
+cat << 'EOF' > storage-class.yaml
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: local-storage
+provisioner: kubernetes.io/no-provisioner
+volumeBindingMode: WaitForFirstConsumer
+EOF
+
 cat << 'EOF' > 4-pv-hostpath.yaml
 apiVersion: v1
 kind: PersistentVolume
@@ -2380,7 +2398,7 @@ metadata:
   labels:
     type: local
 spec:
-  storageClassName: default
+  storageClassName: local-storage
   capacity:
     storage: 1Gi
   accessModes:
@@ -2396,7 +2414,7 @@ kind: PersistentVolumeClaim
 metadata:
   name: pvc-hostpath
 spec:
-  storageClassName: default
+  storageClassName: local-storage
   accessModes:
     - ReadWriteMany
   resources:
@@ -2425,11 +2443,19 @@ spec:
       mountPath: /mydata
 EOF
 
-
+# It works in NixOS
 kubectl apply \
 -f 4-pv-hostpath.yaml \
 -f 4-pvc-hostpath.yaml \
--f 4-busybox-pv-hostpath.yaml
+-f 4-busybox-pv-hostpath.yaml \
+-f storage-class.yaml
+
+
+#kubectl apply -f storage-class.yaml
+#kubectl apply -f 4-pvc-hostpath.yaml
+#kubectl apply -f 4-pv-hostpath.yaml
+#kubectl apply -f 4-busybox-pv-hostpath.yaml
+
 ```
 
 
@@ -2440,13 +2466,100 @@ kubectl exec busybox -- /bin/sh -c 'watch -n 1 ls -al /mydata'
 ```
 
 ```bash
-kubectl delete pod busybox
-kubectl delete pvc pvc-hostpath
-kubectl delete pv pv-hostpath
+kubectl delete pod busybox 
+kubectl delete pvc pvc-hostpath 
+kubectl delete pv pv-hostpath 
+kubectl delete sc local-storage
 ```
 
 ```bash
 rm -frv /kube
+```
+
+```bash
+# It does not deletes all things, as example, storage classes
+kubectl delete all --all --all-namespaces
+```
+
+#### No Storage Class
+
+
+```bash
+test -f /kube/a1b2c3.txt || sudo \
+su \
+root \
+$SHELL \
+-c \
+'
+mkdir /kube
+chmod 0777 /kube
+
+echo '98765' > /kube/a1b2c3.txt
+'
+
+
+cat << 'EOF' > 4-pv-hostpath.yaml
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pv-hostpath
+  labels:
+    type: local
+spec:
+  storageClassName: default
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteMany
+  hostPath:
+    path: "/kube"
+EOF
+
+cat << 'EOF' > 4-pvc-hostpath.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pvc-hostpath
+spec:
+  storageClassName: default
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 100Mi
+EOF
+
+cat << 'EOF' > 4-busybox-pv-hostpath.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: busybox
+spec:
+  volumes:
+  - name: host-volume
+    persistentVolumeClaim:
+      claimName: pvc-hostpath
+  containers:
+  - image: busybox
+    name: busybox
+    command: ["/bin/sh"]
+    args: ["-c", "sleep 600"]
+    volumeMounts:
+    - name: host-volume
+      mountPath: /mydata
+EOF
+
+# It works in NixOS
+kubectl apply \
+-f 4-pv-hostpath.yaml \
+-f 4-pvc-hostpath.yaml \
+-f 4-busybox-pv-hostpath.yaml
+```
+
+```
+podman play kube 4-pvc-hostpath.yaml
+podman play kube 4-pv-hostpath.yaml
+podman play kube 4-busybox-pv-hostpath.yaml
 ```
 
 
@@ -2476,3 +2589,477 @@ rm -frv /kube
    }
 ```   
 
+
+#### minimal example of container exported to .yaml
+
+```bash
+podman \
+run \
+--interactive=true \
+--name=container-with-volume \
+--tty=true \
+--rm=true \
+--volume="$(pwd)":/code \
+--workdir=/code \
+alpine \
+sh
+
+podman generate kube container-with-volume > container-with-volume.yaml
+```
+
+
+```bash
+cat << 'EOF' > container-with-volume.yaml
+# Save the output of this file and use kubectl create -f to import
+# it into Kubernetes.
+#
+# Created with podman-4.0.2
+
+# NOTE: If you generated this yaml from an unprivileged and rootless podman container on an SELinux
+# enabled system, check the podman generate kube man page for steps to follow to ensure that your pod/container
+# has the right permissions to access the volumes added.
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  creationTimestamp: "2022-05-09T01:02:56Z"
+  labels:
+    app: container-with-volumepod
+  name: container-with-volume-pod
+spec:
+  containers:
+  - command:
+    - sh
+    image: docker.io/library/alpine:latest
+    name: container-with-volume
+    securityContext:
+      capabilities: {}
+    stdin: true
+    tty: true
+    volumeMounts:
+    - mountPath: /code
+      name: host-0
+    workingDir: /code
+  volumes:
+  - hostPath:
+      path: .
+      type: Directory
+    name: host-0
+EOF
+
+podman play kube ./container-with-volume.yaml
+# Or
+# kubectl create -f container-with-volume.yaml
+```
+
+```bash
+podman exec -it container-with-volume_pod-container-with-volume sh -c 'apk add --no-cache python3'
+```
+
+
+####
+
+```bash
+podman save --format docker-archive --output income-back.tar ghcr.io/imobanco/income-api:latest
+
+docker load --input income-back.tar
+docker images
+```
+
+```bash
+#test -f /kube/a1b2c3.txt || sudo \
+#su \
+#root \
+#$SHELL \
+#-c \
+#'
+#mkdir /kube
+#chmod 0777 /kube
+#
+#echo '98765' > /kube/a1b2c3.txt
+#'
+
+test -d ./dumps || mkdir ./dumps
+
+cat << 'EOF' > local-storage-postgres.yaml
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: local-storage-postgres
+provisioner: kubernetes.io/no-provisioner
+mountOptions:
+  - debug
+volumeBindingMode: Immediate
+EOF
+
+
+cat << 'EOF' > local-storage-rabbit.yaml
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: local-storage-rabbit
+provisioner: kubernetes.io/no-provisioner
+mountOptions:
+  - debug
+volumeBindingMode: Immediate
+EOF
+
+
+#cat << 'EOF' > pv-hostpath.yaml
+#apiVersion: v1
+#kind: PersistentVolume
+#metadata:
+#  name: pv-hostpath
+#  labels:
+#    type: local
+#spec:
+#  storageClassName: local-storage
+#  capacity:
+#    storage: 1Gi
+#  accessModes:
+#    - ReadWriteMany
+#  hostPath:
+#    path: ./dumps
+#EOF
+
+cat << 'EOF' > income-back-service-postgres-volume-pvc.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: income-back-service-postgres-volume-pvc
+spec:
+  storageClassName: local-storage-postgres
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 100Mi
+EOF
+
+cat << 'EOF' > income-back-service-rabbit-volume-pvc.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: income-back-service-rabbit-volume-pvc
+spec:
+  storageClassName: local-storage-rabbit
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 100Mi
+EOF
+
+
+cat << 'EOF' > imobanco-pod.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  creationTimestamp: "2022-04-12T04:40:19Z"
+  labels:
+    app: imobanco-pod
+  name: imobanco-pod
+spec:
+  containers:
+  - args:
+    - postgres
+    env:
+    - name: POSTGRES_PASSWORD
+      value: postgres
+    - name: POSTGRES_USER
+      value: postgres
+    - name: POSTGRES_DB
+      value: postgres
+    image: docker.io/library/postgres:12.3-alpine
+    name: service-postgres
+    ports:
+    - containerPort: 5432
+      hostPort: 5432
+    - containerPort: 5672
+      hostPort: 5672
+    - containerPort: 6379
+      hostPort: 6379
+    - containerPort: 8000
+      hostPort: 8000
+    - containerPort: 15672
+      hostPort: 9000
+    resources: {}
+    securityContext:
+      capabilities: {}
+    volumeMounts:
+    - mountPath: /dumps
+      name: dumps-host-0
+    - mountPath: /var/lib/postgresql/data
+      name: income-back-service-postgres-volume-pvc
+  - args:
+    - rabbitmq-server
+    image: docker.io/library/rabbitmq:3.8.14-management-alpine
+    name: service-rabbit
+    resources: {}
+    securityContext:
+      capabilities: {}
+    tty: true
+    volumeMounts:
+    - mountPath: /var/lib/rabbitmq
+      name: income-back-service-rabbit-volume-pvc
+  - command:
+    - bash
+    - -c
+    - python manage.py migrate && python manage.py runserver 0.0.0.0:8000
+    env:
+    - name: DB_PORT
+      value: "5432"
+    - name: DEBUG
+      value: "True"
+    - name: ENV
+      value: dev
+    image:  ghcr.io/imobanco/income-api:latest
+    name: service-django
+    resources: {}
+    securityContext:
+      capabilities: {}
+    tty: true
+    volumeMounts:
+    - mountPath: /home/app_user
+      name: host-0
+  - command:
+    - bash
+    - -c
+    - celery --app=income worker --loglevel=info
+    env:
+    - name: ENV
+      value: dev
+    - name: DB_PORT
+      value: "5432"
+    - name: DEBUG
+      value: "False"
+    image:  ghcr.io/imobanco/income-api:latest
+    name: service-celery
+    resources: {}
+    securityContext:
+      capabilities: {}
+    tty: true
+    volumeMounts:
+    - mountPath: /home/app_user
+      name: host-0
+  restartPolicy: Never
+  volumes:
+  - name: income-back-service-rabbit-volume-pvc
+    persistentVolumeClaim:
+      claimName: income-back-service-rabbit-volume-pvc
+  - hostPath:
+      path: .
+      type: Directory
+    name: host-0
+  - hostPath:
+      path: ./dumps
+      type: Directory
+    name: dumps-host-0
+  - name: income-back-service-postgres-volume-pvc
+    persistentVolumeClaim:
+      claimName: income-back-service-postgres-volume-pvc
+EOF
+
+# It works in NixOS
+# -f pv-hostpath.yaml \
+kubectl apply \
+-f income-back-service-postgres-volume-pvc.yaml \
+-f income-back-service-rabbit-volume-pvc.yaml \
+-f local-storage-rabbit.yaml \
+-f local-storage-postgres.yaml \
+-f imobanco-pod.yaml
+```
+
+
+```bash
+kubectl delete pod imobanco-pod 
+kubectl delete pvc income-back-service-postgres-volume-pvc
+kubectl delete pvc income-back-service-rabbit-volume-pvc
+# kubectl delete pv pv-hostpath
+kubectl delete sc local-storage-rabbit
+kubectl delete sc local-storage-postgres
+```
+
+
+```bash
+ssh-keygen -R '[imobanco.ddns.net]:27020' \
+&& while ! nc -w 1 -t imobanco.ddns.net 27020; do echo $(date +'%d/%m/%Y %H:%M:%S:%3N'); sleep 0.5; done \
+&& ssh nixuser@imobanco.ddns.net -p 27020 -o StrictHostKeyChecking=no
+```
+
+
+
+```bash
+#test -f /kube/a1b2c3.txt || sudo \
+#su \
+#root \
+#$SHELL \
+#-c \
+#'
+#mkdir /kube
+#chmod 0777 /kube
+#
+#echo '98765' > /kube/a1b2c3.txt
+#'
+
+test -d ./dumps || mkdir ./dumps
+
+cat << 'EOF' > local-storage-postgres.yaml
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: local-storage-postgres
+provisioner: kubernetes.io/no-provisioner
+mountOptions:
+  - debug
+volumeBindingMode: Immediate
+EOF
+
+
+cat << 'EOF' > local-storage-rabbit.yaml
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: local-storage-rabbit
+provisioner: kubernetes.io/no-provisioner
+mountOptions:
+  - debug
+volumeBindingMode: Immediate
+EOF
+
+
+#cat << 'EOF' > pv-hostpath.yaml
+#apiVersion: v1
+#kind: PersistentVolume
+#metadata:
+#  name: pv-hostpath
+#  labels:
+#    type: local
+#spec:
+#  storageClassName: local-storage
+#  capacity:
+#    storage: 1Gi
+#  accessModes:
+#    - ReadWriteMany
+#  hostPath:
+#    path: ./dumps
+#EOF
+
+cat << 'EOF' > income-back-service-postgres-volume-pvc.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: income-back-service-postgres-volume-pvc
+spec:
+  storageClassName: local-storage-postgres
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 100Mi
+EOF
+
+cat << 'EOF' > income-back-service-rabbit-volume-pvc.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: income-back-service-rabbit-volume-pvc
+spec:
+  storageClassName: local-storage-rabbit
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 100Mi
+EOF
+
+
+cat << 'EOF' > imobanco-pod.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  creationTimestamp: "2022-04-12T04:40:19Z"
+  labels:
+    app: imobanco-pod
+  name: imobanco-pod
+spec:
+  containers:
+  - args:
+    - postgres
+    env:
+    - name: POSTGRES_PASSWORD
+      value: postgres
+    - name: POSTGRES_USER
+      value: postgres
+    - name: POSTGRES_DB
+      value: postgres
+    image: docker.io/library/postgres:12.3-alpine
+    name: service-postgres
+    ports:
+    - containerPort: 5432
+      hostPort: 5432
+    - containerPort: 5672
+      hostPort: 5672
+    - containerPort: 6379
+      hostPort: 6379
+    - containerPort: 8000
+      hostPort: 8000
+    - containerPort: 15672
+      hostPort: 9000
+    resources: {}
+    securityContext:
+      capabilities: {}
+    volumeMounts:
+    - mountPath: /dumps
+      name: dumps-host-0
+    - mountPath: /var/lib/postgresql/data
+      name: income-back-service-postgres-volume-pvc
+  - command:
+    - bash
+    - -c
+    - python manage.py migrate && python manage.py runserver 0.0.0.0:8000
+    env:
+    - name: DB_PORT
+      value: "5432"
+    - name: DEBUG
+      value: "True"
+    - name: ENV
+      value: dev
+    image:  ghcr.io/imobanco/income-api:latest
+    name: service-django
+    resources: {}
+    securityContext:
+      capabilities: {}
+    tty: true
+    volumeMounts:
+    - mountPath: /home/app_user
+      name: host-0
+  - command:
+    - bash
+    - -c
+    - celery --app=income worker --loglevel=info
+    env:
+    - name: ENV
+      value: dev
+    - name: DB_PORT
+      value: "5432"
+    - name: DEBUG
+      value: "False"
+    image:  ghcr.io/imobanco/income-api:latest
+    name: service-celery
+    resources: {}
+    securityContext:
+      capabilities: {}
+    tty: true
+  restartPolicy: Never
+  volumes:
+  - name: income-back-service-postgres-volume-pvc
+    persistentVolumeClaim:
+      claimName: income-back-service-postgres-volume-pvc
+EOF
+
+kubectl apply \
+-f income-back-service-postgres-volume-pvc.yaml \
+-f local-storage-postgres.yaml \
+-f imobanco-pod.yaml
+```

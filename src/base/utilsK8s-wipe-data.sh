@@ -32,3 +32,10 @@ systemctl stop kubelet
 # or similar ones.
 iptables --flush
 iptables -tnat --flush
+
+##
+## https://blog.heptio.com/properly-resetting-your-kubeadm-bootstrapped-cluster-nodes-heptioprotip-473bd0b824aa
+#iptables -F \
+#&& iptables -t nat -F \
+#&& iptables -t mangle -F \
+#&& iptables -X
