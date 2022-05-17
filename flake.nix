@@ -16,7 +16,7 @@
 
         user_name = "nixuser";
 
-        packages = (import ./src/pkgs { pkgs = pkgsAllowUnfree; });
+        packages = (import ./src/pkgs { pkgs = pkgsAllowUnfree; nixpkgs = nixpkgs; });
 
 
         runVMKVM = pkgsAllowUnfree.writeShellScriptBin "run-vm-kvm" ''
@@ -115,23 +115,23 @@
            inherit system;
         };
 
-        myImportGeneric = pkgsAndSystem: fullFilePath:
-          import fullFilePath pkgsAndSystem;
-
+#        myImportGeneric = pkgsAndSystem: fullFilePath:
+#          import fullFilePath pkgsAndSystem;
 #
-
-        myImport = myImportGeneric pkgsAndSystem;
-
-        test-hello-figlet-cowsay = myImport ./src/base/nix/wrappers/test-hello-figlet-cowsay.nix;
-        test-composed-script = myImport ./src/base/nix/wrappers/test-composed-script.nix;
-        retry = myImport ./src/base/nix/wrappers/retry.nix;
-        myssh = myImport ./src/base/nix/wrappers/myssh.nix;
-        start-qemu-vm-in-backround = myImport ./src/base/nix/wrappers/start-qemu-vm-in-backround.nix;
-        my-script = myImport ./src/base/nix/wrappers/my-script.nix;
-        virtual-machine-ssh = myImport ./src/base/nix/wrappers/virtual-machine-ssh.nix;
-        svssh = myImport ./src/base/nix/wrappers/svssh.nix;
-        svissh = myImport ./src/base/nix/wrappers/svissh.nix;
-        prepare-clean-old-stuff-and-create-iso-and-disk = myImport ./src/base/nix/wrappers/prepare-clean-old-stuff-and-create-iso-and-disk.nix;
+##
+#
+#        myImport = myImportGeneric pkgsAndSystem;
+#
+#        test-hello-figlet-cowsay = myImport ./src/base/nix/wrappers/test-hello-figlet-cowsay.nix;
+#        test-composed-script = myImport ./src/base/nix/wrappers/test-composed-script.nix;
+#        retry = myImport ./src/base/nix/wrappers/retry.nix;
+#        myssh = myImport ./src/base/nix/wrappers/myssh.nix;
+#        start-qemu-vm-in-backround = myImport ./src/base/nix/wrappers/start-qemu-vm-in-backround.nix;
+#        my-script = myImport ./src/base/nix/wrappers/my-script.nix;
+#        virtual-machine-ssh = myImport ./src/base/nix/wrappers/virtual-machine-ssh.nix;
+#        svssh = myImport ./src/base/nix/wrappers/svssh.nix;
+#        svissh = myImport ./src/base/nix/wrappers/svissh.nix;
+#        prepare-clean-old-stuff-and-create-iso-and-disk = myImport ./src/base/nix/wrappers/prepare-clean-old-stuff-and-create-iso-and-disk.nix;
 
       in
       {
@@ -314,7 +314,6 @@
 #            self.packages.${system}.myssh
 #            self.packages.${system}.retry
 #            self.packages.${system}.start-qemu-vm-in-backround
-#            self.packages.${system}.test-hello-figlet
 #            self.packages.${system}.my-script
 #            self.packages.${system}.virtual-machine-ssh
 #            self.packages.${system}.svssh
@@ -325,6 +324,12 @@
 #            self.packages.${system}.prepare-clean-old-stuff-and-create-iso-and-disk
 
               hello-figlet
+              composed-script
+
+              retry
+
+              runVM
+              # run-vm-kvm
 
             # It slows a lot the nix develop
             # self.packages.${system}.image.image
@@ -336,9 +341,6 @@
 
           shellHook = ''
             export TMPDIR=/tmp
-
-            alias nbv='nixos-box-volume'
-            alias nb='nixos-box'
           '';
         };
       }

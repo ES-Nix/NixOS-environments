@@ -1,4 +1,5 @@
 result
+*.qcow
 *.qcow2
 .idea/*
 *.iso

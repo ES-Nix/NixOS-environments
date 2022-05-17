@@ -1,6 +1,8 @@
 # Lib virt
 
 
+TODO: https://groups.google.com/g/kubevirt-dev/c/HX6oG8__59M
+
 ```bash
 virt-install \
 --name=nixos \

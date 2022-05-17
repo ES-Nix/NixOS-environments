@@ -126,7 +126,6 @@ in
       # boot.supportedFilesystems = [ "btrfs" "ext2" "ext3" "ext4" "exfat" "f2fs" "fat8" "fat16" "fat32" "ntfs" "xfs" "zfs" ];
       # boot.supportedFilesystems = pkgs.lib.mkForce [ "btrfs" "reiserfs" "vfat" "f2fs" "xfs" "ntfs" "cifs" ];
 
-
       # Define a user account.
       # Don't forget to set a password with `passwd`.
       users.extraUsers.nixuser = {

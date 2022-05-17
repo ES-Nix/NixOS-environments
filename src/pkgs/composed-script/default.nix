@@ -1,11 +1,10 @@
 { pkgs ? import <nixpkgs> { } }:
 pkgs.stdenv.mkDerivation rec {
-  name = "run-nixos-iso";
+  name = "composed-script";
   buildInputs = with pkgs; [ stdenv ];
   nativeBuildInputs = with pkgs; [ makeWrapper ];
   propagatedNativeBuildInputs = with pkgs; [
-    hello
-    figlet
+    (import ../hello-figlet { inherit pkgs;})
   ];
 
   src = builtins.path { path = ./.; name = "${name}"; };

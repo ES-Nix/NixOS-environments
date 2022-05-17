@@ -1,11 +1,11 @@
 { pkgs ? import <nixpkgs> { } }:
 pkgs.stdenv.mkDerivation rec {
-  name = "run-nixos-iso";
+  name = "retry";
   buildInputs = with pkgs; [ stdenv ];
   nativeBuildInputs = with pkgs; [ makeWrapper ];
   propagatedNativeBuildInputs = with pkgs; [
-    hello
-    figlet
+    bash
+    coreutils
   ];
 
   src = builtins.path { path = ./.; name = "${name}"; };

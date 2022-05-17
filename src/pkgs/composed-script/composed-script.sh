@@ -5,7 +5,7 @@
 # test-composed-script -a a -b b -c c
 
 echo 'A'
-test-hello-figlet-cowsay
+hello-figlet --greeting 'From composed script'
 echo 'B'
 
 number_of_arguments="$#"

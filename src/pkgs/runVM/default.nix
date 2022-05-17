@@ -10,7 +10,7 @@ pkgs.stdenv.mkDerivation rec {
     qemu
   ];
 
-  src = builtins.path { path = ./.; name = "runVM"; };
+  src = builtins.path { path = ./.; name = "${name}"; };
   phases = [ "installPhase" ];
 
   unpackPhase = ":";
@@ -18,17 +18,17 @@ pkgs.stdenv.mkDerivation rec {
   installPhase = ''
     mkdir -p $out/bin
 
-    cp -r "${src}"/* $out
+    cp -r "${src}"/"${name}".sh $out
 
     install \
     -m0755 \
-    $out/runVM.sh \
+    $out/"${name}".sh \
     -D \
-    $out/bin/runVM
+    $out/bin/"${name}"
 
-    patchShebangs $out/bin/runVM
+    patchShebangs $out/bin/"${name}"
 
-    wrapProgram $out/bin/runVM \
+    wrapProgram $out/bin/"${name}" \
       --prefix PATH : "${pkgs.lib.makeBinPath propagatedNativeBuildInputs }"
   '';
 

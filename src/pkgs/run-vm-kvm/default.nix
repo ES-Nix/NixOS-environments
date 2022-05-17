@@ -15,7 +15,7 @@ pkgs.stdenv.mkDerivation rec {
   (if stdenv.isDarwin then [ ]
   else [ cloud-utils ]);
 
-  src = builtins.path { path = ./.; name = "run-vm-kvm"; };
+  src = builtins.path { path = ./.; name = "${name}".sh; };
   phases = [ "installPhase" ];
 
   unpackPhase = ":";
@@ -23,11 +23,9 @@ pkgs.stdenv.mkDerivation rec {
   installPhase = ''
     mkdir -p $out/bin
 
-    cp -r "${src}"/* $out
+    cp -r "${src}"/"${name}".sh $out
 
-    cp --reflink=auto "${image}" disk.qcow2
-    chmod +w disk.qcow2
-    qemu-img resize disk.qcow2 +12G
+    qemu-img create disk.qcow2 +12G
 
     mkdir -p $out/bin
 
@@ -41,19 +39,21 @@ pkgs.stdenv.mkDerivation rec {
     cloud-localds userdata.raw cloud-init.yaml
     qemu-img convert -p -f raw userdata.raw -O qcow2 "$out"/userdata.qcow2
 
-    substituteInPlace $out/run-vm-kvm.sh \
+    substituteInPlace $out/"${name}".sh \
       --replace ":-store-disk-name}" ":-$out/disk.qcow2}" \
       --replace ":-store-userdata-name}" ":-$out/userdata.qcow2}"
 
     install \
     -m0755 \
-    $out/run-vm-kvm.sh \
+    $out/"${name}".sh \
     -D \
-    $out/bin/run-vm-kvm
+    $out/bin/"${name}"
 
-    patchShebangs $out/bin/run-vm-kvm
+    rm -v $out/"${name}".sh
 
-    wrapProgram $out/bin/run-vm-kvm \
+    patchShebangs $out/bin/"${name}"
+
+    wrapProgram $out/bin/"${name}" \
       --prefix PATH : "${pkgs.lib.makeBinPath propagatedNativeBuildInputs }"
   '';
 

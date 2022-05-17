@@ -1,5 +1,15 @@
 
 ```bash
+nix build .#empty-qcow2
+cp result/nixos.qcow2 nixos.qcow2
+chmod 0755 nixos.qcow2
+
+qemu-kvm \
+-drive "file=nixos.qcow2,format=qcow2" \
+-m 8G \
+-enable-kvm \
+-nographic
+```
 
 
 ```bash
@@ -38,14 +48,4 @@ Refs.:
 qemu-system-kvm -enable-kvm -m 8192 -boot a -hda nixos.img
 ```
 
-```bash
-nix build .#empty-qcow2
-cp result/nixos.qcow2 nixos.qcow2
-chmod 0755 nixos.qcow2
 
-qemu-kvm \
--drive "file=nixos.qcow2,format=qcow2" \
--m 8G \
--enable-kvm \
--nographic
-```
