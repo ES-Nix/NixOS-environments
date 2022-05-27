@@ -1685,6 +1685,15 @@ nix build --refresh 'path:.#my-vim'
 
 ####
 
+
+```bash
+nix \
+build \
+--refresh \
+github:ES-Nix/NixOS-environments/box#nixos-iso
+```
+
+
 ```bash
 nix build --refresh .#nixos-iso
 

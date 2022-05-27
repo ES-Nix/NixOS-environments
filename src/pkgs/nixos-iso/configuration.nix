@@ -111,18 +111,20 @@ in
     zsh-completions
 #    kind
 #    kubectl
-     clang
-     cmake
-     flutter
-     ninja
-     pkg-config
-     gtk3
-     gtk3.dev
-     gtk3-x11
-     gtk3-x11.dev
-     util-linux
-     util-linux.dev
-     glib.dev
+
+
+#     clang
+#     cmake
+#     flutter
+#     ninja
+#     pkg-config
+#     gtk3
+#     gtk3.dev
+#     gtk3-x11
+#     gtk3-x11.dev
+#     util-linux
+#     util-linux.dev
+#     glib.dev
 
      # Helper script to print the IOMMU groups of PCI devices.
      (
@@ -137,14 +139,16 @@ in
      )
   ];
 
-  environment.sessionVariables = {
-    PKG_CONFIG_PATH="${pkgs.gtk3.dev}/lib/pkgconfig";
-  };
+#  environment.sessionVariables = {
+#    PKG_CONFIG_PATH="${pkgs.gtk3.dev}/lib/pkgconfig";
+#  };
 
   # https://nixos.wiki/wiki/Libvirt
   boot.extraModprobeConfig = "options kvm_intel nested=1";
 
   # https://github.com/NixOS/nixpkgs/issues/27930#issuecomment-417943781
+  # TODO: make it work like:
+  # https://www.youtube.com/watch?v=bkDYmvKINm8&t=1467s
   boot.kernelModules = [ "kvm-intel" ];
 
   # https://github.com/NixOS/nixpkgs/issues/19246#issuecomment-252206901
@@ -175,12 +179,12 @@ in
   programs.ssh.setXAuthLocation = true;
 
   # Enable the X11 windowing system.
-  services.xserver.enable = true;
-  services.xserver.layout = "us";
+  # services.xserver.enable = true;
+  # services.xserver.layout = "us";
 
   # Enable the KDE Desktop Environment.
-  services.xserver.displayManager.sddm.enable = true;
-  services.xserver.desktopManager.plasma5.enable = true;
+  # services.xserver.displayManager.sddm.enable = true;
+  # services.xserver.desktopManager.plasma5.enable = true;
 
   #
   # https://discourse.nixos.org/t/how-to-disable-root-user-account-in-configuration-nix/13235/7
@@ -222,10 +226,13 @@ in
 
   nix = {
     package = pkgs.nixFlakes;
+
+    # TODO: document why/when/how use these
+    # experimental-features commands like: ca-references ca-derivations
     extraOptions = ''
       keep-outputs = true
       keep-derivations = true
-      experimental-features = nix-command flakes ca-references ca-derivations
+      experimental-features = nix-command flakes
       system-features = benchmark big-parallel kvm nixos-test
     '';
 
@@ -240,21 +247,32 @@ in
 
     # TODO: document it
     trustedUsers = [ "@wheel" "nixuser" ];
-    autoOptimiseStore = true;
+    # autoOptimiseStore = true;
 
-    optimise.automatic = true;
+    # optimise.automatic = true;
 
-    gc = {
-      automatic = true;
-      options = "--delete-older-than 1d";
-    };
+    # gc = {
+    #   automatic = true;
+    #   options = "--delete-older-than 1d";
+    # };
 
-    buildCores = 4;
-    maxJobs = 4;
+    # buildCores = 4;
+    # maxJobs = 4;
 
     # Can be a hardening thing
     # https://github.com/sarahhodne/nix-system/blob/98dcfced5ff3bf08ccbd44a1d3619f1730f6fd71/modules/nixpkgs.nix#L16-L22
     readOnlyStore = true;
+
+    # TODO: how write an integration test, that tests it?
+    # Test the binary cache with some thing like:
+    # nix \
+    # store \
+    # ls \
+    # --store https://cache.nixos.org/ \
+    # --long \
+    # --recursive \
+    # "$(nix eval --raw nixpkgs#gtk3.dev)"/lib/pkgconfig/
+    #
     # https://discourse.nixos.org/t/how-to-use-binary-cache-in-nixos/5202/4
     # https://www.reddit.com/r/NixOS/comments/p67ju0/cachix_configuration_in_configurationnix/h9b76fs/?utm_source=reddit&utm_medium=web2x&context=3
     binaryCaches = [
@@ -274,8 +292,8 @@ in
     enable = true;
     shellAliases = {
       vim = "nvim";
-      #          podman = "sudo podman";
-      #          kind = "sudo kind";
+      # podman = "sudo podman";
+      # kind = "sudo kind";
     };
     enableCompletion = true;
     autosuggestions.enable = true;

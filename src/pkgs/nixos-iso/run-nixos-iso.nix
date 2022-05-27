@@ -16,7 +16,7 @@ pkgs.stdenv.mkDerivation rec {
   installPhase = ''
     mkdir -p $out/bin
 
-    cp -r "${src}"/"${name}".sh $out
+    cp -r "${src}"/scripts/"${name}".sh $out
 
     install \
     -m0755 \
