@@ -17,7 +17,7 @@ let
       })
       ./configuration.nix
     ];
-  }).config.system.build.qcow;
+  }).config.system.build.qcow2;
 in
 {
   inherit image;
