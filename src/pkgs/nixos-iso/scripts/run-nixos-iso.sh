@@ -2,18 +2,19 @@
 
 
 
+ISO_NAME='nixos-22.11pre-git-x86_64-linux.iso'
 
 nix build --refresh .#nixos-iso
 
-cp result/iso/nixos-21.11pre-git-x86_64-linux.iso .
+cp result/iso/"${ISO_NAME}" .
 
-chmod 0755 nixos-21.11pre-git-x86_64-linux.iso
+chmod 0755 "${ISO_NAME}"
 
 qemu-img create nixos.img 16G \
 && echo \
 && qemu-kvm \
 -boot order=d nixos.img \
--cdrom nixos-21.11pre-git-x86_64-linux.iso \
+-cdrom "${ISO_NAME}" \
 -m 8G \
 -enable-kvm \
 -cpu host \

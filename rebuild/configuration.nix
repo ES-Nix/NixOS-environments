@@ -291,7 +291,7 @@ in
   # https://github.com/NixOS/nixpkgs/issues/19246#issuecomment-252206901
   services.openssh = {
     allowSFTP = true;
-    challengeResponseAuthentication = false;
+    kbdInteractiveAuthentication = false;
     enable = true;
     forwardX11 = false;
 

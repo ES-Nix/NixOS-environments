@@ -158,6 +158,11 @@
           drv = packages.hello-figlet;
         };
 
+        apps.composed-script = flake-utils.lib.mkApp {
+          name = "composed-script";
+          drv = packages.composed-script;
+        };
+
         devShell = pkgsAllowUnfree.mkShell {
           buildInputs = with pkgsAllowUnfree;
                         with self.packages.${system}; [
@@ -198,7 +203,7 @@
 #            self.packages.${system}.prepare-clean-old-stuff-and-create-iso-and-disk
 
               hello-figlet
-              # composed-script
+              composed-script
 
               # retry
 

@@ -88,7 +88,7 @@ in
     ({
       services.openssh = {
         allowSFTP = true;
-        challengeResponseAuthentication = false;
+        kbdInteractiveAuthentication = false;
         enable = true;
         forwardX11 = true;
         passwordAuthentication = true;
