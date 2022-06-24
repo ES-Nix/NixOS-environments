@@ -163,6 +163,21 @@
           drv = packages.composed-script;
         };
 
+        apps.retry = flake-utils.lib.mkApp {
+          name = "retry";
+          drv = packages.retry;
+        };
+
+        apps.runVM = flake-utils.lib.mkApp {
+          name = "runVM";
+          drv = packages.runVM;
+        };
+
+        apps.run-vm-kvm = flake-utils.lib.mkApp {
+          name = "run-vm-kvm";
+          drv = packages.run-vm-kvm;
+        };
+
         devShell = pkgsAllowUnfree.mkShell {
           buildInputs = with pkgsAllowUnfree;
                         with self.packages.${system}; [
@@ -205,7 +220,7 @@
               hello-figlet
               composed-script
 
-              # retry
+              retry
 
               # runVM
               # run-vm-kvm
