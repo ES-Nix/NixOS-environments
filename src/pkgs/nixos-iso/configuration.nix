@@ -51,7 +51,7 @@ in
   };
 
   virtualisation.podman = {
-    enable = true;
+    enable = false;
     # Create a `docker` alias for podman, to use it as a drop-in replacement
     #dockerCompat = true;
   };
@@ -315,5 +315,7 @@ in
     promptInit = "";
   };
 
+  # TODO: Fix this!
+  # networking.firewall.enable = false;
 
 }

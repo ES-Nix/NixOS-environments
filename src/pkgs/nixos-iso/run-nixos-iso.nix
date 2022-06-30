@@ -6,6 +6,8 @@ pkgs.stdenv.mkDerivation rec {
   propagatedNativeBuildInputs = with pkgs; [
     hello
     figlet
+
+     (import ../retry { inherit pkgs; })
   ];
 
   src = builtins.path { path = ./.; name = "${name}"; };

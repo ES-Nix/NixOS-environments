@@ -9,7 +9,7 @@
   # Base packages
   retry = pkgs.callPackage ./retry { };
   runVM = pkgs.callPackage ./runVM { };
-  # run-vm-kvm = pkgs.callPackage ./run-vm-kvm { };
+  run-vm-kvm = pkgs.callPackage ./run-vm-kvm { };
 
   nixos-iso = pkgs.callPackage ./nixos-iso { nixpkgs = nixpkgs; };
   run-nixos-iso = pkgs.callPackage ./nixos-iso/run-nixos-iso.nix { };

@@ -8,14 +8,13 @@ pkgs.stdenv.mkDerivation rec {
     coreutils
 
     qemu
-    yj
-    (import ./runVM.nix { inherit pkgs; })
+    (import ../runVM { inherit pkgs; })
   ]
   ++
   (if stdenv.isDarwin then [ ]
   else [ cloud-utils ]);
 
-  src = builtins.path { path = ./.; name = "${name}".sh; };
+  src = builtins.path { path = ./.; name = "${name}.sh"; };
   phases = [ "installPhase" ];
 
   unpackPhase = ":";
@@ -31,13 +30,6 @@ pkgs.stdenv.mkDerivation rec {
 
     touch $out/userdata
     mv disk.qcow2 $out/disk.qcow2
-
-    {
-      echo '#cloud-config'
-      echo '${builtins.toJSON cloudInitWithVolume}' | yj -jy
-    } > cloud-init.yaml
-    cloud-localds userdata.raw cloud-init.yaml
-    qemu-img convert -p -f raw userdata.raw -O qcow2 "$out"/userdata.qcow2
 
     substituteInPlace $out/"${name}".sh \
       --replace ":-store-disk-name}" ":-$out/disk.qcow2}" \
