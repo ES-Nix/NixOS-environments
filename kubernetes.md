@@ -3063,3 +3063,208 @@ kubectl apply \
 -f local-storage-postgres.yaml \
 -f imobanco-pod.yaml
 ```
+
+```bash
+sudo apt update -y \
+&& sudo apt upgrade -y
+```
+
+
+
+## Vagrant
+
+With vitualbox:
+```bash
+sudo apt install -y virtualbox
+
+wget https://releases.hashicorp.com/vagrant/2.2.19/vagrant_2.2.19_x86_64.deb
+sudo apt install ./vagrant_2.2.19_x86_64.deb
+vagrant --version
+```
+
+```bash
+mkdir ~/vagrant_project \
+&& cd $_ \
+&& vagrant init debian/jessie64 \
+&& vagrant up
+```
+
+From: https://linuxhint.com/install-vagrant-ubuntu/
+
+
+
+```bash
+sudo apt update -y
+sudo apt install -y vagrant-libvirt
+```
+
+```bash
+curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add -
+sudo apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main"
+sudo apt-get update && sudo apt-get install -y vagrant=2.2.19
+```
+
+```bash
+curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add -
+sudo apt-add-repository -y "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main"
+sudo apt-get update -y \
+&& sudo apt-get install -y vagrant
+```
+From: https://github.com/hashicorp/vagrant/issues/12751#issuecomment-1115862548
+
+
+```bash
+vagrant plugin list
+```
+
+```bash
+vagrant plugin install vagrant-libvirt
+vagrant plugin install vagrant-mutate
+```
+
+
+```bash
+mkdir ~/vagrant_project \
+&& cd $_ \
+&& vagrant init debian/jessie64 \
+&& vagrant up --provider=libvirt
+```
+
+```bash
+mkdir ~/vagrant_project \
+&& cd $_ \
+&& rm -f Vagrantfile \
+&& vagrant init fedora/36-cloud-base \
+&& vagrant up --provider=libvirt
+```
+
+```bash
+echo 'PubkeyAcceptedKeyTypes +ssh-rsa' >> ~/.ssh/config
+```
+
+```bash
+vagrant box add fedora/36-cloud-base --provider=libvirt
+```
+
+
+### Installation vagrant with libvirt from apt-get
+
+
+```bash
+echo 'Start kvm stuff...' \
+&& getent group kvm || sudo groupadd kvm \
+&& sudo usermod --append --groups kvm "$USER" \
+&& echo 'End kvm stuff!' \
+&& sudo sh -c 'DEBIAN_FRONTEND=noninteractive apt-get update -y' \
+&& sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
+                dnsmasq-base \
+                ebtables \
+                libvirt-clients \
+                libvirt-daemon-system \
+                libvirt-dev \
+                libxml2-dev \
+                libxslt-dev \
+                qemu \
+                ruby-dev \
+                ruby-libvirt \
+                zlib1g-dev \
+&& echo 'End of first apt-get stuff' \
+&& curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add - \
+&& sudo DEBIAN_FRONTEND=noninteractive apt-add-repository -y "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main" \
+&& sudo DEBIAN_FRONTEND=noninteractive apt-get update -y \
+&& sudo DEBIAN_FRONTEND=noninteractive apt-get install -y vagrant \
+&& sudo reboot
+```
+
+
+#### Example vagrant with libvirt
+
+
+```bash
+mkdir ~/vagrant_project \
+&& cd $_ \
+&& { cat <<EOF | tee Vagrantfile
+# All Vagrant configuration is done below. The "2" in Vagrant.configure
+# configures the configuration version (we support older styles for
+# backwards compatibility). Please don't change it unless you know what
+# you're doing.
+Vagrant.configure("2") do |config|
+  # The most common configuration options are documented and commented below.
+  # For a complete reference, please see the online documentation at
+  # https://docs.vagrantup.com.
+
+  # Every Vagrant development environment requires a box. You can search for
+  # boxes at https://vagrantcloud.com/search.
+  config.vm.box = "generic/alpine311"
+
+  config.vm.synced_folder '.', '/home/vagrant/somepath' 
+end
+EOF
+} && vagrant up --provider=libvirt \
+&& vagrant ssh
+```
+
+
+
+```bash
+# Broken, maybe because them are the bigger ones? 
+# config.vm.box = "alvistack/ubuntu-22.04"
+# config.vm.box = "generic/opensuse42"
+config.vm.box = "archlinux/archlinux"
+config.vm.box = "generic/centos/8"
+config.vm.box = "generic/debian11"
+config.vm.box = "fedora/36-cloud-base"
+config.vm.box = "esselius/nixos"
+config.vm.box = "generic/alpine311"
+```
+From: https://app.vagrantup.com/boxes/search
+
+
+
+Does not work:
+```bash
+config.vm.box = "ubuntu/jammy64"
+config.vm.box = "ubuntu/focal64"
+config.vm.box = "debian/jessie64"
+config.vm.box = "debian/contrib-buster64"
+```
+
+
+```bash
+vagrant global-status
+```
+
+```bash
+vagrant box list
+```
+
+
+
+TODO:
+- https://discourse.nixos.org/t/libvirtd-on-ubuntu-with-nix/7259/5
+- https://unix.stackexchange.com/a/408735
+- https://www.immae.eu/blog/tag/nixos.html
+- https://github.com/NixOS/nixpkgs/issues/73470
+- https://nixos.wiki/wiki/Vagrant
+- https://lunar.computer/posts/vagrant-nixos/
+
+
+```bash
+nix \
+profile \
+install \
+nixpkgs#docker \
+&& sudo cp "$(nix eval --raw nixpkgs#docker)"/etc/systemd/system/{docker.service,docker.socket} /etc/systemd/system/ \
+&& sudo systemctl enable --now docker
+```
+
+
+```bash
+nix \          
+store \
+ls \
+--store https://cache.nixos.org/ \
+--long \
+--recursive \
+"$(nix eval --raw nixpkgs#libvirt)"/lib/systemd/system
+```
