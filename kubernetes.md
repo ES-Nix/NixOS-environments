@@ -389,6 +389,8 @@ sudo sysctl --system | grep 'Invalid argument'
 ## Installing in a VM made with QEMU + KVM and Ubuntu 21.04 cloud image
 
 
+### all from apt-get
+
 ```bash
 echo 'Start docker installation...' \
 && curl -fsSL https://get.docker.com | sudo sh \
@@ -1591,9 +1593,6 @@ kubectl get secret default-token-g59z6 -o yaml
 ```
 
 
-figma
-
-
 kubectl get events --namespace=kube-system
 kubectl get nodes -o json | jq '.items[].spec.taints'
 kubectl taint nodes $(hostname) node-role.kubernetes.io/master:NoSchedule-
@@ -1755,7 +1754,7 @@ sudo ln -s /etc/static/kubernetes/cluster-admin.kubeconfig ~/.kube/config
 ```bash
 kubectl --server=https://localhost:6443 get pods -A 
 ```
-
+--
 
 ```bash
 sudo netstat -lnpt | grep kube
@@ -1817,6 +1816,23 @@ spec:
     command: ['sh', '-c', 'echo The Bench Container 1 is Running ; sleep 100000']
 EOF
 ```
+
+
+TODO: test it
+```bash
+cat << EOF > example.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-pod
+spec:
+  containers:
+  - name: test-pod
+    image: busybox
+    command: ['sh', '-c', 'while true; do echo The Bench Container $(date +%d/%m/%Y %H:%M:%S:%3N); sleep 0.5; done']
+EOF
+```
+
 
 
 ```bash
