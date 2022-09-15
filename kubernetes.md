@@ -433,8 +433,21 @@ sudo \
 && sudo grub-mkconfig -o /boot/grub/grub.cfg
 # && sudo reboot
 echo 'vm.swappiness = 0' | sudo tee -a /etc/sysctl.conf
+
+
+# https://askubuntu.com/a/984777
+# https://askubuntu.com/a/1401070
+sudo swapoff -a                               # Disable all devices marked as swap in /etc/fstab
+sudo sed -e '/swap/ s/^#*/#/' -i /etc/fstab   # Comment the correct mounting point
+sudo systemctl mask swap.target               # Completely disabled
+
+
+# 
+sudo rm /etc/containerd/config.toml
+
 sudo reboot
 ```
+
 
 
 ```bash
@@ -3257,6 +3270,7 @@ vagrant box list
 
 
 TODO:
+- https://bharatrajagopalan.medium.com/experimenting-with-alternatives-for-docker-podman-on-mac-os-big-sur-with-vmware-fusion-3d9f21dbcf65
 - https://discourse.nixos.org/t/libvirtd-on-ubuntu-with-nix/7259/5
 - https://unix.stackexchange.com/a/408735
 - https://www.immae.eu/blog/tag/nixos.html
