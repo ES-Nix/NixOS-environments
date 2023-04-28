@@ -3176,7 +3176,7 @@ vagrant box add fedora/36-cloud-base --provider=libvirt
 ```
 
 
-### Installation vagrant with libvirt from apt-get
+### Installation vagrant with libvirt from apt-get in Ubuntu
 
 
 ```bash
@@ -3206,7 +3206,7 @@ echo 'Start kvm stuff...' \
 ```
 
 
-#### Example vagrant with libvirt
+#### Example vagrant with libvirt from apt-get in Ubuntu
 
 
 ```bash

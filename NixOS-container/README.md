@@ -63,20 +63,44 @@ https://github.com/corngood/portable-nixos-container
 https://discourse.nixos.org/t/extra-container-run-declarative-containers-without-full-system-rebuilds/511/10
 https://blog.beardhatcode.be/2020/12/Declarative-Nixos-Containers.html
 
+```bash
+nix shell nixpkgs#nixos-shell nixpkgs#jq
+```
 
-nix shell nixpkgs#nixos-shell
+> Yes, the `jq` binary is missing. TODO: send an PR to fix it. 
+
+
+```bash
 nixos-shell --flake github:Mic92/nixos-shell#vm-forward
+```
 
+```bash
+nix shell nixpkgs#nixos-shell nixpkgs#jq --command nixos-shell --flake github:Mic92/nixos-shell#vm-forward
+```
+
+Login with just `root` and press `Enter`.
+
+
+```bash
+nix --extra-experimental-features 'nix-command flakes' run nixpkgs#xorg.xclock
+```
+
+
+```bash
 nix-channel --add https://nixos.org/channels/nixos-20.11 nixos
+```
 
+```bash
 nix flake metadata nixpkgs
 nix run nixpkgs#neofetch -- --json
 nix run nixpkgs#nix-info -- --markdown
+```
 
+```bash
 nix-channel --list
 sudo nix-channel --list
-
-https://github.com/Mic92/nixos-shell/issues/36
+```
+From? https://github.com/Mic92/nixos-shell/issues/36
 
 ```bash
 cat << 'EOF' > flake.nix

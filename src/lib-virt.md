@@ -1,7 +1,9 @@
 # Lib virt
 
 
-TODO: https://groups.google.com/g/kubevirt-dev/c/HX6oG8__59M
+TODO: 
+- https://groups.google.com/g/kubevirt-dev/c/HX6oG8__59M
+- https://www.technicalsourcery.net/posts/nixos-in-libvirt/
 
 ```bash
 virt-install \
@@ -17,6 +19,25 @@ virt-install \
 ```
 Refs.:
 - [Test-Driving a NixOS VM Using Libvirt](https://www.technicalsourcery.net/posts/nixos-in-libvirt/)
+
+
+
+```bash
+qemu-img create -f qcow2 my-nixos-disk-image.qcow2 20G
+```
+
+
+```bash
+virt-install \
+--name=nixos \
+--memory=2048 \
+--vcpus=2 \
+--disk my-nixos-disk-image.qcow2,device=disk,bus=virtio,size=16 \
+--cdrom=nixos-minimal-22.05.3437.81a3237b64e-x86_64-linux.iso \
+--boot=uefi \
+--nographics \
+--console pty,target_type=virtio
+```
 
 
 ```bash
